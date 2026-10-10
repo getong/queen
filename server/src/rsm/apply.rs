@@ -371,6 +371,14 @@ pub type Result<T> = std::result::Result<T, ApplyError>;
 /// test can drive both cadences exactly.
 pub trait Clock: Send + Sync {
     fn now(&self) -> Instant;
+
+    /// Milliseconds since the Unix epoch, for the one cadence that lines up
+    /// with the other nodes' clocks: the durable point's place in its period
+    /// ([`ApplyConfig::durable_phase_ms`]). `None` when there is no wall clock
+    /// (a test's manual clock): the point then keeps its own period.
+    fn wall_ms(&self) -> Option<u64> {
+        None
+    }
 }
 
 /// The wall clock, for the broker.
@@ -384,6 +392,16 @@ impl Clock for SystemClock {
     #[allow(clippy::disallowed_methods)]
     fn now(&self) -> Instant {
         Instant::now()
+    }
+
+    // Node-local like `now`: it places the durable point in time, never in the
+    // log (the point covers whatever index is applied when it runs).
+    #[allow(clippy::disallowed_methods)]
+    fn wall_ms(&self) -> Option<u64> {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .map(|d| d.as_millis() as u64)
     }
 }
 
@@ -621,6 +639,17 @@ pub struct ApplyConfig {
     pub durable_every_ms: u64,
     /// `QUEEN_RAFT_DURABLE_EVERY_BYTES` (§11.4).
     pub durable_every_bytes: u64,
+    /// `QUEEN_RAFT_DURABLE_PHASE_MS`: where in every `durable_every_ms` of
+    /// wall-clock time this node takes its time-driven durable point. A point
+    /// ends in the checkpoint's `fdatasync` of the store, and while that runs
+    /// the raft log's own `fdatasync` on the same filesystem takes tens of
+    /// milliseconds instead of one or two (three 16-vCPU machines, 1M msg/s,
+    /// 2026-10-10). Nodes whose points fall on the same instant all stop
+    /// acknowledging at once and nothing commits; nodes that take them at
+    /// different instants always leave a quorum with a fast log. `None`: the
+    /// point is due `durable_every_ms` after the last one, wherever that falls
+    /// (a single node, and every test).
+    pub durable_phase_ms: Option<u64>,
     /// Files unlinked per maintenance pass (§11.7).
     pub gc_per_pass: usize,
     /// How long the loop parks on an empty channel before running the
@@ -736,6 +765,7 @@ impl Default for ApplyConfig {
             store_commit_entries: 256,
             durable_every_ms: 1000,
             durable_every_bytes: 256 << 20,
+            durable_phase_ms: None,
             gc_per_pass: 32,
             idle_tick_ms: 2,
             durable_async: true,
@@ -792,12 +822,38 @@ impl ApplyConfig {
                 .unwrap_or(1);
             (cores / 2).min(4)
         }
+        // The durable point's place in its period (see the field). A number
+        // of milliseconds is taken as given and "off" keeps the node on its
+        // own timer. Unset, a node with a raft id takes the golden-ratio
+        // fraction of that id: any three consecutive ids land 236 ms or more
+        // apart in a second and any five 145 ms or more, without a node
+        // knowing how many the others are.
+        fn durable_phase(period_ms: u64) -> Option<u64> {
+            let period_ms = period_ms.max(1);
+            match std::env::var("QUEEN_RAFT_DURABLE_PHASE_MS") {
+                Ok(v) if v.trim() == "off" => return None,
+                Ok(v) => {
+                    if let Ok(ms) = v.trim().parse::<u64>() {
+                        return Some(ms % period_ms);
+                    }
+                }
+                Err(_) => {}
+            }
+            let id = std::env::var("QUEEN_RAFT_NODE_ID")
+                .ok()?
+                .trim()
+                .parse::<u64>()
+                .ok()?;
+            Some(golden_phase(id, period_ms))
+        }
         let d = ApplyConfig::default();
+        let durable_every_ms = num("QUEEN_RAFT_DURABLE_EVERY_MS", d.durable_every_ms);
         ApplyConfig {
             store_commit_ms: num("QUEEN_RAFT_STORE_COMMIT_MS", d.store_commit_ms),
             store_commit_entries: num("QUEEN_RAFT_STORE_COMMIT_ENTRIES", d.store_commit_entries),
-            durable_every_ms: num("QUEEN_RAFT_DURABLE_EVERY_MS", d.durable_every_ms),
+            durable_every_ms,
             durable_every_bytes: num("QUEEN_RAFT_DURABLE_EVERY_BYTES", d.durable_every_bytes),
+            durable_phase_ms: durable_phase(durable_every_ms),
             gc_per_pass: d.gc_per_pass,
             idle_tick_ms: d.idle_tick_ms,
             durable_async: flag("QUEEN_RAFT_DURABLE_ASYNC", d.durable_async),
@@ -4689,6 +4745,32 @@ impl Drop for Checkpointer {
 /// `preflush` is the async durable-point helper (§11.4); `None` runs every
 /// durable point fully inline (`QUEEN_RAFT_DURABLE_ASYNC=0`, and the crash
 /// matrix, which drives points by hand).
+/// The place of node `id` in a period of `period_ms`: the fractional part of
+/// `id` times the golden ratio's, so consecutive ids never land close together
+/// however many they are.
+pub(crate) fn golden_phase(id: u64, period_ms: u64) -> u64 {
+    // 2^64 / phi, so the multiplication wraps to the fractional part.
+    let frac = id.wrapping_mul(0x9E37_79B9_7F4A_7C15) >> 32;
+    (frac * period_ms.max(1)) >> 32
+}
+
+/// The last instant at or before `now` at which wall-clock time was `phase_ms`
+/// into a period of `period_ms`; `None` without a phase or a wall clock. The
+/// time-driven durable point counts its period from here, so it is taken at
+/// the same place of every period whatever happened in between, and a clock
+/// that is stepped moves it by less than one period.
+fn durable_grid(
+    clock: &dyn Clock,
+    now: Instant,
+    period_ms: u64,
+    phase_ms: Option<u64>,
+) -> Option<Instant> {
+    let period_ms = period_ms.max(1);
+    let phase = phase_ms? % period_ms;
+    let since = (clock.wall_ms()? % period_ms + period_ms - phase) % period_ms;
+    now.checked_sub(Duration::from_millis(since))
+}
+
 pub(crate) fn run<S: Store>(
     applier: &mut Applier<'_, S>,
     rx: &Receiver<Committed>,
@@ -4697,7 +4779,18 @@ pub(crate) fn run<S: Store>(
     ckpt: Option<&Checkpointer>,
 ) -> Result<()> {
     let mut last_commit = clock.now();
-    let mut last_durable = last_commit;
+    let durable_period_ms = applier.cfg.durable_every_ms;
+    let durable_phase_ms = applier.cfg.durable_phase_ms;
+    let mut last_durable =
+        durable_grid(clock, last_commit, durable_period_ms, durable_phase_ms).unwrap_or(last_commit);
+    if let Some(phase) = durable_phase_ms {
+        tracing::info!(
+            target: "rsm",
+            phase_ms = phase,
+            every_ms = durable_period_ms,
+            "apply: the time-driven durable point has its own place in the period"
+        );
+    }
     let mut last_timing = last_commit;
     let mut last_preflush = last_commit;
     let timing_interval = crate::rsm::timing::timing_log_interval();
@@ -4791,7 +4884,8 @@ pub(crate) fn run<S: Store>(
             }
             // The point cleared `unsynced_bytes`; the warm-up threshold follows.
             next_preflush = preflush_step;
-            last_durable = now;
+            last_durable =
+                durable_grid(clock, now, durable_period_ms, durable_phase_ms).unwrap_or(now);
             last_commit = now;
         } else if applier.commit_due(now.duration_since(last_commit)) {
             let t0 = crate::rsm::timing::enabled().then(|| clock.now());
@@ -5184,5 +5278,89 @@ mod counter_flush_tests {
         }
         store.close();
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod durable_grid_tests {
+    //! The durable point's place in its period ([`ApplyConfig::durable_phase_ms`]).
+
+    use super::*;
+
+    /// A clock whose wall time and monotonic time a test sets by hand.
+    struct WallClock {
+        at: Instant,
+        wall_ms: Option<u64>,
+    }
+
+    impl Clock for WallClock {
+        fn now(&self) -> Instant {
+            self.at
+        }
+
+        fn wall_ms(&self) -> Option<u64> {
+            self.wall_ms
+        }
+    }
+
+    #[test]
+    fn consecutive_ids_land_apart() {
+        // Ids 1, 2 and 3 in a second, as measured against the golden ratio.
+        assert_eq!(
+            [1u64, 2, 3].map(|id| golden_phase(id, 1000)),
+            [618, 236, 854]
+        );
+        // Any three and any five consecutive ids keep their distance, on the
+        // circle of one period.
+        for (count, least) in [(3u64, 236u64), (5, 145)] {
+            for first in 0..200u64 {
+                let mut at: Vec<u64> = (first..first + count)
+                    .map(|id| golden_phase(id, 1000))
+                    .collect();
+                at.sort_unstable();
+                let mut gaps: Vec<u64> = at.windows(2).map(|w| w[1] - w[0]).collect();
+                gaps.push(at[0] + 1000 - at[at.len() - 1]);
+                let min = gaps.into_iter().min().expect("gaps");
+                assert!(min >= least, "{count} ids from {first}: {min} ms apart");
+            }
+        }
+        // Inside the period, whatever it is.
+        for period in [1u64, 7, 250, 1000, 60_000] {
+            for id in 0..64u64 {
+                assert!(golden_phase(id, period) < period);
+            }
+        }
+    }
+
+    #[test]
+    fn the_grid_is_the_last_instant_at_the_phase() {
+        // The base far enough from the monotonic clock's own start to be moved back.
+        #[allow(clippy::disallowed_methods)]
+        let base = Instant::now() + Duration::from_secs(3600);
+        let at = |wall_ms: u64| WallClock {
+            at: base,
+            wall_ms: Some(wall_ms),
+        };
+        // 700 ms into the second, phase 618: the instant was 82 ms ago.
+        assert_eq!(
+            durable_grid(&at(5_700), base, 1000, Some(618)),
+            Some(base - Duration::from_millis(82))
+        );
+        // 100 ms into the second: it was in the second before, 482 ms ago.
+        assert_eq!(
+            durable_grid(&at(5_100), base, 1000, Some(618)),
+            Some(base - Duration::from_millis(482))
+        );
+        // On the instant itself: now.
+        assert_eq!(durable_grid(&at(5_618), base, 1000, Some(618)), Some(base));
+        // A phase past the period wraps into it.
+        assert_eq!(
+            durable_grid(&at(5_700), base, 1000, Some(1_618)),
+            Some(base - Duration::from_millis(82))
+        );
+        // No phase, or no wall clock: no grid, the point keeps its own period.
+        assert_eq!(durable_grid(&at(5_700), base, 1000, None), None);
+        let manual = ManualClock::new(base);
+        assert_eq!(durable_grid(&manual, base, 1000, Some(618)), None);
     }
 }
