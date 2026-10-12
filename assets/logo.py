@@ -23,7 +23,8 @@ alone for small sizes, one colour, and the badge.
   assets/logo/q-badge{,-on-dark}.svg, -512.png    the badge: a disc with the small logo cut out of it
   assets/logo/overview.png                        everything on one sheet, for looking at
 
-and the copies the dashboard (app/), its sign-in page and the docs (webdoc/) use.
+and the copies the dashboard (app/), its sign-in page, the Laravel supervisor
+dashboard and the docs (webdoc/) use.
 
 Run:  python3 assets/logo.py     (needs rsvg-convert and Pillow)
 """
@@ -273,15 +274,18 @@ def main():
         png(src, os.path.join(OUT, f"q-badge{suffix}-512.png"), 512)
 
 
-def place():
-    """The copies the dashboard (app/) and the docs (webdoc/) use. Inlined ones are lettered
-    "currentColor", so they take the text colour of the page's theme."""
-    from PIL import Image
-
-    site = lambda *path: os.path.join(ROOT, *path)
+def place_inline():
+    """The copies the dashboard (app/), Laravel supervisor dashboard and docs (webdoc/) use.
+    Inlined ones are lettered "currentColor", so they take the text colour of the page's theme."""
     view, shapes = lockup("q")
     for name in ("app", "webdoc"):
         write(inline(view, *shapes(YELLOW, "currentColor", "")), name, "src", "assets", "q.svg", root=ROOT)
+    # The Laravel header embeds the same small logo, without an XML namespace:
+    # it is HTML, with no external image request or asset publishing required.
+    mark = inline(view, *shapes(YELLOW, "currentColor", "")).replace(
+        ' xmlns="http://www.w3.org/2000/svg"', ' class="brand-mark"', 1)
+    write("{{-- The Queen logo, inline. Written by assets/logo.py: do not edit. --}}\n" + mark,
+          "clients", "client-php", "resources", "views", "dashboard", "partials", "mark.blade.php", root=ROOT)
     view, shapes = lockup("queen")
     write(inline(view, *shapes(YELLOW, "currentColor", "")), "webdoc", "src", "assets", "queen.svg", root=ROOT)
     # the logo with its line, for the dashboard's sign-in page
@@ -289,6 +293,13 @@ def place():
     write(inline(view, *shapes(YELLOW, "currentColor", "currentColor")), "app", "public", "queen-wordmark.svg",
           root=ROOT)
 
+
+def place():
+    """Place the inline logos and the browser icons."""
+    from PIL import Image
+
+    place_inline()
+    site = lambda *path: os.path.join(ROOT, *path)
     for name in ("app", "webdoc"):
         shutil.copyfile(os.path.join(OUT, "q-auto.svg"), site(name, "public", "favicon.svg"))
         shutil.copyfile(os.path.join(OUT, "q-32.png"), site(name, "public", "favicon-32.png"))

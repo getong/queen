@@ -33,13 +33,11 @@ Outputs (all regenerated, do not hand-edit):
   webdoc/public/queen-scene.svg      the tall scene on plum
   webdoc/public/queen-scene-cream.svg  the same on cream (rose trail)
                                      (the docs homepage shows assets/scene.py's picture now)
-  clients/client-php/resources/views/dashboard/partials/mark.blade.php
-                                     the mark inline, for the Laravel dashboard's header
-                                     (it is served by the user's app, so nothing to fetch)
 
 The logo (the q that is the sunflower), the favicons, the touch icon, the
-schema.org tile and the sign-in page's mark are assets/logo.py's: the
-sidebar, the boot screen and the docs header show that logo.
+schema.org tile, the sign-in page's mark and the Laravel dashboard's inline
+mark are assets/logo.py's: the sidebar, the boot screen, the docs header and
+the Laravel supervisor dashboard show that logo.
 
 Run:  python3 assets/generate-brand.py
 Then: cd app && npm run build     (server/webapp/dist is the artifact BOTH the
@@ -119,12 +117,6 @@ write(MARK, "webdoc", "public", "queen-mark.svg")
 write(BADGE, "webdoc", "public", "queen-badge.svg")
 write(S.scene_svg(), "webdoc", "public", "queen-scene.svg")
 write(S.scene_svg(sky=S.CREAM, trail=S.ROSE), "webdoc", "public", "queen-scene-cream.svg")
-
-print("laravel dashboard")
-write("{{-- The Queen mark, inline. Written by assets/generate-brand.py: do not edit. --}}\n"
-      f'<svg class="brand-mark" viewBox="{S.MARK_VIEWBOX}" aria-hidden="true" focusable="false">'
-      f"{S.mark_body(21)}</svg>\n",
-      "clients", "client-php", "resources", "views", "dashboard", "partials", "mark.blade.php")
 
 print("social card (GitHub repo social preview: Settings -> Social preview, upload only)")
 # 1280x640 is GitHub's declared size; it renders around 640x320 in most feeds and
