@@ -23,6 +23,8 @@
  * - nlohmann/json
  * - cpp-httplib (header-only HTTP client)
  * - astp::ThreadPool
+ * - zstd, only when built with -DQUEEN_CLIENT_ZSTD (and linked with -lzstd):
+ *   the push_compression and framed_pop options of ClientConfig need it
  * 
  * Usage:
  *   #include "queen_client.hpp"
@@ -65,6 +67,10 @@
 #include <future>
 #include <csignal>
 #include <algorithm>
+#include <array>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
 #ifdef _WIN32
 #include <process.h>
 #else
@@ -82,6 +88,12 @@
 
 // ThreadPool
 #include "../server/include/threadpool.hpp"
+
+// zstd, for the push_compression and framed_pop options. Opt-in: a build that
+// does not define QUEEN_CLIENT_ZSTD needs neither the header nor the library.
+#ifdef QUEEN_CLIENT_ZSTD
+#include <zstd.h>
+#endif
 
 namespace queen {
 
@@ -142,6 +154,25 @@ struct ClientConfig {
     bool enable_failover = true;
     std::string bearer_token;                // sent as "Authorization: Bearer <token>"
     Retry429Options retry_429;
+    // The three below need a broker that has the binary push body and the
+    // framed pop answer. Off, the client sends and reads the JSON every broker
+    // knows.
+    //
+    // binary_push: a push goes out as the binary push body (wire::
+    // encode_push_binary) instead of JSON. Items with a trace id stay JSON.
+    bool binary_push = false;
+    // push_compression (with binary_push): the client frames the messages as
+    // the broker stores them, mints their ids and zstd-compresses each
+    // partition's batch once; the broker keeps those bytes as they are. A
+    // transaction that pushes sends its pushes the same way (the binary
+    // transaction body), and the rest of the bundle as JSON in front of them.
+    // Needs a build with QUEEN_CLIENT_ZSTD.
+    bool push_compression = false;
+    // framed_pop: pops ask for the messages as the stored records (frames=true)
+    // and unpack them here (wire::decode_pop_frames). A broker that does not
+    // know the parameter answers JSON, which is read as always. Needs a build
+    // with QUEEN_CLIENT_ZSTD.
+    bool framed_pop = false;
 };
 
 struct QueueConfig {
@@ -492,11 +523,24 @@ public:
 
 namespace util {
 
+/** The lower-case hyphenated text of 16 id bytes. */
+inline std::string uuid_text(const uint8_t* bytes) {
+    static const char* const HEX = "0123456789abcdef";
+    std::string text;
+    text.reserve(36);
+    for (int i = 0; i < 16; ++i) {
+        if (i == 4 || i == 6 || i == 8 || i == 10) text.push_back('-');
+        text.push_back(HEX[bytes[i] >> 4]);
+        text.push_back(HEX[bytes[i] & 0x0F]);
+    }
+    return text;
+}
+
 /**
- * Generate UUIDv7 (time-ordered UUID with millisecond precision)
- * Based on queen::QueueManager::generate_uuid()
+ * Generate UUIDv7 (time-ordered UUID with millisecond precision) as its 16
+ * bytes. Based on queen::QueueManager::generate_uuid()
  */
-inline std::string generate_uuid_v7() {
+inline std::array<uint8_t, 16> generate_uuid_v7_bytes() {
     static std::mutex uuid_mutex;
     static uint64_t last_ms = 0;
     static uint16_t sequence = 0;
@@ -543,16 +587,13 @@ inline std::string generate_uuid_v7() {
     bytes[13] = (rand_data >> 16) & 0xFF;
     bytes[14] = (rand_data >> 8) & 0xFF;
     bytes[15] = rand_data & 0xFF;
-    
-    // Format to string: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    std::stringstream ss;
-    ss << std::hex << std::setfill('0');
-    for (int i = 0; i < 16; ++i) {
-        if (i == 4 || i == 6 || i == 8 || i == 10) ss << '-';
-        ss << std::setw(2) << static_cast<int>(bytes[i]);
-    }
-    
-    return ss.str();
+
+    return bytes;
+}
+
+/** A UUIDv7 as text: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx */
+inline std::string generate_uuid_v7() {
+    return uuid_text(generate_uuid_v7_bytes().data());
 }
 
 /**
@@ -1835,6 +1876,627 @@ inline json single_result(const json& response, const char* what) {
 } // namespace wire
 
 // ============================================================================
+// The binary push body and the framed pop answer
+// ============================================================================
+//
+// The binary push body is an alternative to the JSON body of POST /api/v1/push:
+//
+//   "QPB1" | u8 flags | [u32 raw_len, when zstd] | body
+//   body:  u32 groups | per group: u16 len, queue | u16 len, partition | u32 n
+//          | n x ([u16 len, transactionId, when flag 4] | u32 len, payload)
+//
+// All integers little-endian. flags: 1 = the body is one zstd frame of raw_len
+// bytes, 2 = answer with the counts only, 4 = every item carries its
+// transaction id (empty = the broker mints it). No trace id. Each payload is
+// one JSON document.
+//
+// With flag 8 (encode_push_frames) a group is the messages as the broker stores
+// them, compressed here once:
+//
+//   body:  u32 groups | per group: u16 len, queue | u16 len, partition | u32 n | u32 z_len | z
+//   z:     one zstd frame of n frames: u32 body_len | u8 0 | u8[16] message id
+//          | u16 len, transactionId | payload
+//
+// The message id is a version-7 UUID minted by the client; a message without
+// its own transaction id uses the id's text. The broker checks every frame and
+// keeps the compressed bytes as they are, so it does not compress them again.
+//
+// A broker that does not know this body answers 400; a client sends it only
+// when ClientConfig::binary_push is set, so by default a push is the JSON
+// request every broker knows.
+//
+// The binary transaction body (encode_transaction_frames), an alternative to
+// the JSON body of POST /api/v1/transaction, carries the pushes the same way:
+//
+//   "QTB1" | u8 flags | u32 len, head | u32 groups | the groups, as with flag 8 above
+//
+// head is the JSON transaction body without its push operations: the acks in
+// `operations`, `requiredLeases`, `kv`, `timers`. flags: 2 = the answer leaves
+// out the pushes' and the acks' results and counts them (`pushed`,
+// `duplicate`, `acked`); the riders' results stay. In the answer the head's
+// operations come first and the groups' messages after them, in the order
+// written; the riders follow, as in the JSON body.
+//
+// The framed pop answer is what a broker sends for a pop with `frames=true`:
+// the messages as the stored records, each still the zstd frame the producer
+// (or the broker) made, unpacked here.
+//
+//   "QPF1" | u8 1 | u32 len, the answer's own keys as one JSON object
+//   u16 len, queue | u16 len, leaseId | u16 len, consumerGroup | u32 claims
+//   per claim:  u64 partitionId | u16 len, partition | u64 start | u64 end | u32 deliveryAttempt | u32 records
+//   per record: u64 base_offset | i64 created_at_us | u32 count | u8 codec (0 raw, 1 zstd) | u32 len | bytes
+//
+// A record's bytes are `count` frames:
+//
+//   u32 body_len | u8 flags | u8[16] message id | [u8[16] trace id, flag 1]
+//   | u16 len, transactionId | [u16 len, producer, flag 2] | payload
+//
+// Message i of a record has offset base_offset+i and belongs to the delivery
+// when that lies in the claim's start..=end. The JSON object in front holds
+// what the JSON answer has beside its messages: the conflation echo and the
+// autopilot's choice.
+
+namespace wire {
+
+inline constexpr const char* PUSH_BINARY_CONTENT_TYPE = "application/x-queen-push";
+inline constexpr const char* POP_FRAMES_CONTENT_TYPE = "application/x-queen-pop";
+
+/** Whether this build has zstd (QUEEN_CLIENT_ZSTD). */
+inline bool zstd_available() {
+#ifdef QUEEN_CLIENT_ZSTD
+    return true;
+#else
+    return false;
+#endif
+}
+
+/**
+ * One zstd frame of `raw`, at the fastest level. The frame carries its content
+ * size, which the broker asks of a frame it stores as it came.
+ */
+inline std::string zstd_compress(const std::string& raw) {
+#ifdef QUEEN_CLIENT_ZSTD
+    std::string frame(ZSTD_compressBound(raw.size()), '\0');
+    const size_t written = ZSTD_compress(frame.data(), frame.size(), raw.data(), raw.size(), 1);
+    if (ZSTD_isError(written)) {
+        throw std::runtime_error(std::string("zstd: ") + ZSTD_getErrorName(written));
+    }
+    frame.resize(written);
+    return frame;
+#else
+    (void)raw;
+    throw std::runtime_error("zstd is not in this build: compile with -DQUEEN_CLIENT_ZSTD and link -lzstd");
+#endif
+}
+
+inline std::string zstd_decompress(const std::string& frame) {
+#ifdef QUEEN_CLIENT_ZSTD
+    // Largest record inflated here: the broker's own bound on a stored one.
+    constexpr unsigned long long MAX_RECORD_BYTES = 1ULL << 30;
+    const unsigned long long size = ZSTD_getFrameContentSize(frame.data(), frame.size());
+    if (size == ZSTD_CONTENTSIZE_ERROR || size == ZSTD_CONTENTSIZE_UNKNOWN || size > MAX_RECORD_BYTES) {
+        throw std::runtime_error("zstd: a frame without a plausible content size");
+    }
+    std::string raw(static_cast<size_t>(size), '\0');
+    const size_t written = ZSTD_decompress(raw.data(), raw.size(), frame.data(), frame.size());
+    if (ZSTD_isError(written) || written != raw.size()) {
+        throw std::runtime_error(std::string("zstd: ") +
+            (ZSTD_isError(written) ? ZSTD_getErrorName(written) : "a frame shorter than its content size"));
+    }
+    return raw;
+#else
+    (void)frame;
+    throw std::runtime_error("zstd is not in this build: compile with -DQUEEN_CLIENT_ZSTD and link -lzstd");
+#endif
+}
+
+/** One partition's messages for encode_push_binary and encode_push_frames. */
+struct PushBatch {
+    std::string queue;
+    std::string partition;
+    std::vector<std::string> payloads;                          // each one JSON document
+    // Empty optional, or one transaction id per payload ("" = the broker mints it).
+    std::optional<std::vector<std::string>> transaction_ids;
+};
+
+/** A name or a transaction id does not fit its 16-bit length. */
+class PushBinaryTooLong : public std::length_error {
+public:
+    using std::length_error::length_error;
+};
+
+inline void put_u16(std::string& out, size_t value) {
+    out.push_back(static_cast<char>(value & 0xFF));
+    out.push_back(static_cast<char>((value >> 8) & 0xFF));
+}
+
+inline void put_u32(std::string& out, size_t value) {
+    for (int shift = 0; shift < 32; shift += 8) {
+        out.push_back(static_cast<char>((value >> shift) & 0xFF));
+    }
+}
+
+inline void put_text16(std::string& out, const std::string& text, const char* what) {
+    if (text.size() > 0xFFFF) {
+        throw PushBinaryTooLong(std::string(what) + " longer than 65535 bytes");
+    }
+    put_u16(out, text.size());
+    out += text;
+}
+
+inline void check_push_batch(const PushBatch& batch) {
+    if (batch.transaction_ids && batch.transaction_ids->size() != batch.payloads.size()) {
+        throw std::invalid_argument(std::to_string(batch.transaction_ids->size()) +
+            " transaction ids for " + std::to_string(batch.payloads.size()) + " payloads");
+    }
+}
+
+/**
+ * Encode batches as a binary push body. compress: the body is zstd-compressed.
+ * counts: the broker answers {"count","queued","duplicate","error"} instead of
+ * one object per message.
+ */
+inline std::string encode_push_binary(const std::vector<PushBatch>& batches,
+                                      bool compress = false, bool counts = false) {
+    bool with_txn = false;
+    for (const auto& batch : batches) {
+        with_txn = with_txn || batch.transaction_ids.has_value();
+    }
+    const int flags = (counts ? 2 : 0) | (with_txn ? 4 : 0);
+
+    std::string body;
+    put_u32(body, batches.size());
+    for (const auto& batch : batches) {
+        check_push_batch(batch);
+        put_text16(body, batch.queue, "queue name");
+        put_text16(body, batch.partition, "partition name");
+        put_u32(body, batch.payloads.size());
+        for (size_t i = 0; i < batch.payloads.size(); ++i) {
+            if (with_txn) {
+                put_text16(body, batch.transaction_ids ? (*batch.transaction_ids)[i] : std::string(),
+                           "transaction id");
+            }
+            put_u32(body, batch.payloads[i].size());
+            body += batch.payloads[i];
+        }
+    }
+
+    std::string out = "QPB1";
+    if (!compress) {
+        out.push_back(static_cast<char>(flags));
+        out += body;
+        return out;
+    }
+    out.push_back(static_cast<char>(flags | 1));
+    put_u32(out, body.size());
+    out += zstd_compress(body);
+    return out;
+}
+
+/**
+ * Encode batches as a binary push body whose groups are the messages framed as
+ * the broker stores them and compressed once, here. counts: the broker answers
+ * with the counts instead of one object per message.
+ */
+inline std::string append_frame_groups(std::string out, const std::vector<PushBatch>& batches);
+
+inline std::string encode_push_frames(const std::vector<PushBatch>& batches, bool counts = false) {
+    std::string out = "QPB1";
+    out.push_back(static_cast<char>(8 | (counts ? 2 : 0)));
+    return append_frame_groups(std::move(out), batches);
+}
+
+/**
+ * Encode a binary transaction body: head, the JSON transaction body without
+ * its push operations (empty for none), then batches as groups of messages
+ * framed as the broker stores them and compressed once, here. counts: the
+ * broker counts the pushes and the acks in its answer instead of rendering one
+ * result for each.
+ */
+inline std::string encode_transaction_frames(const std::string& head,
+                                             const std::vector<PushBatch>& batches,
+                                             bool counts = false) {
+    std::string out = "QTB1";
+    out.push_back(static_cast<char>(counts ? 2 : 0));
+    put_u32(out, head.size());
+    out += head;
+    return append_frame_groups(std::move(out), batches);
+}
+
+/**
+ * Appends `u32 groups | per group: u16 len, queue | u16 len, partition | u32 n
+ * | u32 z_len | z` to out: each batch's messages framed as the broker stores
+ * them, with a version-7 id minted here, as one zstd frame.
+ */
+inline std::string append_frame_groups(std::string out, const std::vector<PushBatch>& batches) {
+    put_u32(out, batches.size());
+    std::string frames;
+    for (const auto& batch : batches) {
+        check_push_batch(batch);
+        frames.clear();
+        for (size_t i = 0; i < batch.payloads.size(); ++i) {
+            const auto id = util::generate_uuid_v7_bytes();
+            std::string txn = batch.transaction_ids ? (*batch.transaction_ids)[i] : std::string();
+            if (txn.empty()) {
+                txn = util::uuid_text(id.data());
+            }
+            if (txn.size() > 0xFFFF) {
+                throw PushBinaryTooLong("transaction id longer than 65535 bytes");
+            }
+            put_u32(frames, 1 + 16 + 2 + txn.size() + batch.payloads[i].size());
+            frames.push_back('\0');
+            frames.append(reinterpret_cast<const char*>(id.data()), id.size());
+            put_text16(frames, txn, "transaction id");
+            frames += batch.payloads[i];
+        }
+        put_text16(out, batch.queue, "queue name");
+        put_text16(out, batch.partition, "partition name");
+        put_u32(out, batch.payloads.size());
+        const std::string compressed = zstd_compress(frames);
+        put_u32(out, compressed.size());
+        out += compressed;
+    }
+    return out;
+}
+
+/**
+ * Adds one pushed item to batches, in the last one when it is the same
+ * partition's. False when the item cannot travel in a binary body; throws
+ * json::exception for a payload JSON does not carry.
+ */
+inline bool add_push_item(std::vector<PushBatch>& batches, const json& item) {
+    if (!item.is_object() || !item.contains("queue") || !item["queue"].is_string() ||
+        !item.contains("payload")) {
+        return false;
+    }
+    if (item.contains("traceId") && !item["traceId"].is_null()) {
+        return false;
+    }
+    std::string txn;
+    if (item.contains("transactionId") && !item["transactionId"].is_null()) {
+        if (!item["transactionId"].is_string()) return false;
+        txn = item["transactionId"].get<std::string>();
+    }
+    std::string partition = "Default";
+    if (item.contains("partition") && !item["partition"].is_null()) {
+        if (!item["partition"].is_string()) return false;
+        partition = item["partition"].get<std::string>();
+    }
+    const std::string queue = item["queue"].get<std::string>();
+    if (batches.empty() || batches.back().queue != queue || batches.back().partition != partition) {
+        batches.push_back({queue, partition, {}, std::vector<std::string>{}});
+    }
+    batches.back().payloads.push_back(item["payload"].dump());
+    batches.back().transaction_ids->push_back(std::move(txn));
+    return true;
+}
+
+/**
+ * The items of a JSON push ({queue, partition, payload, transactionId}) as a
+ * binary push body, or nothing when one of them cannot travel in it: a trace
+ * id, a transaction id that is not a string, a payload JSON does not carry, a
+ * name over 65535 bytes. The caller then sends the JSON body, and the broker
+ * answers that as it always did. Consecutive items of one partition share a
+ * group, so the order of the items is the order on the wire.
+ *
+ * compress: the messages framed and compressed here, kept by the broker as
+ * they are.
+ */
+inline std::optional<std::string> binary_push_body(const json& items, bool compress) {
+    if (!items.is_array() || items.empty()) {
+        return std::nullopt;
+    }
+    std::vector<PushBatch> batches;
+    try {
+        for (const auto& item : items) {
+            if (!add_push_item(batches, item)) {
+                return std::nullopt;
+            }
+        }
+        return compress ? encode_push_frames(batches) : encode_push_binary(batches);
+    } catch (const PushBinaryTooLong&) {
+        // The JSON push says so in the broker's words.
+        return std::nullopt;
+    } catch (const json::exception&) {
+        // A payload JSON does not carry (text that is not UTF-8).
+        return std::nullopt;
+    }
+}
+
+/** A JSON transaction body as the binary one (transaction_frames). */
+struct TransactionFrames {
+    std::string body;
+    // Empty when the broker's answer lists the operations as the caller added
+    // them (every other operation before every push). Otherwise order[k] is
+    // the place, among the caller's operations, of the k-th result the broker
+    // sends: it lists the head's operations first, then the pushes.
+    std::optional<std::vector<size_t>> order;
+};
+
+/**
+ * A JSON transaction body ({operations, requiredLeases, kv, timers}) as the
+ * binary one, when its pushes can travel in it: there is at least one, and
+ * none carries a trace id. Everything but the pushes stays in the JSON head;
+ * consecutive pushed items of one partition share a group, so the pushes keep
+ * their order. Nothing otherwise: the caller then sends the JSON body.
+ */
+inline std::optional<TransactionFrames> transaction_frames(const json& request) {
+    if (!request.is_object() || !request.contains("operations") || !request["operations"].is_array()) {
+        return std::nullopt;
+    }
+    json head_operations = json::array();
+    std::vector<PushBatch> batches;
+    std::vector<size_t> head_at;
+    std::vector<size_t> push_at;
+    size_t flat = 0;
+    try {
+        for (const auto& operation : request["operations"]) {
+            if (!operation.is_object() || operation.value("type", json()) != "push") {
+                head_operations.push_back(operation);
+                head_at.push_back(flat++);
+                continue;
+            }
+            // A push names its items, or is one item itself.
+            if (operation.contains("items") && operation["items"].is_array()) {
+                for (const auto& item : operation["items"]) {
+                    if (!add_push_item(batches, item)) return std::nullopt;
+                    push_at.push_back(flat++);
+                }
+            } else {
+                if (!add_push_item(batches, operation)) return std::nullopt;
+                push_at.push_back(flat++);
+            }
+        }
+        if (batches.empty()) {
+            return std::nullopt;
+        }
+        json head = request;
+        head["operations"] = std::move(head_operations);
+        TransactionFrames framed{encode_transaction_frames(head.dump(), batches), std::nullopt};
+        std::vector<size_t> order = std::move(head_at);
+        order.insert(order.end(), push_at.begin(), push_at.end());
+        for (size_t k = 0; k < order.size(); ++k) {
+            if (order[k] != k) {
+                framed.order = std::move(order);
+                break;
+            }
+        }
+        return framed;
+    } catch (const PushBinaryTooLong&) {
+        // The JSON request says so in the broker's words.
+        return std::nullopt;
+    } catch (const json::exception&) {
+        // A payload or a head JSON does not carry (text that is not UTF-8).
+        return std::nullopt;
+    }
+}
+
+/**
+ * Puts the results of a binary transaction back in the order the caller added
+ * its operations in, and gives each its own index again. The riders' results,
+ * after the operations', are already in place.
+ */
+inline void restore_result_order(json& answer, const std::optional<std::vector<size_t>>& order) {
+    if (!order || !answer.is_object() || !answer.contains("results") ||
+        !answer["results"].is_array() || answer["results"].size() < order->size()) {
+        return;
+    }
+    json restored = answer["results"];
+    for (size_t k = 0; k < order->size(); ++k) {
+        const size_t at = (*order)[k];
+        restored[at] = answer["results"][k];
+        if (restored[at].is_object()) {
+            restored[at]["index"] = at;
+        }
+    }
+    answer["results"] = std::move(restored);
+}
+
+/** Whether a pop answer's bytes are the framed one. */
+inline bool is_pop_frames(const std::string& bytes) {
+    return bytes.size() > 4 && bytes.compare(0, 4, "QPF1") == 0;
+}
+
+/** Reads little-endian fields off a byte range; a read past the end throws. */
+class FrameReader {
+private:
+    const unsigned char* at_;
+    size_t left_;
+    std::string short_;
+
+    uint64_t number(size_t width) {
+        const unsigned char* p = take(width);
+        uint64_t value = 0;
+        for (size_t i = 0; i < width; ++i) {
+            value |= static_cast<uint64_t>(p[i]) << (8 * i);
+        }
+        return value;
+    }
+
+public:
+    FrameReader(const char* data, size_t size, std::string short_message = "truncated")
+        : at_(reinterpret_cast<const unsigned char*>(data)), left_(size), short_(std::move(short_message)) {}
+
+    const unsigned char* take(size_t length) {
+        if (left_ < length) {
+            throw std::runtime_error("framed pop answer: " + short_);
+        }
+        const unsigned char* piece = at_;
+        at_ += length;
+        left_ -= length;
+        return piece;
+    }
+
+    uint8_t u8() { return *take(1); }
+    size_t u16() { return static_cast<size_t>(number(2)); }
+    uint32_t u32() { return static_cast<uint32_t>(number(4)); }
+    uint64_t u64() { return number(8); }
+
+    std::string bytes(size_t length) {
+        return std::string(reinterpret_cast<const char*>(take(length)), length);
+    }
+
+    std::string text() { return bytes(u16()); }
+    std::string rest() { return bytes(left_); }
+};
+
+/** Microseconds since the epoch as the broker writes `createdAt`. */
+inline std::string iso_from_micros(int64_t micros) {
+    std::time_t seconds = static_cast<std::time_t>(micros / 1000000);
+    std::tm parts{};
+#ifdef _WIN32
+    gmtime_s(&parts, &seconds);
+#else
+    gmtime_r(&seconds, &parts);
+#endif
+    char text[40];
+    std::snprintf(text, sizeof(text), "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+                  parts.tm_year + 1900, parts.tm_mon + 1, parts.tm_mday,
+                  parts.tm_hour, parts.tm_min, parts.tm_sec,
+                  static_cast<int>((micros % 1000000) / 1000));
+    return text;
+}
+
+/**
+ * Unpack a framed pop answer into the json the JSON answer parses to:
+ *
+ *   {success, queue, partition, partitionId, leaseId, consumerGroup,
+ *    messages: [{id, transactionId, traceId, data, producerSub, createdAt,
+ *                partitionId, partition, leaseId, consumerGroup,
+ *                deliveryAttempt, offset}],
+ *    partitionsClaimed, ...the answer's own keys}
+ *
+ * The messages are in delivery order. Everything that reads a pop answer (the
+ * conflation contract, the autopilot's choice, the consume loop) reads this as
+ * it reads the JSON one. Throws std::runtime_error on an answer that is not
+ * whole.
+ */
+inline json decode_pop_frames(const std::string& bytes) {
+    if (!is_pop_frames(bytes)) {
+        throw std::runtime_error("framed pop answer: not a framed pop answer");
+    }
+    FrameReader answer(bytes.data() + 4, bytes.size() - 4);
+    const int version = answer.u8();
+    json own = nullptr;
+    if (version == 1) {
+        const std::string text = answer.bytes(answer.u32());
+        if (!text.empty()) {
+            try {
+                own = json::parse(text);
+            } catch (const json::exception& error) {
+                throw std::runtime_error(std::string("framed pop answer: its own keys: ") + error.what());
+            }
+        }
+    } else if (version != 0) {
+        throw std::runtime_error("framed pop answer: unknown version " + std::to_string(version));
+    }
+
+    const std::string queue = answer.text();
+    const std::string lease_id = answer.text();
+    const std::string consumer_group = answer.text();
+    const uint32_t claims = answer.u32();
+    json messages = json::array();
+    std::string first_partition;
+    std::string first_partition_id;
+
+    for (uint32_t claim = 0; claim < claims; ++claim) {
+        const std::string partition_id = std::to_string(answer.u64());
+        const std::string partition = answer.text();
+        const uint64_t start = answer.u64();
+        const uint64_t end = answer.u64();
+        const uint32_t delivery_attempt = answer.u32();
+        const uint32_t records = answer.u32();
+        if (claim == 0) {
+            first_partition = partition;
+            first_partition_id = partition_id;
+        }
+        for (uint32_t record = 0; record < records; ++record) {
+            const uint64_t base = answer.u64();
+            const std::string created_at = iso_from_micros(static_cast<int64_t>(answer.u64()));
+            const uint32_t count = answer.u32();
+            const uint8_t codec = answer.u8();
+            std::string raw = answer.bytes(answer.u32());
+            if (codec == 1) {
+                try {
+                    raw = zstd_decompress(raw);
+                } catch (const std::runtime_error& error) {
+                    throw std::runtime_error(std::string("framed pop answer: ") + error.what());
+                }
+            } else if (codec != 0) {
+                throw std::runtime_error("framed pop answer: unknown codec " + std::to_string(codec));
+            }
+            FrameReader frames(raw.data(), raw.size(),
+                               "a record is shorter than its " + std::to_string(count) + " frames");
+            for (uint32_t i = 0; i < count; ++i) {
+                const uint32_t length = frames.u32();
+                FrameReader frame(reinterpret_cast<const char*>(frames.take(length)), length,
+                                  "a frame is malformed");
+                const uint8_t flags = frame.u8();
+                const unsigned char* id = frame.take(16);
+                const unsigned char* trace = (flags & 1) ? frame.take(16) : nullptr;
+                std::string transaction_id = frame.text();
+                json producer_sub = nullptr;
+                if (flags & 2) {
+                    producer_sub = frame.text();
+                }
+                if (flags & 4) {
+                    throw std::runtime_error("framed pop answer: a frame is encrypted");
+                }
+                const uint64_t offset = base + i;
+                if (offset < start || offset > end) {
+                    continue;
+                }
+                const std::string payload = frame.rest();
+                json data = nullptr;
+                if (!payload.empty()) {
+                    try {
+                        data = json::parse(payload);
+                    } catch (const json::exception& error) {
+                        throw std::runtime_error(std::string("framed pop answer: a payload: ") + error.what());
+                    }
+                }
+                messages.push_back({
+                    {"id", util::uuid_text(id)},
+                    {"transactionId", std::move(transaction_id)},
+                    {"traceId", trace ? json(util::uuid_text(trace)) : json(nullptr)},
+                    {"data", std::move(data)},
+                    {"producerSub", std::move(producer_sub)},
+                    {"createdAt", created_at},
+                    {"partitionId", partition_id},
+                    {"partition", partition},
+                    {"leaseId", lease_id},
+                    {"consumerGroup", consumer_group},
+                    {"deliveryAttempt", delivery_attempt},
+                    {"offset", offset}
+                });
+            }
+        }
+    }
+
+    json result = {
+        {"success", true},
+        {"queue", queue},
+        {"partition", first_partition},
+        {"partitionId", first_partition_id},
+        {"leaseId", lease_id},
+        {"consumerGroup", consumer_group},
+        {"messages", std::move(messages)},
+        {"partitionsClaimed", claims}
+    };
+    if (own.is_object()) {
+        for (auto it = own.begin(); it != own.end(); ++it) {
+            // "frames" only says the answer is this one; the JSON answer has no such key.
+            if (it.key() != "frames") {
+                result[it.key()] = it.value();
+            }
+        }
+    }
+    return result;
+}
+
+} // namespace wire
+
+// ============================================================================
 // LoadBalancer - Distributes requests across multiple servers
 // ============================================================================
 
@@ -1914,6 +2576,12 @@ private:
     bool enable_failover_;
     std::string bearer_token_;
     Retry429Options retry_429_;
+    // The binary push body and the framed pop answer (namespace wire). All
+    // three off by default: the client then sends and reads the JSON every
+    // broker knows.
+    bool binary_push_ = false;
+    bool push_compression_ = false;
+    bool framed_pop_ = false;
     
     struct HttpResponse {
         int status_code = 0;
@@ -1947,8 +2615,12 @@ private:
             client.set_write_timeout(timeout_sec);
             if (observation) client.set_max_timeout(2000);
             
+            // A binary value is a body already encoded (the binary push body):
+            // sent as it is.
+            const char* content_type = body.is_binary() ? wire::PUSH_BINARY_CONTENT_TYPE
+                                                        : "application/json";
             httplib::Headers headers = {
-                {"Content-Type", "application/json"}
+                {"Content-Type", content_type}
             };
             if (!bearer_token_.empty()) {
                 headers.emplace("Authorization", "Bearer " + bearer_token_);
@@ -1959,8 +2631,14 @@ private:
             if (method == "GET") {
                 res = client.Get(path.c_str(), headers);
             } else if (method == "POST") {
-                std::string body_str = body.is_null() ? "" : body.dump();
-                res = client.Post(path.c_str(), headers, body_str, "application/json");
+                std::string body_str;
+                if (body.is_binary()) {
+                    const auto& bytes = body.get_binary();
+                    body_str.assign(bytes.begin(), bytes.end());
+                } else if (!body.is_null()) {
+                    body_str = body.dump();
+                }
+                res = client.Post(path.c_str(), headers, body_str, content_type);
             } else if (method == "PUT") {
                 std::string body_str = body.is_null() ? "" : body.dump();
                 res = client.Put(path.c_str(), headers, body_str, "application/json");
@@ -2199,7 +2877,12 @@ public:
      */
     json get(const std::string& path, int request_timeout_millis = 0,
              RetryKind retry_kind = RetryKind::Default) {
-        auto response = request_with_failover("GET", path, nullptr, request_timeout_millis, retry_kind);
+        // A pop route asks for the stored records when framed_pop is on.
+        const bool framed = framed_pop_ && path.rfind("/api/v1/pop", 0) == 0;
+        auto response = request_with_failover(
+            "GET",
+            framed ? path + (path.find('?') == std::string::npos ? "?" : "&") + "frames=true" : path,
+            nullptr, request_timeout_millis, retry_kind);
         
         if (!response.success) {
             throw_response_error(response);
@@ -2208,8 +2891,31 @@ public:
         if (response.body.empty() || response.status_code == 204) {
             return nullptr;
         }
+
+        // The framed pop answer: unpacked into the json the JSON answer parses
+        // to, so its readers do not tell the two apart. A broker that does not
+        // know the parameter answered JSON.
+        if (framed && wire::is_pop_frames(response.body)) {
+            return wire::decode_pop_frames(response.body);
+        }
         
         return json::parse(response.body);
+    }
+
+    /**
+     * Turn on the binary push body and the framed pop answer (ClientConfig::
+     * binary_push, push_compression, framed_pop). Throws when an option needs
+     * zstd and this build has none: better at construction than at the first
+     * compressed record.
+     */
+    void set_wire_forms(bool binary_push, bool push_compression, bool framed_pop) {
+        if (((binary_push && push_compression) || framed_pop) && !wire::zstd_available()) {
+            throw std::runtime_error(
+                "push_compression and framed_pop need zstd: compile with -DQUEEN_CLIENT_ZSTD and link -lzstd");
+        }
+        binary_push_ = binary_push;
+        push_compression_ = push_compression;
+        framed_pop_ = framed_pop;
     }
     
     // One best-effort publication; never inherit unbounded 429/failover retries.
@@ -2221,6 +2927,30 @@ public:
 
     json post(const std::string& path, const json& body = nullptr, int request_timeout_millis = 0,
               RetryKind retry_kind = RetryKind::Default) {
+        if (binary_push_ && path == "/api/v1/push" && body.is_object() && body.contains("items")) {
+            // Encoded once, before any retry: every attempt sends the same
+            // bytes (with push_compression, the same message ids). Nothing =
+            // an item the binary body does not carry, and the push stays JSON.
+            if (auto encoded = wire::binary_push_body(body["items"], push_compression_)) {
+                return post(path, json::binary(std::vector<std::uint8_t>(encoded->begin(), encoded->end())),
+                            request_timeout_millis, retry_kind);
+            }
+        }
+        if (binary_push_ && push_compression_ && path == "/api/v1/transaction") {
+            // The pushes of a bundle as frames built and compressed here, the
+            // rest of it as the JSON head in front of them. Nothing = no push,
+            // or one the binary body does not carry: the bundle stays JSON.
+            if (auto framed = wire::transaction_frames(body)) {
+                json answer = post(path,
+                                   json::binary(std::vector<std::uint8_t>(framed->body.begin(), framed->body.end())),
+                                   request_timeout_millis, retry_kind);
+                // The broker answers the head's operations before the pushes:
+                // the caller gets the results in the order of its own
+                // operations.
+                wire::restore_result_order(answer, framed->order);
+                return answer;
+            }
+        }
         auto response = request_with_failover("POST", path, body, request_timeout_millis, retry_kind);
         
         if (!response.success) {
@@ -4794,6 +5524,7 @@ public:
                 config_.retry_attempts, config_.retry_delay_millis, config_.enable_failover,
                 config_.bearer_token, config_.retry_429);
         }
+        http_client_->set_wire_forms(config_.binary_push, config_.push_compression, config_.framed_pop);
         
         buffer_manager_ = std::make_shared<BufferManager>(http_client_);
         
