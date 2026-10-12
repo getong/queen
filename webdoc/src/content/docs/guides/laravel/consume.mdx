@@ -55,6 +55,12 @@ sourceOfTruth:
 # registers WorkerPopGuard for workers a supervisor started; queen:consume is not one. Nothing this
 # page states changes.
 # sourceOfTruth re-read 2026-10-10 (job metrics, PHP client 2.4.2): QueenServiceProvider changes only the job-metrics listeners; queen:consume and its registration are unchanged. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-12 (binary push, push compression, framed pop): the client that
+# QueenServiceProvider builds from config/queen.php, the one this command uses, also takes binary_push,
+# push_compression and framed_pop; Queen.php checks them and HttpClient sends and reads the binary
+# forms when they are on. Off, the default, the requests are the ones this page describes, and on, the
+# consumer returns the same messages. QueenConnector only gains the three checks. Nothing this page
+# states changes.
 ---
 
 `php artisan queen:consume` reads a Queen queue and passes each message to a class of yours. Use it

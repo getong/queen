@@ -14,6 +14,11 @@ sourceOfTruth:
   - clients/client-cpp/queen_client.hpp
   - clients/client-php/composer.json
   - clients/client-php/config/queen.php
+  - clients/client-js/client-v2/utils/defaults.js
+  - clients/client-py/queen/utils/defaults.py
+  - clients/client-go/types.go
+  - clients/client-rust/src/config.rs
+  - clients/client-php/src/Support/Defaults.php
   - clients/client-js/client-v2/consumer/ConsumerManager.js
   - clients/client-js/client-v2/consumer/Supervision.js
   - clients/client-js/client-v2/builders/QueueBuilder.js
@@ -109,6 +114,15 @@ verifiedBy:
 # sourceOfTruth re-read 2026-10-09 (review fixes, PHP client 2.4.1): config/queen.php reads its
 # switch variables through filter_var; url, urls and the token this page shows are unchanged.
 # Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-12 (binary push, push compression, framed pop): every SDK gained the
+# three options, off by default; the new section names them and where each SDK takes zstd from, and
+# the five files that hold the options and their defaults join the list. go.mod adds
+# github.com/klauspost/compress and stays on Go 1.24; pyproject.toml adds the zstd extra,
+# client-rust/Cargo.toml the zstd crate (Rust 1.86 still builds it), composer.json suggests ext-zstd,
+# config/queen.php has the three keys, queen_client.hpp takes zstd only with QUEEN_CLIENT_ZSTD;
+# package.json only adds the wire tests to test:unit. consumer_manager.go and client-rust's queue.rs
+# pop and push through the HTTP client's framed and binary paths. No version moved, and the install
+# and supervision sections are unchanged.
 ---
 
 Queen speaks JSON over HTTP, on port `6632`, so every client is a thin layer over the same
@@ -313,6 +327,46 @@ with one ID for its lifetime and leave per-call supervision off. The fluent APIs
 a shared reporter or instance-ID override. Preserve limits used for queue fairness and the
 combined concurrency budget. [Consuming](/concepts/consuming/#optional-sdk-consumer-supervision)
 explains the lifetime; the [status contract](/reference/supervisor-status/) defines the wire format.
+
+## Binary push, push compression and framed pop
+
+All six SDKs can send and read the messages in binary forms instead of JSON, with three options
+that are off by default. They change how messages travel between the client and the broker and
+nothing else: the calls, their results, deduplication and the delivery guarantees stay the same.
+
+- **Binary push** sends a push, direct or buffered, as one length-prefixed binary body instead of
+  a JSON document.
+- **Push compression**, with binary push, frames each partition's batch the way the broker stores
+  it, mints the message ids and compresses the batch with zstd in the client. The broker checks
+  the frames and, when it has nothing to add to them, stores those bytes without compressing them
+  again. A transaction that pushes sends its pushes the same way.
+- **Framed pop** asks for the stored records and unpacks them in the client into the same
+  messages, instead of a JSON answer that the broker renders message by message.
+
+| Client | Options | Where zstd comes from |
+| --- | --- | --- |
+| JavaScript | `binaryPush`, `pushCompression`, `framedPop` in the `Queen` config | Node.js itself (`node:zlib`) |
+| Python | `binary_push`, `push_compression`, `framed_pop`, keyword arguments of `Queen` | The standard library from Python 3.14; before it, `pip install "queen-mq[zstd]"` |
+| Go | `BinaryPush`, `PushCompression`, `FramedPop` in `ClientConfig` | A dependency of the module |
+| Rust | `.binary_push(true)`, `.push_compression(true)`, `.framed_pop(true)` on `Config` | A dependency of the crate |
+| C++ | `binary_push`, `push_compression`, `framed_pop` in `ClientConfig` | libzstd: compile with `-DQUEEN_CLIENT_ZSTD` and link `-lzstd` |
+| PHP | `binaryPush`, `pushCompression`, `framedPop` in the `Queen` config. Under Laravel: `binary_push`, `push_compression`, `framed_pop` in [`config/queen.php`](/guides/laravel/configuration/#queue-driver) | The zstd extension (`pecl install zstd`) |
+
+Turn them on when the broker's CPU or the network limits a high message rate: the framing, the
+compression and the unpacking then run in the clients, and the batches cross the network
+compressed. Binary push alone needs no zstd.
+
+The client falls back to JSON by itself where a binary form cannot carry the request: a push with
+a trace id, a transaction with no push or with a trace id on one of its pushes, a pop of a
+conflating group, and every pop on a broker that runs with an encryption key. Acks, KV, timers,
+locks and ephemeral queues do not change. A transaction's results come back in the order the
+operations were added, as with JSON.
+
+The options ship in the client releases after 2.1.0 (PHP: after 2.4.3). Binary push and push
+compression need a broker newer than 2.2.0: a broker up to 2.2.0 answers a binary body with 400
+and the client does not fall back, so turn the two on after every broker of the cluster is
+upgraded. Framed pop is safe against any broker, because an older one ignores the request and
+answers JSON.
 
 ## What each SDK implements
 

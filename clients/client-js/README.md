@@ -229,7 +229,11 @@ const queen = new Queen({
   timeoutMillis: 30000,
   retryAttempts: 3,
   loadBalancingStrategy: 'affinity',  // or 'round-robin', 'session'
-  enableFailover: true
+  enableFailover: true,
+  // Opt-in wire forms, off by default (see Binary Push, Push Compression and Framed Pop)
+  binaryPush: false,
+  pushCompression: false,
+  framedPop: false
 })
 ```
 
@@ -514,6 +518,54 @@ A producer that outruns the flush pipeline is therefore paced down to the drain
 rate, and a broker outage shows up as slow pushes with bounded memory rather
 than as messages that quietly disappeared. `close()` flushes with a 30 second
 deadline and logs how many messages were left unsent if it expires.
+
+### Binary Push, Push Compression and Framed Pop
+
+Three opt-in forms of the push, pop and transaction requests. They change how
+the messages travel between the client and the broker and nothing else: the
+calls, their results, deduplication and the delivery guarantees stay the same.
+All three are off by default, and with them off the client sends and reads the
+JSON every broker knows.
+
+```javascript
+const queen = new Queen({
+  url: 'http://localhost:6632',
+  binaryPush: true,       // a push travels as a binary body
+  pushCompression: true,  // with binaryPush: framed and compressed here
+  framedPop: true         // a pop returns the stored records, unpacked here
+})
+```
+
+| Option | What it does |
+| --- | --- |
+| `binaryPush` | A push, direct or buffered, sends its items as one length-prefixed binary body instead of a JSON document. The answer is the same list, one entry per item. |
+| `pushCompression` | Needs `binaryPush`. The client frames each partition's batch the way the broker stores it, mints the message ids (UUIDv7) and compresses the batch with zstd, once. The broker checks the frames and, when it has nothing to add to them, stores those bytes without compressing them again. A transaction that pushes sends its pushes the same way, with the rest of the bundle as JSON in front of them. |
+| `framedPop` | `pop()` and `consume()` ask for the stored records (`frames=true`) and unpack them here into the same message objects, instead of a JSON answer that the broker renders message by message. |
+
+Turn them on when the broker's CPU or the network limits a high message rate:
+the framing, the compression and the unpacking then run in the clients, and the
+batches cross the network compressed. zstd is the one of Node.js (`node:zlib`),
+so there is nothing to install.
+
+**What stays JSON**, with no action from you:
+
+- A push with a `traceId` on one of its items.
+- A transaction with no push, or with a `traceId` on one of its pushes.
+- A pop the broker cannot answer in frames: a pop of a conflating group, and
+  every pop on a broker that runs with an encryption key
+  (`QUEEN_ENCRYPTION_KEY`). The client reads the JSON answer as always.
+- Acks, KV, timers, locks and the admin calls. Ephemeral queues have their own
+  routes and do not change either.
+
+A transaction's `results` come back in the order you added the operations, as
+with JSON. The broker answers a binary transaction with the acks first and the
+pushes after them, and the client puts them back.
+
+**Requires a broker newer than 2.2.0** for `binaryPush` and `pushCompression`.
+A broker up to 2.2.0 answers 400 to the binary bodies and the client does not
+fall back to JSON, so turn the two on after every broker of the cluster is
+upgraded. `framedPop` is safe against any broker: an older one ignores the
+parameter and answers JSON.
 
 ### Dead Letter Queue
 
@@ -997,7 +1049,10 @@ await queen.close()  // Flush buffers and close connections
   loadBalancingStrategy: 'affinity',   // 'affinity' | 'round-robin' | 'session'
   affinityHashRing: 128,
   enableFailover: true,
-  healthRetryAfterMillis: 5000
+  healthRetryAfterMillis: 5000,
+  binaryPush: false,                   // a push as a binary body
+  pushCompression: false,              // with binaryPush: frames compressed in the client
+  framedPop: false                     // a pop as the stored records
 }
 ```
 
