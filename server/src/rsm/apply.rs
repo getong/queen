@@ -67,7 +67,7 @@
 //!   lengths and liveness of every segment file the entries touched, in one
 //!   transaction — that is I11, and it is what lets recovery truncate files to
 //!   the recorded lengths and trust every `seg_loc` row it finds.
-//! - **Durable point**, every `QUEEN_RAFT_DURABLE_EVERY_MS` (1000) or
+//! - **Durable point**, every `QUEEN_RAFT_DURABLE_EVERY_MS` (250) or
 //!   `QUEEN_RAFT_DURABLE_EVERY_BYTES` (256 MiB): fsync the segment files
 //!   written since the last one and their directories, then a DURABLE store
 //!   commit carrying `meta.durable_index`, and only then report the durable
@@ -635,7 +635,11 @@ pub struct ApplyConfig {
     pub store_commit_ms: u64,
     /// `QUEEN_RAFT_STORE_COMMIT_ENTRIES` (§11.3).
     pub store_commit_entries: u64,
-    /// `QUEEN_RAFT_DURABLE_EVERY_MS` (§11.4).
+    /// `QUEEN_RAFT_DURABLE_EVERY_MS` (§11.4), default 250. It was 1000: a
+    /// point then held four times the pages, and the raft log's sync waited
+    /// behind them for that much longer. One voter at 600,000 msg/s
+    /// (2026-10-12): push p99 11.8 ms at 250, 21 to 28 ms at 1000, 68.6 ms at
+    /// 5000.
     pub durable_every_ms: u64,
     /// `QUEEN_RAFT_DURABLE_EVERY_BYTES` (§11.4).
     pub durable_every_bytes: u64,
@@ -763,7 +767,7 @@ impl Default for ApplyConfig {
         ApplyConfig {
             store_commit_ms: 4,
             store_commit_entries: 256,
-            durable_every_ms: 1000,
+            durable_every_ms: 250,
             durable_every_bytes: 256 << 20,
             durable_phase_ms: None,
             gc_per_pass: 32,

@@ -147,7 +147,7 @@ single node, in its own.**
 <Figure id="internals/storage-write" />
 
 The store is not on that path. Its keyspaces live in RAM, loaded whole at boot. Every
-`QUEEN_RAFT_DURABLE_EVERY_MS` (1000) or `QUEEN_RAFT_DURABLE_EVERY_BYTES` (256 MiB), a checkpoint
+`QUEEN_RAFT_DURABLE_EVERY_MS` (250) or `QUEEN_RAFT_DURABLE_EVERY_BYTES` (256 MiB), a checkpoint
 writes the rows that changed into `store/data.mdb`, commits and syncs it, and records the applied
 index in the same transaction. That checkpoint bounds what a restart replays. No answer ever waits
 for it, which is why a store write costs a push nothing.

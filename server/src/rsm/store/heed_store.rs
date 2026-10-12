@@ -257,9 +257,9 @@ fn arena_slice(_arena: &RefCell<Arena>, p: *const [u8]) -> &[u8] {
 // The store
 // ---------------------------------------------------------------------------
 
-/// `QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB` (default 0, off): write a checkpoint
-/// out in steps of this many megabytes of `data.mdb` before its sync
-/// ([`HeedStore::flush_in_steps`]).
+/// `QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB` (default 8; 0 = off): write a
+/// checkpoint out in steps of this many megabytes of `data.mdb` before its
+/// sync ([`HeedStore::flush_in_steps`]). Linux only.
 ///
 /// A checkpoint's commit leaves all its pages in the page cache, and the
 /// environment sync then hands them to the device in one go: tens of megabytes
@@ -270,11 +270,17 @@ fn arena_slice(_arena: &RefCell<Arena>, p: *const [u8]) -> &[u8] {
 /// every node at once, and nothing committed meanwhile. Written a range at a
 /// time, the device never holds more than one range's pages, and another sync
 /// waits for that much.
+///
+/// 8 MB is the measured choice (one voter, 900,000 msg/s, 2026-10-12): the
+/// checkpoint's own sync fell from 21-35 ms to 0.5-1 ms and the push p99 from
+/// 41.5 to 18.7 ms; with steps of 32 MB the p99 was 46 ms. The walk covers the
+/// whole file, so it costs one call for every 8 MB of `data.mdb` at each
+/// checkpoint, written or not.
 static CKPT_FLUSH_STEP: std::sync::LazyLock<u64> = std::sync::LazyLock::new(|| {
     std::env::var("QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB")
         .ok()
         .and_then(|v| v.trim().parse::<u64>().ok())
-        .unwrap_or(0)
+        .unwrap_or(8)
         << 20
 });
 

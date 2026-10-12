@@ -155,8 +155,10 @@ what each one does. A cluster with none of them set is neither a standby nor rea
 | Variable | Default | Effect |
 |---|---|---|
 | `QUEEN_RAFT_APPLY_SHARDS` | `4` (at most 64) | Threads that apply partition-keyed effects in parallel. Node-local: the replicated state is the same at every value. |
-| `QUEEN_RAFT_DURABLE_EVERY_MS` | `1000` | How often the store checkpoint is written to disk. It bounds what a restart replays; no answer waits for it. |
+| `QUEEN_RAFT_DURABLE_EVERY_MS` | `250` | How often the store checkpoint is written to disk. It bounds what a restart replays; no answer waits for it. |
 | `QUEEN_RAFT_DURABLE_EVERY_BYTES` | `268435456` (256 MiB) | ...or after this many bytes, whichever comes first. |
+| `QUEEN_RAFT_DURABLE_PHASE_MS` | from the node's raft id | Where in that period a node of a cluster writes its checkpoint, so that the nodes do not all write theirs at the same instant. A number of milliseconds sets it; `off` leaves the node on its own timer. |
+| `QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB` | `8` | The megabytes of the store file a checkpoint hands to the disk at a time before its sync, so that the raft log's own sync does not wait behind the whole checkpoint. `0` hands it over in one go. Linux only. |
 | `QUEEN_RAFT_SEGMENT_BYTES` | `67108864` (64 MiB) | The size at which a queue-log file rolls. |
 | `QUEEN_RAFT_QLOG_ZSTD_LEVEL` | `1` | zstd level for queue-log payloads; `0` stores them raw. |
 | `QUEEN_QLOG_LANES` | `1` (1 to 64) | Queue-log lanes per queue. Read only when the data directory is created. |
