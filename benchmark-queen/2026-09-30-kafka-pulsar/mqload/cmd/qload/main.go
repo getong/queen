@@ -46,6 +46,7 @@ type queenFlags struct {
 	verifyConc int
 	pushWire   string
 	pushZstd   bool
+	txnWire    string
 
 	url  string
 	list []string
@@ -58,6 +59,7 @@ func (q *queenFlags) register(fs *flag.FlagSet) {
 	fs.BoolVar(&popFrames, "pop-frames", false, "pops ask for the messages as the stored records (frames=true) and unpack them here")
 	fs.BoolVar(&ackCounts, "ack-counts", false, "ack batches ask for the totals (\"answer\":\"counts\") instead of one object per message")
 	fs.BoolVar(&q.pushZstd, "push-zstd", false, "with -push-wire bin: the messages framed and zstd-compressed by the client, kept by the broker as they are")
+	fs.StringVar(&q.txnWire, "txn-wire", "json", "-txn: transaction body: json | bin (the Go client's binary transaction body: the acks as JSON, the pushes framed and zstd-compressed here, answered with counts; needs a broker that accepts it)")
 	fs.IntVar(&q.conns, "conns", 2048, "HTTP keep-alive connections kept per broker (MaxIdleConnsPerHost, goload's -idle-conns)")
 	core.DurationVar(fs, &q.timeout, "timeout", 30*time.Second, "request timeout")
 	fs.IntVar(&q.popWidth, "pop-width", 10, "partitions claimed per pop (workers and readers; the 09-30 grid's pop width)")
