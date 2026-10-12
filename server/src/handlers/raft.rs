@@ -341,14 +341,12 @@ pub(crate) async fn dispatch_pop_discover(
 /// user-supplied name in the composite cursor key, so bound it (R-108); the
 /// partition id is a bounded derived value.
 pub(crate) async fn dispatch_ack(st: &AppState, tenant: &str, body: axum::body::Bytes) -> Response {
-    let group = ack_group(&body);
-    if let Err(e) = facade::check_message_key_names(tenant, "", Some(&group), None) {
-        return err_response(e);
-    }
+    // The group is the body's `consumerGroup` key: the facade reads and
+    // bounds it in the one parse it does anyway (an empty `group` asks for it).
     let ctx = ReqCtx::new(tenant, deadline_for(st.stmt_timeout.as_millis() as u64));
     let req = AckReq {
         queue: None,
-        group,
+        group: String::new(),
         raw: body.to_vec(),
     };
     match st.rsm.ack(ctx, req).await {
@@ -375,20 +373,6 @@ pub(crate) async fn dispatch_transaction(
         ),
         Err(e) => err_response(e),
     }
-}
-
-/// Extract the consumer group from an ack body (single or batch) without the
-/// private `AckSingle`/`AckBatch` types: read the `consumerGroup` key
-/// generically, defaulting to the queue-mode group the handlers use.
-fn ack_group(body: &axum::body::Bytes) -> String {
-    serde_json::from_slice::<serde_json::Value>(body)
-        .ok()
-        .and_then(|v| {
-            v.get("consumerGroup")
-                .and_then(|x| x.as_str())
-                .map(str::to_string)
-        })
-        .unwrap_or_else(|| "__QUEUE_MODE__".to_string())
 }
 
 /// `POST /api/v1/lease/:leaseId/extend`.

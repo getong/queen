@@ -2691,13 +2691,23 @@ pub(crate) struct PushBodyIn<'a> {
 pub(crate) struct PushItemIn<'a> {
     #[serde(borrow)]
     pub(crate) queue: std::borrow::Cow<'a, str>,
-    #[serde(borrow, default)]
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
     pub(crate) partition: Option<std::borrow::Cow<'a, str>>,
     #[serde(borrow)]
     pub(crate) payload: &'a RawValue,
-    #[serde(borrow, default, rename = "transactionId")]
+    #[serde(
+        borrow,
+        default,
+        deserialize_with = "opt_cow::deserialize",
+        rename = "transactionId"
+    )]
     pub(crate) transaction_id: Option<std::borrow::Cow<'a, str>>,
-    #[serde(borrow, default, rename = "traceId")]
+    #[serde(
+        borrow,
+        default,
+        deserialize_with = "opt_cow::deserialize",
+        rename = "traceId"
+    )]
     pub(crate) trace_id: Option<std::borrow::Cow<'a, str>>,
 }
 
@@ -4706,32 +4716,90 @@ fn render_pop_body(
 // Ack
 // ---------------------------------------------------------------------------
 
+/// `Option<Cow<str>>` that borrows from the body when the JSON string has no
+/// escapes. serde's `#[serde(borrow)]` does that for a bare `Cow<str>` only:
+/// inside an `Option` it allocates a `String` per value.
+mod opt_cow {
+    use serde::de::{Deserializer, Error, Visitor};
+    use std::borrow::Cow;
+    use std::fmt;
+
+    struct Str;
+    impl<'de> Visitor<'de> for Str {
+        type Value = Cow<'de, str>;
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str("a string")
+        }
+        fn visit_borrowed_str<E: Error>(self, v: &'de str) -> Result<Self::Value, E> {
+            Ok(Cow::Borrowed(v))
+        }
+        fn visit_str<E: Error>(self, v: &str) -> Result<Self::Value, E> {
+            Ok(Cow::Owned(v.to_owned()))
+        }
+        fn visit_string<E: Error>(self, v: String) -> Result<Self::Value, E> {
+            Ok(Cow::Owned(v))
+        }
+    }
+    struct Opt;
+    impl<'de> Visitor<'de> for Opt {
+        type Value = Option<Cow<'de, str>>;
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str("a string or null")
+        }
+        fn visit_none<E: Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+        fn visit_unit<E: Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+        fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+            d.deserialize_str(Str).map(Some)
+        }
+    }
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Cow<'de, str>>, D::Error> {
+        d.deserialize_option(Opt)
+    }
+}
+
+type OptStr<'a> = Option<std::borrow::Cow<'a, str>>;
+
 #[derive(Deserialize)]
-struct AckBodyIn {
+struct AckBodyIn<'a> {
     // single
-    #[serde(rename = "transactionId")]
-    transaction_id: Option<String>,
-    #[serde(rename = "partitionId")]
-    partition_id: Option<String>,
-    status: Option<String>,
-    #[serde(rename = "leaseId")]
-    lease_id: Option<String>,
-    error: Option<String>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "transactionId")]
+    transaction_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "partitionId")]
+    partition_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    status: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "leaseId")]
+    lease_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    error: OptStr<'a>,
     // batch
-    #[serde(default)]
-    acknowledgments: Vec<AckBodyItem>,
+    #[serde(borrow, default)]
+    acknowledgments: Vec<AckBodyItem<'a>>,
+    /// The consumer group, read here when the caller did not name one: the
+    /// route used to parse the whole body a first time for this key.
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "consumerGroup")]
+    consumer_group: OptStr<'a>,
+    /// `"counts"` asks for the totals instead of one object per item.
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    answer: OptStr<'a>,
 }
 
 #[derive(Deserialize)]
-struct AckBodyItem {
-    #[serde(rename = "transactionId")]
-    transaction_id: Option<String>,
-    #[serde(rename = "partitionId")]
-    partition_id: Option<String>,
-    status: Option<String>,
-    #[serde(rename = "leaseId")]
-    lease_id: Option<String>,
-    error: Option<String>,
+struct AckBodyItem<'a> {
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "transactionId")]
+    transaction_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "partitionId")]
+    partition_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    status: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "leaseId")]
+    lease_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    error: OptStr<'a>,
 }
 
 /// One flat ack the receiver resolved: original index, txn, pid, worker, status,
@@ -4756,30 +4824,48 @@ fn ack_status_of(s: Option<&str>) -> AckStatus {
 
 impl RaftFacade {
     async fn ack_impl(&self, ctx: ReqCtx, req: AckReq) -> Result<AckOut, RsmError> {
-        let body: AckBodyIn = serde_json::from_slice(&req.raw).map_err(|e| RsmError::Rejected {
-            code: "bad_body".into(),
-            message: format!("bad ack body: {e}"),
-        })?;
+        let body: AckBodyIn<'_> =
+            serde_json::from_slice(&req.raw).map_err(|e| RsmError::Rejected {
+                code: "bad_body".into(),
+                message: format!("bad ack body: {e}"),
+            })?;
+        // The group: the caller's, or the body's own `consumerGroup`, bounded
+        // here as the route bounded it (R-108).
+        let group_of_body;
+        let group: &str = if req.group.is_empty() {
+            group_of_body = body
+                .consumer_group
+                .as_deref()
+                .unwrap_or("__QUEUE_MODE__")
+                .to_string();
+            super::check_message_key_names(&ctx.tenant, "", Some(&group_of_body), None)?;
+            &group_of_body
+        } else {
+            &req.group
+        };
+        let counts_only = body.answer.as_deref() == Some("counts");
 
-        // Flatten single vs batch into (index, txn, partitionId, status, lease).
-        let mut raw_items: Vec<(String, String, AckStatus, String, Option<String>)> = Vec::new();
+        // Flatten single vs batch into (txn, partitionId, status, lease,
+        // error), borrowed from the body.
+        let mut raw_items: Vec<(&str, &str, AckStatus, &str, Option<&str>)> =
+            Vec::with_capacity(body.acknowledgments.len().max(1));
         if !body.acknowledgments.is_empty() {
             for it in &body.acknowledgments {
                 raw_items.push((
-                    it.transaction_id.clone().unwrap_or_default(),
-                    it.partition_id.clone().unwrap_or_default(),
+                    it.transaction_id.as_deref().unwrap_or(""),
+                    it.partition_id.as_deref().unwrap_or(""),
                     ack_status_of(it.status.as_deref()),
-                    it.lease_id.clone().unwrap_or_default(),
-                    it.error.clone(),
+                    it.lease_id.as_deref().unwrap_or(""),
+                    it.error.as_deref(),
                 ));
             }
         } else {
             raw_items.push((
-                body.transaction_id.clone().unwrap_or_default(),
-                body.partition_id.clone().unwrap_or_default(),
+                body.transaction_id.as_deref().unwrap_or(""),
+                body.partition_id.as_deref().unwrap_or(""),
                 ack_status_of(body.status.as_deref()),
-                body.lease_id.clone().unwrap_or_default(),
-                body.error.clone(),
+                body.lease_id.as_deref().unwrap_or(""),
+                body.error.as_deref(),
             ));
         }
         if raw_items.is_empty() {
@@ -4791,12 +4877,12 @@ impl RaftFacade {
             let mut run: Option<(&str, u32)> = None;
             for (_, _, _, lease, _) in &raw_items {
                 match &mut run {
-                    Some((l, n)) if *l == lease.as_str() => *n += 1,
+                    Some((l, n)) if *l == *lease => *n += 1,
                     _ => {
                         if let Some((l, n)) = run.take() {
                             self.autopilot.acked(l, n);
                         }
-                        run = Some((lease.as_str(), 1));
+                        run = Some((*lease, 1));
                     }
                 }
             }
@@ -4813,11 +4899,11 @@ impl RaftFacade {
             match pid_str.parse::<u64>() {
                 Ok(pid) => flats.push(AckFlat {
                     index: i,
-                    txn: txn.clone(),
+                    txn: txn.to_string(),
                     pid,
-                    worker: worker.clone(),
+                    worker: worker.to_string(),
                     status: *status,
-                    error: error.clone(),
+                    error: error.map(str::to_string),
                 }),
                 Err(_) => bad.push((i, "partitionId is not a partition id".to_string())),
             }
@@ -4825,17 +4911,22 @@ impl RaftFacade {
 
         // Group by (pid, worker) into AckTargets. Read each pid's (tenant,
         // queue) once. A pid with no row is a per-item error.
-        let resolved = self.resolve_acks(&ctx, &req.group, flats).await?;
+        let resolved = self.resolve_acks(&ctx, group, flats).await?;
         let (targets, per_item, more_bad) = resolved.map_err(RsmError::Internal)?;
         bad.extend(more_bad);
 
-        let txns: Vec<String> = raw_items.iter().map(|r| r.0.clone()).collect();
+        let txns: Vec<&str> = raw_items.iter().map(|r| r.0).collect();
+        let render = |results: &[crate::rsm::entry::AckResult]| {
+            if counts_only {
+                render_ack_counts(txns.len(), results, &per_item, &bad)
+            } else {
+                render_ack(&txns, results, &per_item, &bad)
+            }
+        };
 
         if targets.is_empty() {
             // Nothing resolvable: render all as errors/failures.
-            return Ok(AckOut {
-                body: render_ack(&txns, &[], &per_item, &bad),
-            });
+            return Ok(AckOut { body: render(&[]) });
         }
 
         // Dashboard tallies per target, taken before the targets move into the
@@ -4885,7 +4976,7 @@ impl RaftFacade {
             }
         }
         Ok(AckOut {
-            body: render_ack(&txns, &results, &per_item, &bad),
+            body: render(&results),
         })
     }
 }
@@ -5162,11 +5253,25 @@ fn read_dlq_snapshot(
 /// `[{index, transactionId, success, error, leaseReleased, dlq, noop}]`, input order
 /// (`handlers/data.rs` ack wire). The group is applied by the caller.
 fn render_ack(
-    txns: &[String],
+    txns: &[&str],
     results: &[crate::rsm::entry::AckResult],
     per_item: &[AckPerItem],
     bad: &[(usize, String)],
 ) -> String {
+    // Each input item's resolution and refusal, by its index: looked up once
+    // per item (a scan per item was quadratic in the batch).
+    let mut item_at: Vec<Option<&AckPerItem>> = vec![None; txns.len()];
+    for p in per_item {
+        if let Some(slot) = item_at.get_mut(p.index) {
+            slot.get_or_insert(p);
+        }
+    }
+    let mut bad_at: Vec<Option<&str>> = vec![None; txns.len()];
+    for (i, m) in bad {
+        if let Some(slot) = bad_at.get_mut(*i) {
+            slot.get_or_insert(m.as_str());
+        }
+    }
     // A `failed`/`dlq` item at or below its target's new cursor was settled by
     // this ack. Per target: how many such items.
     let settled = |p: &AckPerItem| {
@@ -5190,8 +5295,8 @@ fn render_ack(
         out.push_str("{\"index\":");
         out.push_str(&i.to_string());
         // Attribute this input item to its target result.
-        let item = per_item.iter().find(|p| p.index == i);
-        let bad_msg = bad.iter().find(|(bi, _)| *bi == i).map(|(_, m)| m.as_str());
+        let item = item_at[i];
+        let bad_msg = bad_at[i];
         out.push_str(",\"transactionId\":\"");
         crate::util::json_escape_into(&mut out, txn);
         out.push('"');
@@ -5256,6 +5361,53 @@ fn render_ack(
         out.push('}');
     }
     out.push(']');
+    out
+}
+
+/// The answer a client asked for with `"answer":"counts"`: how many items the
+/// ack settled and how many it refused, with the first refusal's reason. An
+/// item counts as [`render_ack`] would mark it `success`.
+fn render_ack_counts(
+    count: usize,
+    results: &[crate::rsm::entry::AckResult],
+    per_item: &[AckPerItem],
+    bad: &[(usize, String)],
+) -> String {
+    let mut refused = vec![false; count];
+    let mut first: Option<&str> = None;
+    for (i, m) in bad {
+        if let Some(r) = refused.get_mut(*i) {
+            *r = true;
+            first.get_or_insert(m.as_str());
+        }
+    }
+    for p in per_item {
+        let Some(res) = results.get(p.target) else {
+            continue;
+        };
+        if p.index < count && !refused[p.index] && res.stale_hashes.contains(&p.hash) {
+            refused[p.index] = true;
+            first.get_or_insert(if p.lease_invalid {
+                "invalid or expired lease"
+            } else {
+                "transaction is unresolvable, already committed, or acknowledgment is stale"
+            });
+        }
+    }
+    let failed = refused.iter().filter(|r| **r).count();
+    let mut out = format!(
+        "{{\"count\":{count},\"success\":{},\"failed\":{failed},\"error\":",
+        count - failed
+    );
+    match first {
+        Some(m) => {
+            out.push('"');
+            crate::util::json_escape_into(&mut out, m);
+            out.push('"');
+        }
+        None => out.push_str("null"),
+    }
+    out.push('}');
     out
 }
 
