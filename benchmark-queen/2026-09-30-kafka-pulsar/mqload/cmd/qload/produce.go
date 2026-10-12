@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"mqload/internal/core"
+
+	queen "github.com/smartpricing/queen/clients/client-go/v2"
 )
 
 // producers: one POST /api/v1/push per unit, in its own goroutine (the pacer never blocks; the core's in-flight
@@ -36,6 +38,10 @@ func newProducers(run *core.Run, cli *qhttp, qf *queenFlags, txn bool) *producer
 func (p *producers) send(u *core.Unit) { go p.push(u) }
 
 func (p *producers) push(u *core.Unit) {
+	if p.qf.pushWire == "bin" {
+		p.pushBinary(u)
+		return
+	}
 	size := 16
 	for _, m := range u.Payloads {
 		size += len(m) + len(p.queue) + 48
@@ -76,6 +82,48 @@ func (p *producers) push(u *core.Unit) {
 		}
 	}
 	for j := 0; j < u.N; j++ {
+		u.MsgDone(err)
+	}
+}
+
+// pushBinary is push with the Go client's binary body (plain, or framed and compressed by the client) and its
+// counts-only answer.
+func (p *producers) pushBinary(u *core.Unit) {
+	batch := []queen.PushBatch{{
+		Queue:     p.queue,
+		Partition: "p" + strconv.FormatUint(u.Entity, 10),
+		Payloads:  u.Payloads,
+	}}
+	var b []byte
+	var err error
+	if p.qf.pushZstd {
+		// The messages framed and compressed here; the broker keeps those bytes as they are.
+		b, err = queen.EncodePushFrames(batch, true)
+	} else {
+		b, err = queen.EncodePushBinary(batch, false, true)
+	}
+	bad := u.N
+	if err == nil {
+		ctx, cancel := context.WithTimeout(p.ctx, p.qf.timeout)
+		var rb []byte
+		_, rb, err = p.cli.do(ctx, "POST", "/api/v1/push", b)
+		cancel()
+		if err == nil {
+			var c queen.PushCounts
+			if c, err = queen.ParsePushCounts(rb); err == nil {
+				if c.Count != u.N {
+					err = fmt.Errorf("push answered %d items for %d", c.Count, u.N)
+				} else {
+					bad = c.Error
+					err = fmt.Errorf("push item status \"error\"")
+				}
+			}
+		}
+	}
+	for j := 0; j < u.N-bad; j++ {
+		u.MsgDone(nil)
+	}
+	for j := 0; j < bad; j++ {
 		u.MsgDone(err)
 	}
 }
