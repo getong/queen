@@ -992,7 +992,7 @@ impl<'a, R: Reads + ?Sized> Planner<'a, R> {
                 .iter()
                 .map(|(_, row, h)| PushItem {
                     hash: *h,
-                    frame: row.frame.clone(),
+                    frame: row.frame.clone().into(),
                 })
                 .collect(),
             create_cfg: implicit_queue_config_for(queue),

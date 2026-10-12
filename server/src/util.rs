@@ -160,7 +160,21 @@ impl Drop for DeterministicUuids {
     }
 }
 
+/// Wall clock, milliseconds since the epoch: what [`uuidv7_bytes_at`] takes.
+pub fn unix_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
+
 pub fn uuidv7_bytes() -> [u8; 16] {
+    uuidv7_bytes_at(unix_ms())
+}
+
+/// [`uuidv7_bytes`] with the clock already read: a push mints one id per
+/// message and reads the clock once for all of them.
+pub fn uuidv7_bytes_at(now_ms: u64) -> [u8; 16] {
     #[cfg(test)]
     if let Some(n) = TEST_UUIDS.with(|c| {
         let v = c.get();
@@ -175,10 +189,6 @@ pub fn uuidv7_bytes() -> [u8; 16] {
         b[8] |= 0x80;
         return b;
     }
-    let now_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64;
     let last = LAST_MS.load(Ordering::Relaxed);
     let seq = if now_ms <= last {
         SEQ.fetch_add(1, Ordering::Relaxed) + 1

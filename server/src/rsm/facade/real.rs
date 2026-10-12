@@ -77,7 +77,7 @@ use crate::rsm::replicator::node::{NodeReplicator, ReplicatorKind};
 use crate::rsm::replicator::Replicator;
 use crate::rsm::segments;
 use crate::rsm::store::{rows, HeedStore, Reads, Store, StoreOpts, TypedReads};
-use crate::util::{txn_hash128, uuidv7_bytes};
+use crate::util::{txn_hash128, unix_ms, uuidv7_bytes, uuidv7_bytes_at};
 
 use super::{
     AckOut, AckReq, ApiOut, ApiReq, DepthOut, DepthReq, DlqHeadOut, DlqHeadReq, KvFailure,
@@ -1433,6 +1433,7 @@ impl RaftFacade {
                         let b = bytes::Bytes::from(super::remote::encode_request(
                             &command,
                             ctx.deadline.remaining(),
+                            ctx.stored_forms.as_deref().map_or(&[], |v| v.as_slice()),
                         )?);
                         body = Some(b.clone());
                         b
@@ -1866,7 +1867,7 @@ fn release_claims(repl: &Arc<NodeReplicator<HeedStore>>, command: &Command, repl
     tokio::spawn(async move {
         let budget = Duration::from_secs(5);
         for cmd in nacks {
-            if let Ok(b) = super::remote::encode_request(&cmd, budget) {
+            if let Ok(b) = super::remote::encode_request(&cmd, budget, &[]) {
                 let _ = repl
                     .forward_command(bytes::Bytes::from(b), budget, true)
                     .await;
@@ -2401,7 +2402,7 @@ impl RaftFacade {
                     .iter()
                     .map(|&i| PushItem {
                         hash: pushes[i].hash,
-                        frame: pushes[i].frame.clone(),
+                        frame: pushes[i].frame.clone().into(),
                     })
                     .collect(),
                 create_cfg: default_queue_config(&g.queue),
@@ -2661,6 +2662,24 @@ pub(crate) fn txn_too_long(txn: Option<&str>) -> bool {
     txn.is_some_and(|t| t.len() > MAX_TXN_BYTES)
 }
 
+/// First bytes of a binary push body ([`RaftFacade::push_binary`]).
+pub(crate) const PUSH_BINARY_MAGIC: &[u8] = b"QPB1";
+/// Binary push flag: the body is zstd-compressed.
+pub(crate) const PUSH_BINARY_ZSTD: u8 = 1;
+/// Binary push flag: answer with the counts only.
+pub(crate) const PUSH_BINARY_SHORT: u8 = 2;
+/// Binary push flag: every item carries a transactionId.
+pub(crate) const PUSH_BINARY_TXN: u8 = 4;
+/// Binary push flag: every group is the client's own frames, compressed.
+pub(crate) const PUSH_BINARY_FRAMES: u8 = 8;
+/// `QUEEN_PUSH_FORWARD_STORED` (default on): a node that does not lead sends a
+/// framed push's compressed groups beside the command it forwards.
+static FORWARD_STORED_FORMS: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
+    std::env::var("QUEEN_PUSH_FORWARD_STORED").map_or(true, |v| v != "0")
+});
+/// Largest uncompressed binary push body accepted.
+const PUSH_BINARY_MAX_RAW: usize = 256 * 1024 * 1024;
+
 // `pub(crate)` for the W7 fuzz entry point (`crate::fuzzing::push_body`).
 #[derive(Deserialize)]
 pub(crate) struct PushBodyIn<'a> {
@@ -2695,7 +2714,7 @@ struct PushResolved {
     /// intra-request follower.
     follower_of: Option<usize>,
     hash: [u8; 16],
-    frame: Vec<u8>,
+    frame: bytes::Bytes,
 }
 
 /// One push item as its parser left it: borrowed from the JSON body of the
@@ -2706,6 +2725,25 @@ pub(crate) struct PushInput<'a> {
     pub(crate) payload: &'a [u8],
     /// The client's `transactionId`; `None` mints one from the message id.
     pub(crate) txn: Option<&'a str>,
+    /// The item as a frame the client already built ([`RaftFacade::push_binary`]).
+    pub(crate) prebuilt: Option<Prebuilt<'a>>,
+}
+
+/// A message the client framed itself: its id, its transaction id and the
+/// whole frame, checked by the receiver.
+#[derive(Clone)]
+pub(crate) struct Prebuilt<'a> {
+    pub(crate) id: [u8; 16],
+    pub(crate) txn: &'a str,
+    /// A slice of the group's one buffer: shared, never copied per message.
+    pub(crate) frame: bytes::Bytes,
+    /// No other item of the request carries this transaction id.
+    pub(crate) unique: bool,
+}
+
+/// Whether `payload` is exactly one JSON document.
+fn is_json(payload: &[u8]) -> bool {
+    serde_json::from_slice::<serde::de::IgnoredAny>(payload).is_ok()
 }
 
 /// The JSON one route item adds around its payload, queue and partition
@@ -2842,6 +2880,9 @@ impl RaftFacade {
         // pre-submit work (parse + resolve + pack); `submit_ns` accumulates the
         // `cmd_tx.send` await (channel back-pressure, which `arrival_to_proposed`
         // cannot see because it stamps just before the send).
+        if req.raw.starts_with(PUSH_BINARY_MAGIC) {
+            return self.push_binary(ctx, &req.raw).await;
+        }
         let _admitted = self.admit_push(req.raw.len()).await?;
         let t_prep = crate::rsm::timing::stamp();
         let body: PushBodyIn =
@@ -2872,9 +2913,308 @@ impl RaftFacade {
                 partition: it.partition.as_deref(),
                 payload: it.payload.get().as_bytes(),
                 txn: it.transaction_id.as_deref(),
+                prebuilt: None,
             })
             .collect();
-        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep).await?;
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        Ok(PushOut {
+            body: render_push(&resolved, &out),
+        })
+    }
+
+    /// The binary push body, an alternative to the JSON one on the same route
+    /// (a JSON body starts with `{`, this one with [`PUSH_BINARY_MAGIC`]):
+    ///
+    /// ```text
+    /// "QPB1" | u8 flags | [u32 raw_len, when FLAG_ZSTD] | body
+    /// body:  u32 groups | per group: u16 len, queue | u16 len, partition | u32 n
+    ///        | n x ([u16 len, transactionId, when FLAG_TXN] | u32 len, payload)
+    /// ```
+    ///
+    /// All integers little-endian. `flags`: [`PUSH_BINARY_ZSTD`] = the body is
+    /// one zstd frame of `raw_len` bytes; [`PUSH_BINARY_SHORT`] = answer with
+    /// the counts only, not one object per message; [`PUSH_BINARY_TXN`] = every
+    /// item carries its `transactionId` (empty = the broker mints it). No
+    /// `traceId`. Same admission, same commands and same verdicts as the JSON
+    /// body.
+    ///
+    /// A payload must be one JSON document, as in the JSON body, and is checked.
+    /// With [`PUSH_BINARY_FRAMES`] the body is [`RaftFacade::push_frames`]'s.
+    async fn push_binary(&self, ctx: ReqCtx, raw: &[u8]) -> Result<PushOut, RsmError> {
+        fn bad(m: &str) -> RsmError {
+            RsmError::Rejected {
+                code: "bad_body".into(),
+                message: format!("bad push body: {m}"),
+            }
+        }
+        fn take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8], RsmError> {
+            let end = p.checked_add(n).ok_or_else(|| bad("truncated"))?;
+            let s = b.get(*p..end).ok_or_else(|| bad("truncated"))?;
+            *p = end;
+            Ok(s)
+        }
+        fn u16le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
+            Ok(u16::from_le_bytes(take(b, p, 2)?.try_into().expect("2 bytes")) as usize)
+        }
+        fn u32le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
+            Ok(u32::from_le_bytes(take(b, p, 4)?.try_into().expect("4 bytes")) as usize)
+        }
+        let mut p = PUSH_BINARY_MAGIC.len();
+        let flags = *raw.get(p).ok_or_else(|| bad("truncated"))?;
+        p += 1;
+        let inflated;
+        let body: &[u8] = if flags & PUSH_BINARY_ZSTD != 0 {
+            let raw_len = u32le(raw, &mut p)?;
+            if raw_len > PUSH_BINARY_MAX_RAW {
+                return Err(bad("the uncompressed body is too large"));
+            }
+            inflated = zstd::bulk::decompress(&raw[p..], raw_len)
+                .map_err(|e| bad(&format!("zstd: {e}")))?;
+            &inflated
+        } else {
+            &raw[p..]
+        };
+        if flags & PUSH_BINARY_FRAMES != 0 {
+            return self.push_frames(ctx, body, flags).await;
+        }
+        let _admitted = self.admit_push(body.len()).await?;
+        let t_prep = crate::rsm::timing::stamp();
+        let mut p = 0usize;
+        let groups = u32le(body, &mut p)?;
+        let mut inputs: Vec<PushInput<'_>> = Vec::new();
+        for _ in 0..groups {
+            let n = u16le(body, &mut p)?;
+            let queue = std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("queue"))?;
+            let n = u16le(body, &mut p)?;
+            let partition =
+                std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("partition"))?;
+            let count = u32le(body, &mut p)?;
+            inputs.reserve(count.min(65_536));
+            for _ in 0..count {
+                let txn = if flags & PUSH_BINARY_TXN != 0 {
+                    let n = u16le(body, &mut p)?;
+                    let t = std::str::from_utf8(take(body, &mut p, n)?)
+                        .map_err(|_| bad("transactionId"))?;
+                    if t.len() > MAX_TXN_BYTES {
+                        return Err(bad("a transactionId exceeds the limit"));
+                    }
+                    (!t.is_empty()).then_some(t)
+                } else {
+                    None
+                };
+                let n = u32le(body, &mut p)?;
+                let payload = take(body, &mut p, n)?;
+                if !is_json(payload) {
+                    return Err(bad("a payload is not one JSON document"));
+                }
+                inputs.push(PushInput {
+                    queue,
+                    partition: Some(partition),
+                    payload,
+                    txn,
+                    prebuilt: None,
+                });
+            }
+        }
+        if inputs.is_empty() {
+            return Ok(PushOut { body: "[]".into() });
+        }
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        if flags & PUSH_BINARY_SHORT != 0 {
+            let (mut queued, mut duplicate, mut error) = (0usize, 0usize, 0usize);
+            for o in &out {
+                match o.status {
+                    "queued" => queued += 1,
+                    "duplicate" => duplicate += 1,
+                    _ => error += 1,
+                }
+            }
+            return Ok(PushOut {
+                body: format!(
+                    "{{\"count\":{},\"queued\":{queued},\"duplicate\":{duplicate},\"error\":{error}}}",
+                    out.len()
+                ),
+            });
+        }
+        Ok(PushOut {
+            body: render_push(&resolved, &out),
+        })
+    }
+
+    /// The binary push body with [`PUSH_BINARY_FRAMES`]: every group is the
+    /// client's own frames (`crate::frames`: message id, transaction id,
+    /// payload), compressed by the client as ONE zstd frame:
+    ///
+    /// ```text
+    /// u32 groups | per group: u16 len, queue | u16 len, partition | u32 n | u32 z_len | z
+    /// ```
+    ///
+    /// Each group is decompressed and every frame checked here (layout, a
+    /// version-7 id, the transaction id, one JSON document as payload). When
+    /// nothing has to be added to the frames (no producer identity, no
+    /// encryption, no transaction id twice), the client's compressed bytes go
+    /// to the queue-log codec as the group's stored form ([`codec::preseed`]):
+    /// this node does not compress them again, and ships them to its
+    /// followers as they are.
+    async fn push_frames(
+        &self,
+        mut ctx: ReqCtx,
+        body: &[u8],
+        flags: u8,
+    ) -> Result<PushOut, RsmError> {
+        use crate::rsm::qlog::codec;
+        fn bad(m: &str) -> RsmError {
+            RsmError::Rejected {
+                code: "bad_body".into(),
+                message: format!("bad push body: {m}"),
+            }
+        }
+        fn take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8], RsmError> {
+            let end = p.checked_add(n).ok_or_else(|| bad("truncated"))?;
+            let s = b.get(*p..end).ok_or_else(|| bad("truncated"))?;
+            *p = end;
+            Ok(s)
+        }
+        fn u16le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
+            Ok(u16::from_le_bytes(take(b, p, 2)?.try_into().expect("2 bytes")) as usize)
+        }
+        fn u32le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
+            Ok(u32::from_le_bytes(take(b, p, 4)?.try_into().expect("4 bytes")) as usize)
+        }
+        // 1. The groups: names, counts, and each one's frames decompressed by
+        //    the codec's own decoder, the one every later read of them uses.
+        struct Group<'a> {
+            queue: &'a str,
+            partition: &'a str,
+            count: usize,
+            z: &'a [u8],
+        }
+        let mut p = 0usize;
+        let n_groups = u32le(body, &mut p)?;
+        let mut groups: Vec<Group<'_>> = Vec::with_capacity(n_groups.min(1024));
+        let mut blobs: Vec<bytes::Bytes> = Vec::with_capacity(n_groups.min(1024));
+        let mut weight = 2usize;
+        for _ in 0..n_groups {
+            let n = u16le(body, &mut p)?;
+            let queue = std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("queue"))?;
+            let n = u16le(body, &mut p)?;
+            let partition =
+                std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("partition"))?;
+            let count = u32le(body, &mut p)?;
+            let n = u32le(body, &mut p)?;
+            let z = take(body, &mut p, n)?;
+            if zstd::zstd_safe::find_frame_compressed_size(z).ok() != Some(z.len()) {
+                return Err(bad("a group is not exactly one zstd frame"));
+            }
+            let raw = codec::decompress(z).map_err(|e| bad(&format!("zstd: {e}")))?;
+            weight = weight.saturating_add(raw.len());
+            if weight > PUSH_BINARY_MAX_RAW {
+                return Err(bad("the uncompressed body is too large"));
+            }
+            groups.push(Group { queue, partition, count, z });
+            blobs.push(bytes::Bytes::from(raw));
+        }
+        let _admitted = self.admit_push(weight).await?;
+        let t_prep = crate::rsm::timing::stamp();
+        // 2. Every frame, checked.
+        let mut inputs: Vec<PushInput<'_>> = Vec::new();
+        let mut txns: std::collections::HashSet<&str> = std::collections::HashSet::new();
+        let mut unique = true;
+        for (g, blob) in groups.iter().zip(&blobs) {
+            let raw: &[u8] = blob;
+            let mut p = 0usize;
+            for _ in 0..g.count {
+                let start = p;
+                let n = u32le(raw, &mut p)?;
+                let b = take(raw, &mut p, n)?;
+                if b.len() < 19 || b[0] != 0 {
+                    return Err(bad("a frame is malformed or carries flags"));
+                }
+                let id: [u8; 16] = b[1..17].try_into().expect("16 bytes");
+                if id[6] >> 4 != 7 || id[8] & 0xc0 != 0x80 {
+                    return Err(bad("a message id is not a version-7 UUID"));
+                }
+                let tl = u16::from_le_bytes([b[17], b[18]]) as usize;
+                let txn = b.get(19..19 + tl).ok_or_else(|| bad("truncated"))?;
+                let txn = std::str::from_utf8(txn).map_err(|_| bad("transactionId"))?;
+                if txn.is_empty() || txn.len() > MAX_TXN_BYTES {
+                    return Err(bad("a transactionId is empty or exceeds the limit"));
+                }
+                let payload = &b[19 + tl..];
+                if !is_json(payload) {
+                    return Err(bad("a payload is not one JSON document"));
+                }
+                unique &= txns.insert(txn);
+                inputs.push(PushInput {
+                    queue: g.queue,
+                    partition: Some(g.partition),
+                    payload,
+                    txn: None,
+                    prebuilt: Some(Prebuilt {
+                        id,
+                        txn,
+                        frame: blob.slice(start..p),
+                        unique: true,
+                    }),
+                });
+            }
+            if p != raw.len() {
+                return Err(bad("a group holds more bytes than its frames"));
+            }
+        }
+        if inputs.is_empty() {
+            return Ok(PushOut { body: "[]".into() });
+        }
+        if !unique {
+            for it in &mut inputs {
+                if let Some(pb) = &mut it.prebuilt {
+                    pb.unique = false;
+                }
+            }
+        }
+        // 3. The client's compressed bytes as the stored form, when the frames
+        //    go into the log exactly as they came.
+        let as_sent = unique
+            && ctx.producer_sub.is_none()
+            && !self.encryption.is_enabled()
+            && codec::level() > 0;
+        let preseeded = as_sent && self.early_codec();
+        if preseeded {
+            for (g, raw) in groups.iter().zip(&blobs) {
+                codec::preseed(raw, g.z.to_vec());
+            }
+        } else if as_sent && self.offload && *FORWARD_STORED_FORMS {
+            // Another node leads: the stored forms travel beside the
+            // forwarded command, and the leader files them the same way.
+            ctx.stored_forms = Some(Arc::new(
+                groups
+                    .iter()
+                    .zip(&blobs)
+                    .map(|(g, raw)| super::StoredForm {
+                        key: codec::early_key(raw),
+                        raw_len: raw.len() as u32,
+                        z: bytes::Bytes::copy_from_slice(g.z),
+                    })
+                    .collect(),
+            ));
+        }
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, preseeded).await?;
+        if flags & PUSH_BINARY_SHORT != 0 {
+            let (mut queued, mut duplicate, mut error) = (0usize, 0usize, 0usize);
+            for o in &out {
+                match o.status {
+                    "queued" => queued += 1,
+                    "duplicate" => duplicate += 1,
+                    _ => error += 1,
+                }
+            }
+            return Ok(PushOut {
+                body: format!(
+                    "{{\"count\":{},\"queued\":{queued},\"duplicate\":{duplicate},\"error\":{error}}}",
+                    out.len()
+                ),
+            });
+        }
         Ok(PushOut {
             body: render_push(&resolved, &out),
         })
@@ -2906,9 +3246,10 @@ impl RaftFacade {
                 partition: Some(it.partition.as_str()),
                 payload: &it.payload,
                 txn: None,
+                prebuilt: None,
             })
             .collect();
-        let (_, out) = self.push_inputs(&ctx, &inputs, t_prep).await?;
+        let (_, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
         Ok(out
             .into_iter()
             .map(|o| super::RecordPushed {
@@ -2936,25 +3277,46 @@ impl RaftFacade {
         if self.storage_pressure() {
             return Err(RsmError::StorageFull);
         }
-        let encrypted_queues = self
-            .encrypted_queues(
-                &ctx.tenant,
-                inputs.iter().map(|item| item.queue.to_string()).collect(),
-            )
-            .await?;
+        // The distinct queue names: a batch is one queue, so one string, not one per message.
+        let mut queue_names = std::collections::BTreeSet::new();
+        let mut last_queue: Option<&str> = None;
+        for item in inputs {
+            if last_queue != Some(item.queue) {
+                queue_names.insert(item.queue.to_string());
+                last_queue = Some(item.queue);
+            }
+        }
+        let encrypted_queues = self.encrypted_queues(&ctx.tenant, queue_names).await?;
         let mut resolved: Vec<PushResolved> = Vec::with_capacity(inputs.len());
         // (queue, partition, txn) → the flat index of its leader.
         let mut seen: std::collections::HashMap<(String, String, String), usize> =
             std::collections::HashMap::new();
         // (queue, partition) → the survivors' flat indices, in order.
         let mut groups: indexed_groups::Groups = indexed_groups::Groups::new();
+        // One clock read for the whole push, not one per message.
+        let now_ms = unix_ms();
         for it in inputs {
-            let mid = uuidv7_bytes();
+            // A frame the client built carries its own message id and
+            // transaction id; otherwise the id is minted here.
+            let mid = match &it.prebuilt {
+                Some(p) => p.id,
+                None => uuidv7_bytes_at(now_ms),
+            };
             let mid_str = uuid_bytes_to_string(&mid);
-            let txn = it
-                .txn
-                .map(str::to_string)
-                .unwrap_or_else(|| mid_str.clone());
+            let txn = match &it.prebuilt {
+                Some(p) => p.txn.to_string(),
+                None => it
+                    .txn
+                    .map(str::to_string)
+                    .unwrap_or_else(|| mid_str.clone()),
+            };
+            // Whether another item of this request may carry the same
+            // transaction id: a client's own id may, one minted here cannot,
+            // and the receiver already compared the ids of prebuilt frames.
+            let may_repeat = match &it.prebuilt {
+                Some(p) => !p.unique,
+                None => it.txn.is_some(),
+            };
             let partition_name = it.partition.filter(|p| !p.is_empty()).unwrap_or("Default");
             // The item's names, shared with the item before it when it is in
             // the same partition (the shape of every batch): one allocation per
@@ -2981,7 +3343,7 @@ impl RaftFacade {
             // A transaction id the broker just minted is a fresh UUIDv7: no
             // other item of this request can carry it, so only a client's own
             // ids need the duplicate map (and its three key copies per item).
-            let follower_of = if it.txn.is_none() {
+            let follower_of = if !may_repeat {
                 None
             } else {
                 let key = (queue.to_string(), partition.to_string(), txn.clone());
@@ -3004,16 +3366,21 @@ impl RaftFacade {
                 } else {
                     (it.payload, false)
                 };
-                pack_frames(&[FrameIn {
-                    message_id: mid,
-                    txn: &txn,
-                    trace_id: None,
-                    producer_sub: ctx.producer_sub.as_deref(),
-                    payload,
-                    encrypted,
-                }])
+                match &it.prebuilt {
+                    // The client's frame as it is: nothing to add to it.
+                    Some(p) if !encrypted && ctx.producer_sub.is_none() => p.frame.clone(),
+                    _ => pack_frames(&[FrameIn {
+                        message_id: mid,
+                        txn: &txn,
+                        trace_id: None,
+                        producer_sub: ctx.producer_sub.as_deref(),
+                        payload,
+                        encrypted,
+                    }])
+                    .into(),
+                }
             } else {
-                Vec::new()
+                bytes::Bytes::new()
             };
             if follower_of.is_none() {
                 groups.push(&queue, &partition, flat);
@@ -3093,8 +3460,8 @@ impl RaftFacade {
         ctx: &ReqCtx,
         groups: &indexed_groups::Groups,
         resolved: &mut [PushResolved],
+        early_codec: bool,
     ) -> Command {
-        let early_codec = self.early_codec();
         if groups.len() == 1 {
             let g = groups.iter().next().expect("one group");
             return Command::Push(Self::push_command(ctx, 0, g, resolved, early_codec));
@@ -3127,6 +3494,8 @@ impl RaftFacade {
         ctx: &ReqCtx,
         inputs: &[PushInput<'_>],
         _t_prep: Option<std::time::Instant>,
+        // The groups' stored forms are already with the codec (`codec::preseed`).
+        preseeded: bool,
     ) -> Result<(Vec<PushResolved>, Vec<PushVerdictOut>), RsmError> {
         let mut _submit_ns: u64 = 0;
         let (mut resolved, groups) = self.push_resolve(ctx, inputs).await?;
@@ -3140,10 +3509,10 @@ impl RaftFacade {
                 .record_dur(t.elapsed());
         }
         let mut rxs = Vec::with_capacity(groups.len());
-        let early_codec = self.early_codec();
+        let early_codec = self.early_codec() && !preseeded;
         let multi = *MULTIPUSH && groups.len() > 1;
         if multi {
-            let cmd = self.multi_command(ctx, &groups, &mut resolved);
+            let cmd = self.multi_command(ctx, &groups, &mut resolved, early_codec);
             let reply = if self.offload {
                 self.submit_offloaded(ctx, cmd).await?
             } else {

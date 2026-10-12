@@ -396,7 +396,7 @@ impl RaftFacade {
             partition: partition.clone(),
             items: vec![PushItem {
                 hash: txn_hash128(&transaction_id),
-                frame,
+                frame: frame.into(),
             }],
             create_cfg: super::super::default_queue_config(&queue),
         };

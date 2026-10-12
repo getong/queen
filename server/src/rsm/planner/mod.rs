@@ -306,8 +306,22 @@ pub enum Lookup {
 pub struct PushItem {
     /// `xxh3_128` of the transaction id, the dedup key and the `Append` hash.
     pub hash: [u8; 16],
-    #[serde(with = "serde_bytes")]
-    pub frame: Vec<u8>,
+    /// Shared, not owned: a copy of the command (the retry copy a cluster node
+    /// keeps, a multi-push split) shares these bytes instead of copying them.
+    #[serde(with = "frame_bytes")]
+    pub frame: bytes::Bytes,
+}
+
+/// [`PushItem::frame`] on the wire: bytes, exactly as `serde_bytes` wrote the
+/// `Vec<u8>` it used to be.
+mod frame_bytes {
+    pub fn serialize<S: serde::Serializer>(b: &bytes::Bytes, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_bytes(b)
+    }
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(d: D) -> Result<bytes::Bytes, D::Error> {
+        <serde_bytes::ByteBuf as serde::Deserialize>::deserialize(d)
+            .map(|b| bytes::Bytes::from(b.into_vec()))
+    }
 }
 
 /// `POST /api/v1/push` for one partition. The receiver has already

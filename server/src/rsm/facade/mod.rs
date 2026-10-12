@@ -149,6 +149,19 @@ pub struct ReqCtx {
     /// Authenticated JWT subject stamped by producer-facing writes. It is
     /// never populated from a request body.
     pub producer_sub: Option<String>,
+    /// A push's groups as the client compressed them, when this node is not
+    /// the leader: sent beside the forwarded command, so the leader stores
+    /// them as they are instead of compressing the frames itself.
+    pub stored_forms: Option<std::sync::Arc<Vec<StoredForm>>>,
+}
+
+/// One push group's stored form: its frames, concatenated, as one zstd frame.
+#[derive(Clone, Debug)]
+pub struct StoredForm {
+    /// `qlog::codec::early_key` of the raw frames.
+    pub key: u128,
+    pub raw_len: u32,
+    pub z: bytes::Bytes,
 }
 
 impl ReqCtx {
@@ -159,6 +172,7 @@ impl ReqCtx {
             request_id: uuidv7_bytes(),
             deadline,
             producer_sub: None,
+            stored_forms: None,
         }
     }
 
