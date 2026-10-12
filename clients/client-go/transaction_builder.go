@@ -215,7 +215,23 @@ func (tb *TransactionBuilder) Commit(ctx context.Context) (*TransactionResponse,
 		// Make request. The RAW path, not Post: this answer carries a KV
 		// `version`, which is a BIGINT, and map[string]interface{} would round
 		// it through a float64 (§10.4).
-		body, err := tb.httpClient.PostRaw(ctx, "/api/v1/transaction", req)
+		//
+		// With BinaryPush and PushCompression the pushes travel as frames
+		// built and compressed here (push_binary.go), and the rest of the
+		// bundle as the JSON head in front of them.
+		var body []byte
+		var err error
+		var order []int
+		framed := false
+		if cfg := tb.httpClient.config; cfg.BinaryPush && cfg.PushCompression {
+			var raw []byte
+			if raw, order, framed = transactionFrames(tb.operations, leases, kv, tb.timers); framed {
+				body, err = tb.httpClient.PostRaw(ctx, "/api/v1/transaction", rawRequestBody(raw))
+			}
+		}
+		if !framed {
+			body, err = tb.httpClient.PostRaw(ctx, "/api/v1/transaction", req)
+		}
 		if err != nil {
 			// A 4xx from this endpoint still carries the transaction failure
 			// shape (a rider refused by the operator's runtime kill switch
@@ -230,6 +246,7 @@ func (tb *TransactionBuilder) Commit(ctx context.Context) (*TransactionResponse,
 		if err != nil {
 			return nil, err
 		}
+		restoreResultOrder(response, order)
 
 		logInfo("TransactionBuilder.Commit", map[string]interface{}{
 			"operations": len(tb.operations),

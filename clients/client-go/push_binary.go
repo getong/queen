@@ -25,6 +25,18 @@ package queen
 // A broker that does not know this body answers 400; a client sends it only
 // when ClientConfig.BinaryPush is set, so by default a push is the JSON
 // request every broker knows.
+//
+// The binary transaction body (EncodeTransactionFrames), an alternative to the
+// JSON body of POST /api/v1/transaction, carries the pushes the same way:
+//
+//	"QTB1" | u8 flags | u32 len, head | u32 groups | the groups, as with flag 8 above
+//
+// head is the JSON transaction body without its push operations: the acks in
+// "operations", "requiredLeases", "kv", "timers". flags: 2 = the answer leaves
+// out the pushes' and the acks' results and counts them ("pushed",
+// "duplicate", "acked"); the riders' results stay. In the answer the head's
+// operations come first and the groups' messages after them, in the order
+// written; the riders follow, as in the JSON body.
 
 import (
 	"encoding/binary"
@@ -37,6 +49,8 @@ import (
 )
 
 const (
+	txnBinaryMagic        = "QTB1"
+	txnBinaryShort   byte = 2
 	pushBinaryMagic       = "QPB1"
 	pushBinaryZstd   byte = 1
 	pushBinaryShort  byte = 2
@@ -158,6 +172,31 @@ func EncodePushFrames(batches []PushBatch, short bool) ([]byte, error) {
 	out := make([]byte, 0, 1024)
 	out = append(out, pushBinaryMagic...)
 	out = append(out, flags)
+	return appendFrameGroups(out, batches)
+}
+
+// EncodeTransactionFrames encodes a binary transaction body: head, the JSON
+// transaction body without its push operations, then batches as groups of
+// messages framed as the broker stores them and compressed once, here. short:
+// the broker counts the pushes and the acks in its answer instead of rendering
+// one result for each.
+func EncodeTransactionFrames(head []byte, batches []PushBatch, short bool) ([]byte, error) {
+	var flags byte
+	if short {
+		flags |= txnBinaryShort
+	}
+	out := make([]byte, 0, 1024+len(head))
+	out = append(out, txnBinaryMagic...)
+	out = append(out, flags)
+	out = binary.LittleEndian.AppendUint32(out, uint32(len(head)))
+	out = append(out, head...)
+	return appendFrameGroups(out, batches)
+}
+
+// appendFrameGroups appends `u32 groups | per group: u16 len, queue | u16 len,
+// partition | u32 n | u32 z_len | z` to out: each batch's messages framed as
+// the broker stores them, with a version-7 id minted here, as one zstd frame.
+func appendFrameGroups(out []byte, batches []PushBatch) ([]byte, error) {
 	out = binary.LittleEndian.AppendUint32(out, uint32(len(batches)))
 	var raw []byte
 	var text [36]byte
@@ -263,4 +302,94 @@ func binaryPushBody(items []PushItem, compress bool) ([]byte, bool) {
 	}
 	body, err := EncodePushBinary(batches, false, false)
 	return body, err == nil
+}
+
+// transactionFrames is a transaction as a binary body, when its pushes can
+// travel in one: there is at least one, and none carries a trace id. The acks
+// stay in the JSON head; consecutive pushed items of one partition share a
+// group, so the pushes keep their order.
+//
+// order is nil when the broker's answer lists the operations as the caller
+// added them (every ack before every push). Otherwise order[k] is the place,
+// among the caller's operations, of the k-th result the broker sends: it lists
+// the head's acks first, then the pushes.
+func transactionFrames(ops []Operation, leases []string, kv []KVOp, timers []TimerOp) (body []byte, order []int, ok bool) {
+	head := transactionRequest{Operations: []Operation{}, RequiredLeases: leases, KV: kv, Timers: timers}
+	var batches []PushBatch
+	var ackAt, pushAt []int
+	flat := 0
+	for i := range ops {
+		op := &ops[i]
+		if op.Type != "push" {
+			head.Operations = append(head.Operations, *op)
+			ackAt = append(ackAt, flat)
+			flat++
+			continue
+		}
+		for j := range op.Items {
+			it := &op.Items[j]
+			if it.TraceID != "" {
+				return nil, nil, false
+			}
+			payload, err := json.Marshal(it.Payload)
+			if err != nil {
+				return nil, nil, false
+			}
+			n := len(batches)
+			if n == 0 || batches[n-1].Queue != it.Queue || batches[n-1].Partition != it.Partition {
+				batches = append(batches, PushBatch{Queue: it.Queue, Partition: it.Partition, TransactionIDs: []string{}})
+				n++
+			}
+			batches[n-1].Payloads = append(batches[n-1].Payloads, payload)
+			batches[n-1].TransactionIDs = append(batches[n-1].TransactionIDs, it.TransactionID)
+			pushAt = append(pushAt, flat)
+			flat++
+		}
+	}
+	if len(batches) == 0 {
+		return nil, nil, false
+	}
+	headJSON, err := json.Marshal(head)
+	if err != nil {
+		return nil, nil, false
+	}
+	body, err = EncodeTransactionFrames(headJSON, batches, false)
+	if err != nil {
+		return nil, nil, false
+	}
+	order = append(ackAt, pushAt...)
+	inOrder := true
+	for k, at := range order {
+		if at != k {
+			inOrder = false
+			break
+		}
+	}
+	if inOrder {
+		order = nil
+	}
+	return body, order, true
+}
+
+// restoreResultOrder puts the results of a binary transaction back in the
+// order the caller added its operations in, and gives each its own index
+// again. The riders' results, after the operations', are already in place.
+func restoreResultOrder(resp *TransactionResponse, order []int) {
+	if resp == nil || order == nil || len(resp.Results) < len(order) {
+		return
+	}
+	out := make([]json.RawMessage, len(resp.Results))
+	copy(out[len(order):], resp.Results[len(order):])
+	for k, at := range order {
+		out[at] = resp.Results[k]
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(resp.Results[k], &fields); err != nil {
+			continue
+		}
+		fields["index"] = json.RawMessage(fmt.Sprintf("%d", at))
+		if b, err := json.Marshal(fields); err == nil {
+			out[at] = b
+		}
+	}
+	resp.Results = out
 }

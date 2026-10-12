@@ -98,6 +98,9 @@ type ClientConfig struct {
 	// PushCompression (BinaryPush only) frames the messages as the broker stores
 	// them and zstd-compresses each partition's batch once, here; the broker
 	// keeps those bytes as they are. The client then mints the message ids.
+	// With both set, a transaction that pushes sends its pushes the same way
+	// (the binary transaction body), and the rest of the bundle as JSON in
+	// front of them.
 	PushCompression bool
 	// MaxIdleConnsPerHost caps idle keep-alive connections retained per host.
 	// Go's net/http default is 2, which cripples high-concurrency, single-host
