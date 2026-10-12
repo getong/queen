@@ -85,6 +85,20 @@ type ClientConfig struct {
 	BearerToken string
 	// Headers is a map of custom headers to include in every request
 	Headers map[string]string
+	// BinaryPush sends a push whose items carry neither a transaction id nor a
+	// trace id as the binary push body (push_binary.go) instead of JSON. It
+	// needs a broker that accepts that body; off by default, so a push is the
+	// JSON request every broker knows.
+	BinaryPush bool
+	// FramedPop asks the broker for a pop's messages as the stored records
+	// (frames=true) and unpacks them here, instead of a JSON answer the broker
+	// renders message by message. A broker that does not know the parameter
+	// answers JSON, which is read as always; off by default.
+	FramedPop bool
+	// PushCompression (BinaryPush only) frames the messages as the broker stores
+	// them and zstd-compresses each partition's batch once, here; the broker
+	// keeps those bytes as they are. The client then mints the message ids.
+	PushCompression bool
 	// MaxIdleConnsPerHost caps idle keep-alive connections retained per host.
 	// Go's net/http default is 2, which cripples high-concurrency, single-host
 	// workloads (load generators, hot producer pools) by forcing per-request

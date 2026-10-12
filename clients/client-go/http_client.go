@@ -450,12 +450,19 @@ func (hc *HttpClient) doRequestWithRetry429Raw(ctx context.Context, method, url 
 func (hc *HttpClient) attemptOnceRaw(ctx context.Context, method, url string, body interface{}, timeout int) ([]byte, error) {
 	// Create request body
 	var bodyReader io.Reader
+	contentType := "application/json"
 	if body != nil {
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		if raw, ok := body.(rawRequestBody); ok {
+			// Already encoded (the binary push body): sent as it is.
+			bodyReader = bytes.NewReader(raw)
+			contentType = "application/x-queen-push"
+		} else {
+			jsonBody, err := json.Marshal(body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal request body: %w", err)
+			}
+			bodyReader = bytes.NewReader(jsonBody)
 		}
-		bodyReader = bytes.NewReader(jsonBody)
 	}
 
 	// Create request with context
@@ -467,7 +474,7 @@ func (hc *HttpClient) attemptOnceRaw(ctx context.Context, method, url string, bo
 	}
 
 	// Set headers
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
 	if hc.config.BearerToken != "" {
 		req.Header.Set("Authorization", "Bearer "+hc.config.BearerToken)
