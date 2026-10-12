@@ -103,7 +103,7 @@ jobs:
           phpts: ${{ matrix.phpts }}
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: mbstring, pcntl, posix, dom, xml, xmlwriter
+          extensions: mbstring, pcntl, posix, dom, xml, xmlwriter, zstd
           coverage: none
           tools: composer:v2
       - name: Validate Composer metadata
