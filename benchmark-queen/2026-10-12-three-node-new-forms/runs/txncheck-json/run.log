@@ -1,0 +1,19 @@
+[13:30:42] run txncheck-json: binary txn, transactions as json, 10 messages each, 30000 msg/s for 30s | roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+  [warm] one message (no "ts") into each of 200 partitions of bench-in, bench-out in 0.0s; drained in 0.1s
+[create] done: bench-in, bench-out x 200 partitions
+[txn] 13:31:18 txn=    1361/s msgs=    13614/s avg= 10.00 msg/txn | commit p50=1.70 p99=2.48 p999=2.99 ms | aborts=0 errs=0 open=2 | in=    13616/s | total txns=36955 msgs=369550 aborts=0 errs=0
+[final] offered=2750 achieved=2750 shed=0 (msgs: offered=275000 achieved=275000 shed=0) pushErr=0 | pushed=275000 popped=300860 lag=-25860 | popErr=0 empty=28 | overall p50=2.19 p99=3.41 p999=7.26 ms | acked=300860 ackErr=0 ackLag=-25860 ackAvg=4.71ms | e2e p50=34.05 p99=61.18 p999=64.26 ms
+[txn] 13:31:18 txn=     841/s msgs=     8413/s avg= 10.00 msg/txn | commit p50=1.98 p99=2.80 p999=3.76 ms | aborts=0 errs=0 open=0 | in=     8413/s | total txns=23374 msgs=233740 aborts=0 errs=0
+[final] offered=2751 achieved=2751 shed=0 (msgs: offered=275100 achieved=275100 shed=0) pushErr=0 | pushed=275100 popped=267820 lag=7280 | popErr=0 empty=29 | overall p50=2.80 p99=3.98 p999=4.45 ms | acked=267820 ackErr=0 ackLag=7280 ackAvg=4.75ms | e2e p50=34.56 p99=61.18 p999=64.77 ms
+[txn] 13:31:18 txn=     797/s msgs=     7970/s avg= 10.00 msg/txn | commit p50=2.77 p99=3.60 p999=4.32 ms | aborts=0 errs=0 open=0 | in=     7970/s | total txns=22091 msgs=220910 aborts=0 errs=0
+[final] offered=2751 achieved=2751 shed=0 (msgs: offered=275100 achieved=275100 shed=0) pushErr=0 | pushed=275100 popped=256520 lag=18580 | popErr=0 empty=31 | overall p50=3.76 p99=5.02 p999=8.64 ms | acked=256520 ackErr=0 ackLag=18580 ackAvg=4.77ms | e2e p50=34.56 p99=61.70 p999=64.26 ms
+[13:31:21] verifier
+verifier exit 0
+duplicates=0 dup_records=0 missing=0 pending_in=0 in_and_out=0 extra=0
+[verify] waiting 6s until every worker lease (10s) ran out before reading the rest of bench-in
+[verify] rest of bench-in: 0 records, idle 5s: scan complete after 5.0s
+[verify] system=queen ledgers=3 produced=825200 ambiguous=0 out_records=825400 out_unique=825200 duplicates=0 dup_records=0 missing=0 pending_in=0 in_and_out=0 extra=0 ambiguous_in_out=0 rereads=0 unparsed=0 warm=200 scan=17.1s | VERDICT PASS
+queen_raft_qlog_early_codec_hits_total 2750 | n1 "role":"leader" warn+error 9323
+queen_raft_qlog_early_codec_hits_total 0 | n2 "role":"follower" warn+error 1
+queen_raft_qlog_early_codec_hits_total 0 | n3 "role":"follower" warn+error 8817
+RUN_DONE
