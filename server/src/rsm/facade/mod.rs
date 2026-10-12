@@ -153,6 +153,9 @@ pub struct ReqCtx {
     /// the leader: sent beside the forwarded command, so the leader stores
     /// them as they are instead of compressing the frames itself.
     pub stored_forms: Option<std::sync::Arc<Vec<StoredForm>>>,
+    /// The client asked for a pop's messages as the stored records
+    /// (`frames=true`), not rendered as JSON.
+    pub pop_frames: bool,
 }
 
 /// One push group's stored form: its frames, concatenated, as one zstd frame.
@@ -173,6 +176,7 @@ impl ReqCtx {
             deadline,
             producer_sub: None,
             stored_forms: None,
+            pop_frames: false,
         }
     }
 
@@ -547,6 +551,9 @@ pub struct PopOut {
     /// §3.3: the request named a policy the group's stored one overrode. The body
     /// carries `"conflationConflict":true`.
     pub conflation_conflict: bool,
+    /// The answer as stored records ([`ReqCtx::pop_frames`]): `body` is empty
+    /// then. See `RaftFacade`'s `render_pop_frames` for the layout.
+    pub frames: Option<Vec<u8>>,
 }
 
 /// An ack outcome: the rendered response body.

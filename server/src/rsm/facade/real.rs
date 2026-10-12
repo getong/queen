@@ -4299,6 +4299,7 @@ impl RaftFacade {
         let group = group.to_string();
         let worker = worker.to_string();
         let deadline = ctx.deadline;
+        let frames = ctx.pop_frames;
 
         let rendered = tokio::task::spawn_blocking(move || {
             // PERF-1: pop payload read latency — the blocking segment render.
@@ -4317,6 +4318,7 @@ impl RaftFacade {
                 auto_ack,
                 &claims,
                 deadline,
+                frames,
             );
             if let Some(r0) = r0 {
                 crate::rsm::timing::metrics()
@@ -4358,6 +4360,7 @@ fn render_pop_blocking(
     auto_ack: bool,
     claims: &[PopClaim],
     deadline: super::Deadline,
+    frames: bool,
 ) -> Result<PopOut, String> {
     // Resolve every claimed pid's partition row + sealed files in one read txn.
     //
@@ -4385,6 +4388,19 @@ fn render_pop_blocking(
         .count();
     if missing > 0 {
         crate::rsm::dbgctr::inc(&crate::rsm::dbgctr::C.render_part_missing, missing as u64);
+    }
+    // The stored records as they are, when the client asked for them and
+    // nothing has to be done to a message on the way out (no decryption, no
+    // conflation). A record that is not readable here leaves the whole answer
+    // to the JSON render, which waits for it and stops before a gap.
+    if frames && !encryption.is_enabled() && !claims.iter().any(|c| c.conflated) {
+        if let Some(ql) = qlog_reader {
+            if let Some(out) =
+                render_pop_frames(ql, tenant, top_queue, group, worker, auto_ack, claims, &infos)?
+            {
+                return Ok(out);
+            }
+        }
     }
     render_pop_body(
         qlog_reader,
@@ -4709,7 +4725,138 @@ fn render_pop_body(
         empty: count == 0,
         conflation: false,
         conflation_conflict: false,
+        frames: None,
     })
+}
+
+/// The pop answer as the stored records, for a client that asked for them
+/// (`frames=true`): each record's payload goes out as the queue log holds it,
+/// zstd frame included, so nothing is decompressed or rendered here. All
+/// integers little-endian:
+///
+/// ```text
+/// "QPF1" | u8 1 | u32 len, the answer's own keys as one JSON object
+/// u16 len, queue | u16 len, leaseId | u16 len, consumerGroup | u32 claims
+/// per claim:  u64 partitionId | u16 len, partition | u64 start | u64 end | u32 deliveryAttempt | u32 records
+/// per record: u64 base_offset | i64 created_at_us | u32 count | u8 codec (0 raw, 1 zstd) | u32 len | bytes
+/// ```
+///
+/// A record's bytes are `count` frames (`crate::frames`); message `i` of it
+/// has offset `base_offset + i` and belongs to the delivery when that lies in
+/// the claim's `start..=end`. The JSON object is [`PopOut::body`]
+/// (`{"frames":true}` plus the conflation echo and the autopilot's choice);
+/// the first line is written by the route (`handlers::raft::pop_answer`), the
+/// rest here. `None` when a claimed record is not readable.
+#[allow(clippy::too_many_arguments)]
+fn render_pop_frames(
+    ql: &QLogReader,
+    tenant: &str,
+    top_queue: &str,
+    group: &str,
+    worker: &str,
+    auto_ack: bool,
+    claims: &[PopClaim],
+    infos: &std::collections::HashMap<Pid, PartInfo>,
+) -> Result<Option<PopOut>, String> {
+    fn text(out: &mut Vec<u8>, s: &str) {
+        let n = s.len().min(u16::MAX as usize);
+        out.extend_from_slice(&(n as u16).to_le_bytes());
+        out.extend_from_slice(&s.as_bytes()[..n]);
+    }
+    let lease_id = if auto_ack || claims.is_empty() {
+        ""
+    } else {
+        worker
+    };
+    let mut out: Vec<u8> = Vec::with_capacity(64 * 1024);
+    text(&mut out, top_queue);
+    text(&mut out, lease_id);
+    text(&mut out, group);
+    let claims_at = out.len();
+    out.extend_from_slice(&0u32.to_le_bytes());
+    let mut n_claims = 0u32;
+    let mut count = 0usize;
+    let now_ms = wall_micros() / 1000;
+    let mut per_q: std::collections::HashMap<&str, (u64, u64, u64)> =
+        std::collections::HashMap::new();
+    for claim in claims {
+        let Some(info) = infos.get(&claim.pid) else {
+            continue;
+        };
+        let qid = QLogReader::queue_id_of(tenant, &info.queue);
+        out.extend_from_slice(&claim.pid.to_le_bytes());
+        text(&mut out, &info.name);
+        out.extend_from_slice(&claim.start_offset.to_le_bytes());
+        out.extend_from_slice(&claim.end_offset.to_le_bytes());
+        out.extend_from_slice(&claim.delivery_attempt.max(1).to_le_bytes());
+        let records_at = out.len();
+        out.extend_from_slice(&0u32.to_le_bytes());
+        let mut n_records = 0u32;
+        let mut off = claim.start_offset;
+        while off <= claim.end_offset {
+            let rec = match ql.read_stored(qid, claim.pid, off) {
+                Ok(Some(r)) if r.count > 0 => r,
+                Ok(_) => return Ok(None),
+                Err(e) => {
+                    return Err(format!(
+                        "read pop payload (qlog, stored) at pid {} off {off}: {e}",
+                        claim.pid
+                    ))
+                }
+            };
+            out.extend_from_slice(&rec.base_offset.to_le_bytes());
+            out.extend_from_slice(&rec.created_at_us.to_le_bytes());
+            out.extend_from_slice(&rec.count.to_le_bytes());
+            out.push(u8::from(rec.zstd));
+            out.extend_from_slice(&(rec.payload.len() as u32).to_le_bytes());
+            out.extend_from_slice(&rec.payload);
+            n_records += 1;
+            let last = rec.base_offset + u64::from(rec.count) - 1;
+            let (lo, hi) = (off.max(rec.base_offset), claim.end_offset.min(last));
+            if hi >= lo {
+                let n = hi - lo + 1;
+                count += n as usize;
+                let lag_ms = (now_ms - rec.created_at_us / 1000).max(0) as u64;
+                let e = per_q.entry(info.queue.as_str()).or_insert((0, 0, 0));
+                e.0 += n;
+                e.1 += lag_ms * n;
+                e.2 = e.2.max(lag_ms);
+            }
+            off = last + 1;
+        }
+        out[records_at..records_at + 4].copy_from_slice(&n_records.to_le_bytes());
+        n_claims += 1;
+    }
+    out[claims_at..claims_at + 4].copy_from_slice(&n_claims.to_le_bytes());
+    // The dashboard counters, as the JSON render keeps them.
+    if let Some(m) = crate::metrics::global() {
+        m.pop.record_request(count);
+        if count == 0 && !top_queue.is_empty() {
+            m.per_queue.add_pop_empty(tenant, top_queue);
+        }
+        for (q, (n, sum, max)) in &per_q {
+            m.per_queue.add_pop(tenant, q, *n);
+            m.per_queue.add_pop_lag(tenant, q, *sum, *max, *n);
+            if auto_ack {
+                m.per_queue.add_ack(tenant, q, *n, 0);
+            }
+        }
+        if auto_ack && count > 0 {
+            m.ack.record_request(count);
+            m.ack_success
+                .fetch_add(count as u64, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+    Ok(Some(PopOut {
+        // The answer's own keys: the conflation echo and the autopilot's
+        // choice are added to this object as they are to the JSON answer, and
+        // it travels in front of the records.
+        body: "{\"frames\":true}".to_string(),
+        empty: count == 0,
+        conflation: false,
+        conflation_conflict: false,
+        frames: Some(out),
+    }))
 }
 
 // ---------------------------------------------------------------------------

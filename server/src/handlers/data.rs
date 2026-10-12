@@ -86,6 +86,10 @@ pub struct PopParams {
     // client sent. Absent ⇒ off ⇒ byte-identical behaviour.
     #[serde(rename = "autopilot")]
     autopilot: Option<bool>,
+    // `frames=true`: answer with the stored records as they are (binary,
+    // still compressed) instead of rendering every message as JSON. Absent ⇒
+    // the JSON answer, byte for byte.
+    frames: Option<bool>,
 }
 
 impl PopParams {
@@ -223,6 +227,7 @@ pub async fn handle_pop(
             conflate,
             conflate_requested: p.conflation,
         },
+        p.frames == Some(true),
     )
     .await
 }
@@ -271,6 +276,7 @@ pub async fn handle_pop_partition(
             conflate: p.conflation == Some(true) && p.consumer_group.is_some(),
             conflate_requested: p.conflation,
         },
+        p.frames == Some(true),
     )
     .await
 }
@@ -280,6 +286,8 @@ pub async fn handle_pop_partition(
 // `client.queue().namespace_name(ns).consume(...)` (no queue in the path).
 #[derive(Deserialize)]
 pub struct PopDiscoverParams {
+    // See `PopParams::frames`.
+    frames: Option<bool>,
     batch: Option<i32>,
     partitions: Option<i32>,
     // Commit at delivery, and its deprecated alias: as on `PopParams`.
@@ -374,6 +382,7 @@ pub async fn handle_pop_discover(
             conflate,
             conflate_requested: p.conflation,
         },
+        p.frames == Some(true),
     )
     .await
 }

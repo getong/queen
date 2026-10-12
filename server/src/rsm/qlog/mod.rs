@@ -473,6 +473,7 @@ pub struct StoredRecord {
     pub pid: u64,
     pub base_offset: u64,
     pub count: u32,
+    pub created_at_us: i64,
     pub zstd: bool,
     pub payload: Vec<u8>,
 }
@@ -1991,6 +1992,7 @@ impl QLog {
             pid: rr.header.pid,
             base_offset: rr.header.base_offset,
             count: rr.header.count,
+            created_at_us: rr.header.created_at_us,
             zstd: rr.header.payload_zstd(),
             payload: rr.payload.to_vec(),
         }))

@@ -380,6 +380,7 @@ impl RaftFacade {
                 deadline: ctx.deadline,
                 producer_sub: ctx.producer_sub.clone(),
                 stored_forms: None,
+                pop_frames: false,
             };
             self.submit_effects(
                 &chunk_ctx,

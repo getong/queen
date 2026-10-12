@@ -2625,6 +2625,20 @@ impl QLogReader {
         }
     }
 
+    /// [`QLogReader::read_owned`] with the payload as it is stored (a zstd
+    /// payload stays compressed): what a pop answered as frames sends.
+    pub fn read_stored(
+        &self,
+        queue_id: u64,
+        pid: u64,
+        offset: u64,
+    ) -> io::Result<Option<crate::rsm::qlog::StoredRecord>> {
+        match self.log_for(queue_id, pid) {
+            Some(l) => l.read().expect("qlog poisoned").read_stored(pid, offset),
+            None => Ok(None),
+        }
+    }
+
     /// [`QLogReader::read_owned`] for the consecutive offsets of one
     /// partition ([`QLog::read_owned_hinted`]).
     pub fn read_owned_hinted(
