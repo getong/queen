@@ -136,6 +136,46 @@ Not done: the late start of the lanes without spinning, less serial work per com
 lanes, and the zstd pass the raft threads make over entries the client already compressed (17% of
 their time).
 
+## Transactions
+
+The transactional pipeline of [`../2026-09-30-kafka-pulsar/txn`](../2026-09-30-kafka-pulsar/txn)
+on this harness (`scripts/txnrun.sh`): a feeder fills an input queue, 198 workers each commit one
+transaction per batch (every input acked with its lease and the outputs pushed), readers consume
+the output. 200 partitions, 40 s steps, the fast-disk brokers. `edeb8b1e8` adds a binary
+transaction body whose pushes are frames the client built and compressed; the runs compare
+2.2.0, that build with JSON transactions, and that build with the binary body. No step had an
+error or an abort. Commit and end to end are median / p99 in ms.
+
+| Transactions of 10 messages | 2.2.0 (`txn-220-10`) | JSON body (`txn-json-10`) | Binary body (`txn-bin-10`) |
+|---|---|---|---|
+| 6,000 txn/s: commit | 2.8 / 5.0 | 2.7 / 4.5 | 2.6 / 4.2 |
+| 12,000 txn/s: commit | 5.3 / 12.4 | 4.9 / 11.1 | 3.6 / 8.6 |
+| 12,000 txn/s: end to end | 78 / 195 | 72 / 176 | 62 / 143 |
+| txn/s when 18,000 are offered | 11,320 | 11,770 | 12,890 |
+
+| Transactions of 100 messages | 2.2.0 (`txn-220-100`) | JSON body (`txn-json-100`) | Binary body (`txn-bin-100`) |
+|---|---|---|---|
+| 3,000 txn/s: commit | 6.1 / 19.2 | 5.6 / 9.7 | 4.1 / 7.0 |
+| 3,000 txn/s: end to end | 25 / 60 | 21 / 30 | 19 / 26 |
+| 3,000 txn/s: broker cores | 5.8 / 3.8 / 3.6 | 5.1 / 3.5 / 3.2 | 4.8 / 3.3 / 3.1 |
+| txn/s when 6,000 are offered | 2,020 | 2,290 | 2,450 |
+
+The binary body takes about a third off the commit time at the highest rate all three carry, and
+moves the ceiling by 14% (10 messages) and 21% (100 messages) against 2.2.0.
+
+The ceilings belong to the design and are the same in the three. With 10 messages all stop
+between 11,000 and 13,000 transactions a second with the leader at about 6 of 16 cores: a worker
+manages about 65 a second, a loop of about 15 ms made of its pop, which is a lease committed
+through raft, and its commit, and a partition is held by one worker at a time. With 100 messages
+all stop near 2,000 to 2,450 on the planner's serial control phase, where every transaction that
+carries an ack is planned: it takes 5.5 ms of each 6.5 ms cycle and its thread is at 0.86 of a
+core. Past that limit the cluster does less than at it (3,000 a second are carried, 2,450 are
+reached when 6,000 are offered) and plain pushes wait behind the control phase for 0.6 to 0.7 s.
+
+`scripts/txncheck.sh` is the check of correctness: the same pipeline on one loader through every
+broker, then qload's verifier over the id ledgers. Both bodies: every message once, none missing
+(`txncheck-bin`, `txncheck-json`).
+
 ## What was read wrongly on the way
 
 - The first comparison was with the numbers of 2026-10-11 ("1.2M carried, now 1.6M"). Most of that
@@ -149,7 +189,8 @@ their time).
 
 `scripts/`: `mrun.sh` (one fresh cluster, then a step per rate; `QBIN`, `QEXTRA`, `EXTRA_ENV`,
 `TEN`, `PARTS`, `CONS`), `ld.sh`, `qc.sh`, `deploy.sh`, `bins.sh`, `mreport.py`, `step.py`,
-`threads.py`, `ceilprobe.sh` with `synctrace.bt` and `pthreads.py`, `fsync.py`, `pattern.py`.
+`threads.py`, `ceilprobe.sh` with `synctrace.bt` and `pthreads.py`, `fsync.py`, `pattern.py`,
+`txnrun.sh` with `txnstep.py`, `txncheck.sh`.
 They come from [`../2026-10-10-three-node-1m/scripts`](../2026-10-10-three-node-1m/scripts).
 
 `runs/<run>/<rate>/` holds the nine load processes' reports and the brokers' samples;

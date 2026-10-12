@@ -1,0 +1,7 @@
+[13:50:03] run txn-json-100: binary txn, transactions as json of 100 messages, 200 partitions, 22 workers a process, steps of 40s at: 300000 600000 900000 1200000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | FORMS=-push-wire bin -push-zstd -ack-counts -pop-frames | roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: b1-in, b1-out x 200 partitions
+[13:51:02]   300,000: offered 299,995 | workers 3,000 txn/s = 299,978 msg/s | read 299,965 | shed 0 errors 0 aborts 0 | commit p50 5.6 p99 9.7 | e2e p50 21 p99 30 | feed push p50 4.7 p99 8.2 | cores 5.1 / 3.5 / 3.2 | loaders 4.9c  OK 
+[create] done: b2-in, b2-out x 200 partitions
+[13:52:26]   600,000: offered 600,022 | workers 2,291 txn/s = 229,099 msg/s | read 229,049 | shed 0 errors 0 aborts 0 | commit p50 24.1 p99 102.4 | e2e p50 23331 p99 25952 | feed push p50 679.9 p99 843.8 | cores 5.2 / 2.7 / 2.5 | loaders 5.9c  NOT CARRIED 
+[13:52:26] stopping at 600000
+RUN_DONE
