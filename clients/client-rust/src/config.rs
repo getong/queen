@@ -162,6 +162,25 @@ pub struct Config {
     pub host_header: Option<HostHeader>,
 
     pub retry_429: Retry429,
+
+    /// Send a push as the binary push body ([`crate::push_binary`]) instead of
+    /// JSON. It needs a broker that accepts that body; off by default, so a
+    /// push is the JSON request every broker knows.
+    pub binary_push: bool,
+
+    /// With `binary_push`: frame the messages as the broker stores them and
+    /// zstd-compress each partition's batch once, here; the broker keeps those
+    /// bytes as they are. The client then mints the message ids. A transaction
+    /// that pushes sends its pushes the same way (the binary transaction
+    /// body), and the rest of the bundle as JSON in front of them.
+    pub push_compression: bool,
+
+    /// Ask the broker for a pop's messages as the stored records
+    /// (`frames=true`) and unpack them here ([`crate::pop_frames`]), instead of
+    /// a JSON answer the broker renders message by message. A broker that does
+    /// not know the parameter answers JSON, which is read as always; off by
+    /// default.
+    pub framed_pop: bool,
 }
 
 impl Default for Config {
@@ -182,6 +201,9 @@ impl Default for Config {
             headers: Vec::new(),
             host_header: None,
             retry_429: Retry429::default(),
+            binary_push: false,
+            push_compression: false,
+            framed_pop: false,
         }
     }
 }
@@ -242,6 +264,25 @@ impl Config {
         self
     }
 
+    /// Send pushes as the binary push body. See [`Config::binary_push`].
+    pub fn binary_push(mut self, enabled: bool) -> Self {
+        self.binary_push = enabled;
+        self
+    }
+
+    /// With `binary_push`, frame and compress each partition's batch here. See
+    /// [`Config::push_compression`].
+    pub fn push_compression(mut self, enabled: bool) -> Self {
+        self.push_compression = enabled;
+        self
+    }
+
+    /// Ask for pops as the stored records. See [`Config::framed_pop`].
+    pub fn framed_pop(mut self, enabled: bool) -> Self {
+        self.framed_pop = enabled;
+        self
+    }
+
     /// Set the Host to advertise. See [`HostHeader`].
     pub fn host_header(mut self, authority: impl AsRef<str>) -> Result<Self> {
         self.host_header = Some(HostHeader::parse(authority.as_ref())?);
@@ -298,6 +339,8 @@ mod tests {
         assert_eq!(c.retry_429.max_attempts, Some(10));
         assert_eq!(c.retry_429.base, Duration::from_millis(500));
         assert_eq!(c.retry_429.cap, Duration::from_secs(30));
+        // The wire forms a released broker does not know are all off.
+        assert!(!c.binary_push && !c.push_compression && !c.framed_pop);
     }
 
     #[test]

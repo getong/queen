@@ -8,7 +8,7 @@ use serde::Serialize;
 
 use queen_protocol::{
     ConfigureRequest, DlqParams, DlqResponse, Message, PopParams, PopResponse, PushItem,
-    PushRequest, PushResult, QueueOptions, SubscriptionMode, DEFAULT_PARTITION,
+    PushResult, QueueOptions, SubscriptionMode, DEFAULT_PARTITION,
 };
 
 use crate::buffer::{self, BufferOptions};
@@ -404,13 +404,10 @@ impl QueueBuilder {
             return Ok(Vec::new());
         }
 
-        let req = PushRequest::new(items);
-        let results: Option<Vec<PushResult>> = self
-            .inner
+        self.inner
             .http
-            .post_json("/api/v1/push", &req, &Opts::affinity(self.affinity_key()))
-            .await?;
-        Ok(results.unwrap_or_default())
+            .push(&items, &Opts::affinity(self.affinity_key()))
+            .await
     }
 
     /// Send anything this queue and partition have buffered.
@@ -631,7 +628,7 @@ impl QueueBuilder {
             opts = opts.timeout(self.poll_timeout);
         }
 
-        let resp: Option<PopResponse> = self.inner.http.get_json(&url, &opts).await?;
+        let resp: Option<PopResponse> = self.inner.http.pop(&url, &opts).await?;
         let Some(resp) = resp else {
             // A bodiless 204 — the shape a pre-1.1.0 broker gives an empty pop.
             // A conflating broker never sends it, so for a consumer that asked

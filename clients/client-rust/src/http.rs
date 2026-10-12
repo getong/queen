@@ -20,11 +20,14 @@ use rand::Rng;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use queen_protocol::ErrorBody;
+use queen_protocol::{
+    ErrorBody, PopResponse, PushItem, PushResult, TransactionRequest, TransactionResponse,
+};
 
 use crate::config::{Config, RetryKind};
 use crate::error::{Error, Result};
 use crate::lb::LoadBalancer;
+use crate::{pop_frames, push_binary};
 
 /// Per-request knobs.
 #[derive(Debug, Clone, Default)]
@@ -35,6 +38,8 @@ pub(crate) struct Opts {
     /// Pins this request to a backend on the affinity ring.
     pub affinity_key: Option<String>,
     pub retry_kind: RetryKindOpt,
+    /// The body's `Content-Type`, when it is not the client's JSON.
+    pub content_type: Option<&'static str>,
 }
 
 pub(crate) type RetryKindOpt = Option<RetryKind>;
@@ -325,6 +330,9 @@ impl HttpClient {
             .client_for(backend)
             .request(method, &url)
             .timeout(timeout);
+        if let Some(content_type) = opts.content_type {
+            req = req.header(reqwest::header::CONTENT_TYPE, content_type);
+        }
         if let Some(b) = body {
             req = req.body(b);
         }
@@ -407,6 +415,99 @@ impl HttpClient {
             .send(reqwest::Method::POST, path, Some(bytes), opts)
             .await?;
         decode(out)
+    }
+
+    /// `POST /api/v1/push`.
+    ///
+    /// With [`Config::binary_push`] the items go out as the binary push body
+    /// (with [`Config::push_compression`], framed and compressed here);
+    /// otherwise, and for an item that body does not carry, as the JSON
+    /// request. The answer is the same either way.
+    pub async fn push(&self, items: &[PushItem], opts: &Opts) -> Result<Vec<PushResult>> {
+        if self.config.binary_push {
+            if let Ok(body) = push_binary::body_of(items, self.config.push_compression) {
+                let opts = Opts {
+                    content_type: Some(push_binary::CONTENT_TYPE),
+                    ..opts.clone()
+                };
+                // Encoded once: every attempt sends the same bytes (with
+                // push_compression, the same message ids).
+                let out = self
+                    .send(reqwest::Method::POST, "/api/v1/push", Some(body), &opts)
+                    .await?;
+                return Ok(decode(out)?.unwrap_or_default());
+            }
+        }
+        /// Same wire shape as `queen_protocol::PushRequest`, borrowing the
+        /// items: a buffer drain keeps its chunk to put it back on a failure.
+        #[derive(Serialize)]
+        struct Body<'a> {
+            items: &'a [PushItem],
+        }
+        let results: Option<Vec<PushResult>> = self
+            .post_json("/api/v1/push", &Body { items }, opts)
+            .await?;
+        Ok(results.unwrap_or_default())
+    }
+
+    /// `POST /api/v1/transaction`.
+    ///
+    /// With [`Config::binary_push`] and [`Config::push_compression`] a bundle
+    /// that pushes goes out as the binary transaction body: its pushes framed
+    /// and compressed here, the rest of it as the JSON head in front of them.
+    /// A bundle without pushes, or with a push that carries a trace id, stays
+    /// JSON. The results come back in the order of the caller's operations
+    /// either way.
+    pub async fn transaction(
+        &self,
+        req: &TransactionRequest,
+        opts: &Opts,
+    ) -> Result<Option<TransactionResponse>> {
+        if self.config.binary_push && self.config.push_compression {
+            if let Some((body, order)) = push_binary::transaction_frames(req) {
+                let opts = Opts {
+                    content_type: Some(push_binary::CONTENT_TYPE),
+                    ..opts.clone()
+                };
+                let out = self
+                    .send(
+                        reqwest::Method::POST,
+                        "/api/v1/transaction",
+                        Some(body),
+                        &opts,
+                    )
+                    .await?;
+                let mut resp: Option<TransactionResponse> = decode(out)?;
+                // The broker answers the head's acks before the pushes.
+                if let (Some(resp), Some(order)) = (resp.as_mut(), order.as_deref()) {
+                    push_binary::restore_result_order(resp, order);
+                }
+                return Ok(resp);
+            }
+        }
+        self.post_json("/api/v1/transaction", req, opts).await
+    }
+
+    /// One pop: `url` is a pop route with its query string.
+    ///
+    /// With [`Config::framed_pop`] the request carries `frames=true` and a
+    /// framed answer is unpacked into the [`PopResponse`] the JSON answer
+    /// parses to. A JSON answer (a broker that does not know the parameter, a
+    /// conflated claim, an encrypted queue) is read as always.
+    pub async fn pop(&self, url: &str, opts: &Opts) -> Result<Option<PopResponse>> {
+        if !self.config.framed_pop {
+            return self.get_json(url, opts).await;
+        }
+        let url = format!(
+            "{url}{}frames=true",
+            if url.contains('?') { '&' } else { '?' }
+        );
+        match self.send(reqwest::Method::GET, &url, None, opts).await? {
+            Some(bytes) if pop_frames::is_pop_frames(&bytes) => {
+                pop_frames::decode_pop_frames(&bytes).map(Some)
+            }
+            other => decode(other),
+        }
     }
 
     pub async fn post_empty<T: DeserializeOwned>(

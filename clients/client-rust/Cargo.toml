@@ -39,6 +39,11 @@ rand = "0.8"
 # the other SDKs byte for byte. Same crate and version the broker uses.
 sha2 = "0.10"
 
+# zstd for the binary push body and the framed pop answer: the crate the
+# broker stores its records with, so a frame made here is one it keeps as it
+# is. Built from C by `cc`, which `ring` already asks of the host.
+zstd = { version = "0.13", default-features = false }
+
 # Same logging facade as the broker, so an application already wired to
 # `tracing` sees client events without extra setup.
 tracing = "0.1"

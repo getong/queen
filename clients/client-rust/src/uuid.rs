@@ -65,7 +65,7 @@ pub fn uuidv7() -> String {
     format_uuid(&uuidv7_bytes())
 }
 
-fn format_uuid(b: &[u8; 16]) -> String {
+pub(crate) fn format_uuid(b: &[u8; 16]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut s = String::with_capacity(36);
     for (i, byte) in b.iter().enumerate() {
