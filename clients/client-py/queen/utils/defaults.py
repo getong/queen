@@ -18,6 +18,12 @@ CLIENT_DEFAULTS: Dict[str, Any] = {
     "health_retry_after_millis": 5000,  # Retry unhealthy backends after 5 seconds
     "bearer_token": None,  # Bearer token for proxy authentication
     "headers": {},  # Custom headers to include in every request
+    # The three below need a broker that has the binary push body and the
+    # framed pop answer. Off, the client sends and reads the JSON every broker
+    # knows.
+    "binary_push": False,  # A push goes out as the binary push body, not JSON
+    "push_compression": False,  # With binary_push: batches framed and zstd-compressed here
+    "framed_pop": False,  # Pops ask for the stored records (frames=true) and unpack them here
 }
 
 QUEUE_DEFAULTS: Dict[str, Any] = {

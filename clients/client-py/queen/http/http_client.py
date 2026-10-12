@@ -8,7 +8,18 @@ from typing import Any, Dict, Optional, Tuple, Union
 import httpx
 
 from ..utils import logger
+from . import zstd
 from .load_balancer import LoadBalancer
+from .pop_frames import decode_pop_frames, is_pop_frames
+from .push_binary import (
+    PUSH_BINARY_CONTENT_TYPE,
+    binary_push_body,
+    restore_result_order,
+    transaction_frames,
+)
+
+# A request body: JSON to encode, or bytes sent as they are (the binary push body).
+_Body = Optional[Union[Dict[str, Any], bytes]]
 
 
 class HttpClient:
@@ -27,6 +38,9 @@ class HttpClient:
         headers: Optional[Dict[str, str]] = None,
         retry_429: Optional[Dict[str, Any]] = None,
         transport: Optional[httpx.BaseTransport] = None,
+        binary_push: bool = False,
+        push_compression: bool = False,
+        framed_pop: bool = False,
     ):
         """
         Initialize HTTP client
@@ -50,6 +64,20 @@ class HttpClient:
             transport: Optional httpx transport override (e.g.
                 httpx.MockTransport) for tests -- no broker/network required.
                 None uses httpx's normal transport.
+            binary_push: A push to /api/v1/push goes out as the binary push
+                body (push_binary.py) instead of JSON. It needs a broker that
+                accepts that body. Items with a trace id stay JSON.
+            push_compression: With binary_push: the messages are framed as the
+                broker stores them and each partition's batch is
+                zstd-compressed once, here; the broker keeps those bytes as
+                they are. The client then mints the message ids. A
+                transaction that pushes sends its pushes the same way (the
+                binary transaction body), and the rest of the bundle as JSON
+                in front of them.
+            framed_pop: Pops ask the broker for the messages as the stored
+                records (frames=true) and unpack them here (pop_frames.py). A
+                broker that does not know the parameter answers JSON, which is
+                read as always.
         """
         self._base_url = base_url
         self._load_balancer = load_balancer
@@ -59,6 +87,12 @@ class HttpClient:
         self._enable_failover = enable_failover
         self._bearer_token = bearer_token
         self._retry_429: Dict[str, Any] = dict(retry_429) if retry_429 else {}
+        self._binary_push = binary_push is True
+        self._push_compression = push_compression is True
+        self._framed_pop = framed_pop is True
+        if self._framed_pop or (self._binary_push and self._push_compression):
+            # Both need zstd: say so now, not at the first compressed record.
+            zstd.require()
 
         # Build headers with optional auth
         merged_headers: Dict[str, str] = {}
@@ -137,7 +171,7 @@ class HttpClient:
         self,
         url: str,
         method: str,
-        body: Optional[Dict[str, Any]],
+        body: _Body,
         request_timeout_millis: Optional[int],
         retry_kind: Optional[str],
     ) -> Any:
@@ -203,6 +237,8 @@ class HttpClient:
         (push, admin calls, non-waiting pop), which get the bounded default
         (10 attempts).
         """
+        if self._framed_pop and path.startswith("/api/v1/pop"):
+            path += ("&" if "?" in path else "?") + "frames=true"
         return await self._request_with_failover(
             "GET", path, None, request_timeout_millis, affinity_key, retry_kind
         )
@@ -217,8 +253,31 @@ class HttpClient:
         retry_kind: Optional[str] = None,
     ) -> Any:
         """POST request"""
+        wire: _Body = body
+        if self._binary_push and path == "/api/v1/push" and isinstance(body, dict):
+            items = body.get("items")
+            if isinstance(items, list):
+                # Encoded once, before any retry: every attempt sends the same
+                # bytes (with push_compression, the same message ids). None =
+                # an item the binary body does not carry, and the push stays
+                # JSON.
+                wire = binary_push_body(items, self._push_compression) or body
+        if self._binary_push and self._push_compression and path == "/api/v1/transaction":
+            # The pushes of a bundle as frames built and compressed here, the
+            # rest of it as the JSON head in front of them. None = no push, or
+            # one the binary body does not carry: the bundle stays JSON.
+            framed = transaction_frames(body)
+            if framed is not None:
+                answer = await self._request_with_failover(
+                    "POST", path, framed[0], request_timeout_millis, affinity_key, retry_kind
+                )
+                # The broker answers the head's operations before the pushes:
+                # the caller gets the results in the order of its own
+                # operations.
+                restore_result_order(answer, framed[1])
+                return answer
         return await self._request_with_failover(
-            "POST", path, body, request_timeout_millis, affinity_key, retry_kind
+            "POST", path, wire, request_timeout_millis, affinity_key, retry_kind
         )
 
     async def put(
@@ -252,7 +311,7 @@ class HttpClient:
         self,
         url: str,
         method: str,
-        body: Optional[Dict[str, Any]],
+        body: _Body,
         request_timeout_millis: Optional[int],
     ) -> Any:
         """Execute single HTTP request"""
@@ -273,7 +332,11 @@ class HttpClient:
                 "timeout": timeout,
             }
 
-            if body:
+            if isinstance(body, bytes):
+                # Already encoded (the binary push body): sent as it is.
+                kwargs["content"] = body
+                kwargs["headers"] = {"Content-Type": PUSH_BINARY_CONTENT_TYPE}
+            elif body:
                 kwargs["json"] = body
 
             response = await self._client.request(**kwargs)
@@ -320,6 +383,14 @@ class HttpClient:
                 raise error
 
             # Parse successful response
+            # A pop that asked for frames: its first bytes say which answer
+            # came back, whatever a proxy made of the Content-Type on the way.
+            # The framed one is unpacked into the dict the JSON answer parses
+            # to, so its readers do not tell the two apart; a JSON one (a
+            # broker that does not know the parameter) is read as always.
+            if self._framed_pop and is_pop_frames(response.content):
+                return decode_pop_frames(response.content)
+
             content_type = response.headers.get("content-type", "")
             content_length = response.headers.get("content-length", "")
 
@@ -352,7 +423,7 @@ class HttpClient:
         self,
         method: str,
         path: str,
-        body: Optional[Dict[str, Any]],
+        body: _Body,
         request_timeout_millis: Optional[int],
         retry_kind: Optional[str] = None,
     ) -> Any:
@@ -399,7 +470,7 @@ class HttpClient:
         self,
         method: str,
         path: str,
-        body: Optional[Dict[str, Any]],
+        body: _Body,
         request_timeout_millis: Optional[int],
         affinity_key: Optional[str],
         retry_kind: Optional[str] = None,

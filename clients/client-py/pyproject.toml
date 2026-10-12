@@ -36,9 +36,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# zstd for push_compression and framed_pop. Python 3.14 has it in the standard
+# library (compression.zstd).
+zstd = [
+    "zstandard>=0.21.0; python_version<'3.14'",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "zstandard>=0.21.0; python_version<'3.14'",
     "black>=23.0.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
