@@ -13,7 +13,7 @@
       </div>
       <div v-if="queues.length" class="queue-table">
         <table class="t">
-          <thead><tr><th>Queue</th><th class="right">Workers</th></tr></thead>
+          <thead><tr><th>Queue</th><th class="right">Workers reporting</th></tr></thead>
           <tbody>
             <tr :class="{ selected: queue === null }">
               <td colspan="2"><button class="row-open" :aria-pressed="queue === null" aria-label="Show activity for all reported queues" @click="queue = null">All queues</button></td>

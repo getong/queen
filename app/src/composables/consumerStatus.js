@@ -43,6 +43,9 @@ export function consumerObservation(entry, base, now, unconfirmed) {
     missingWorkers: valid ? pools.reduce((n, p) => n + p.desired - p.running, 0) : null,
   }
   if (unconfirmed) return { ...row, label: 'Current state unconfirmed', next: 'The latest read failed. These values come from the last successful reading.' }
+  if (row.state === 'stopped' && valid && model && row.pid && row.engine && row.age !== null && row.age >= -5 && row.timeout !== null) return { ...row,
+    terminal: true, fresh: !entry.expired && row.age <= row.timeout, label: 'Stopped', severity: '', priority: 1,
+    next: 'This instance reported a completed shutdown. No further heartbeats are expected.' }
   if (entry.expired) return { ...row, label: 'Publication expired', next: 'The publication expired. Check the application and its publisher.' }
   if (row.age === null || row.age < -5 || row.timeout === null) return { ...row, label: 'Heartbeat unconfirmed', next: 'Check the heartbeat timestamp and host clocks.' }
   if (row.age > row.timeout) return { ...row, label: 'Heartbeat overdue', next: 'Check the application and publisher. Current consumer health is unknown.' }
