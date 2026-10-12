@@ -2066,7 +2066,11 @@ impl RaftFacade {
     /// atomic across queue logs by Phase C's present-in-all replay. The wire
     /// contract is the SQL wire transaction's: HTTP 200, `success` + a flat
     /// `results` array on commit; `success:false` + `reason` on a rollback.
-    async fn txn_impl(&self, ctx: ReqCtx, req: super::TxnReq) -> Result<super::TxnOut, RsmError> {
+    async fn txn_impl(
+        &self,
+        mut ctx: ReqCtx,
+        req: super::TxnReq,
+    ) -> Result<super::TxnOut, RsmError> {
         let txn_id = uuid_bytes_to_string(&uuidv7_bytes());
         // A rollback VERDICT answers 200 + `success:false`; a body the wire
         // refuses (wrong shape, server-owned field) answers a named 4xx.
@@ -2083,11 +2087,65 @@ impl RaftFacade {
         };
         let fail = |reason: &str, err: &str| answer(200, reason, err);
         let refuse = |reason: &str, err: &str| answer(400, reason, err);
-        let body: TxnBodyIn = match serde_json::from_slice(&req.raw) {
+        // The binary body ([`TXN_BINARY_MAGIC`]): the JSON body without its
+        // pushes (the head), then the pushes as the client's own frames,
+        // compressed by the client group by group, as a framed push carries
+        // them ([`frame_groups`]):
+        //
+        //   "QTB1" | u8 flags | u32 len, head | u32 groups | the groups
+        //
+        // The head's operations keep the first flat ordinals and the groups'
+        // messages take the next ones, in the order they are written; the
+        // riders follow, as in the JSON body.
+        let binary = req.raw.starts_with(TXN_BINARY_MAGIC);
+        let (head, short, bin_groups, bin_blobs) = if binary {
+            let b = &req.raw[TXN_BINARY_MAGIC.len()..];
+            let mut at = 0usize;
+            let parsed = (|| -> Result<_, String> {
+                let flags = wire_take(b, &mut at, 1)?[0];
+                if flags & !TXN_BINARY_SHORT != 0 {
+                    return Err("unknown flags".into());
+                }
+                let n = wire_u32(b, &mut at)?;
+                let head = wire_take(b, &mut at, n)?;
+                let (groups, blobs, _) = frame_groups(b, &mut at)?;
+                if at != b.len() {
+                    return Err("bytes after the last group".into());
+                }
+                Ok((head, flags & TXN_BINARY_SHORT != 0, groups, blobs))
+            })();
+            match parsed {
+                Ok((head, short, groups, blobs)) => {
+                    let head: &[u8] = if head.is_empty() { b"{}" } else { head };
+                    (head, short, groups, blobs)
+                }
+                Err(m) => {
+                    return Ok(refuse(
+                        "bad_request",
+                        &format!("bad transaction body: {m}"),
+                    ))
+                }
+            }
+        } else {
+            (&req.raw[..], false, Vec::new(), Vec::new())
+        };
+        let mut bin_frames: Vec<Vec<ClientFrame<'_>>> = Vec::with_capacity(bin_groups.len());
+        for (g, blob) in bin_groups.iter().zip(&bin_blobs) {
+            match client_frames(blob, g.count) {
+                Ok(frames) => bin_frames.push(frames),
+                Err(m) => {
+                    return Ok(refuse(
+                        "bad_request",
+                        &format!("bad transaction body: {m}"),
+                    ))
+                }
+            }
+        }
+        let body: TxnBodyIn = match serde_json::from_slice(head) {
             Ok(b) => b,
             Err(e) => {
                 // A rider that is not an array is the common wrong shape: name it.
-                let rider = serde_json::from_slice::<serde_json::Value>(&req.raw)
+                let rider = serde_json::from_slice::<serde_json::Value>(head)
                     .ok()
                     .and_then(|v| {
                         ["operations", "kv", "timers", "positions", "requiredLeases"]
@@ -2166,7 +2224,12 @@ impl RaftFacade {
             Err(e) => return Ok(fail(e.reason, &e.detail)),
         };
         let ops = body.operations.unwrap_or_default();
-        if ops.is_empty() && kv_ops.is_empty() && timer_ops.is_empty() && position_ops.is_empty() {
+        if ops.is_empty()
+            && bin_frames.iter().all(|f| f.is_empty())
+            && kv_ops.is_empty()
+            && timer_ops.is_empty()
+            && position_ops.is_empty()
+        {
             return Ok(fail(
                 "bad_request",
                 "transaction requires an operations array (or a top-level kv/timers/positions \
@@ -2184,6 +2247,9 @@ impl RaftFacade {
         }
         for op in &timer_ops {
             queue_names.insert(op.queue().to_string());
+        }
+        for g in &bin_groups {
+            queue_names.insert(g.queue.to_string());
         }
         let encrypted_queues = self.encrypted_queues(&ctx.tenant, queue_names).await?;
         if let Err(error) = self.encrypt_timer_ops(&mut timer_ops, &encrypted_queues) {
@@ -2206,7 +2272,7 @@ impl RaftFacade {
             queue: String,
             follower_of: Option<usize>, // index into `pushes`
             hash: [u8; 16],
-            frame: Vec<u8>,
+            frame: bytes::Bytes,
         }
         let mut pushes: Vec<TxnPush> = Vec::new();
         let mut seen: std::collections::HashMap<(String, String, String), usize> =
@@ -2218,11 +2284,15 @@ impl RaftFacade {
         let mut ack_txn: Vec<(usize, String, AckStatus)> = Vec::new();
         let mut flat = 0usize;
 
+        // `prebuilt`: the message's id and frame as the client built them (the
+        // binary body); the frame is used as it is when nothing has to be added
+        // to it, and built here around the client's id otherwise.
         let mut add_push = |queue: &str,
                             partition: Option<&str>,
-                            payload: &RawValue,
+                            payload: &[u8],
                             txn_in: Option<&str>,
                             trace_id: Option<&str>,
+                            prebuilt: Option<([u8; 16], bytes::Bytes)>,
                             flat: usize,
                             pushes: &mut Vec<TxnPush>|
          -> Result<(), RsmError> {
@@ -2232,7 +2302,7 @@ impl RaftFacade {
                     message: format!("transactionId exceeds the {MAX_TXN_BYTES}-byte limit"),
                 });
             }
-            let mid = uuidv7_bytes();
+            let mid = prebuilt.as_ref().map_or_else(uuidv7_bytes, |(id, _)| *id);
             let mid_str = uuid_bytes_to_string(&mid);
             let txn = txn_in
                 .map(str::to_string)
@@ -2248,23 +2318,26 @@ impl RaftFacade {
             let frame = if follower_of.is_none() {
                 seen.insert(key, idx);
                 groups.push(queue, &partition, idx);
-                let (payload, encrypted) = self.encode_payload(
-                    encrypted_queues.contains(queue),
-                    payload.get().as_bytes(),
-                    queue,
-                );
-                pack_frames(&[FrameIn {
-                    message_id: mid,
-                    txn: &txn,
-                    // Invalid trace ids are deliberately ignored, matching the
-                    // permissive transaction wire contract.
-                    trace_id: trace_id.and_then(uuid_string_to_bytes),
-                    producer_sub: ctx.producer_sub.as_deref(),
-                    payload: &payload,
-                    encrypted,
-                }])
+                let encrypt = encrypted_queues.contains(queue);
+                match prebuilt {
+                    Some((_, frame)) if !encrypt && ctx.producer_sub.is_none() => frame,
+                    _ => {
+                        let (payload, encrypted) = self.encode_payload(encrypt, payload, queue);
+                        pack_frames(&[FrameIn {
+                            message_id: mid,
+                            txn: &txn,
+                            // Invalid trace ids are deliberately ignored, matching the
+                            // permissive transaction wire contract.
+                            trace_id: trace_id.and_then(uuid_string_to_bytes),
+                            producer_sub: ctx.producer_sub.as_deref(),
+                            payload: &payload,
+                            encrypted,
+                        }])
+                        .into()
+                    }
+                }
             } else {
-                Vec::new()
+                bytes::Bytes::new()
             };
             pushes.push(TxnPush {
                 flat,
@@ -2286,9 +2359,10 @@ impl RaftFacade {
                             add_push(
                                 it.queue.as_ref(),
                                 it.partition.as_deref(),
-                                it.payload,
+                                it.payload.get().as_bytes(),
                                 it.transaction_id.as_deref(),
                                 it.trace_id.as_deref(),
+                                None,
                                 flat,
                                 &mut pushes,
                             )?;
@@ -2304,9 +2378,10 @@ impl RaftFacade {
                         add_push(
                             q,
                             op.partition.as_deref(),
-                            pl,
+                            pl.get().as_bytes(),
                             op.transaction_id.as_deref(),
                             op.trace_id.as_deref(),
+                            None,
                             flat,
                             &mut pushes,
                         )?;
@@ -2367,6 +2442,27 @@ impl RaftFacade {
             }
         }
 
+        // The binary body's messages take the flat ordinals after the head's
+        // operations. `bin_spans`: where each group's messages lie in `pushes`.
+        let mut bin_spans: Vec<(usize, usize)> = Vec::with_capacity(bin_groups.len());
+        for ((g, blob), frames) in bin_groups.iter().zip(&bin_blobs).zip(&bin_frames) {
+            let start = pushes.len();
+            for f in frames {
+                add_push(
+                    g.queue,
+                    Some(g.partition),
+                    f.payload,
+                    Some(f.txn),
+                    None,
+                    Some((f.id, blob.slice(f.at.clone()))),
+                    flat,
+                    &mut pushes,
+                )?;
+                flat += 1;
+            }
+            bin_spans.push((start, pushes.len()));
+        }
+
         // The riders take the flat ordinals after the operations (the SQL wire's
         // layout: operations keep their indices, the riders append).
         let kv_base = flat;
@@ -2402,12 +2498,54 @@ impl RaftFacade {
                     .iter()
                     .map(|&i| PushItem {
                         hash: pushes[i].hash,
-                        frame: pushes[i].frame.clone().into(),
+                        frame: pushes[i].frame.clone(),
                     })
                     .collect(),
                 create_cfg: default_queue_config(&g.queue),
             });
             push_members.push(g.members.clone());
+        }
+        // The client's compressed bytes as a partition's stored form, as a
+        // framed push does it: when the group is the whole of what this bundle
+        // appends to its partition, in order, and its frames go into the log
+        // exactly as they came (no producer identity, no encryption, no
+        // transaction id twice). Anything else is compressed here as before.
+        if binary
+            && ctx.producer_sub.is_none()
+            && !self.encryption.is_enabled()
+            && crate::rsm::qlog::codec::level() > 0
+        {
+            use crate::rsm::qlog::codec;
+            let whole = |&(start, end): &(usize, usize)| {
+                end > start
+                    && push_members
+                        .iter()
+                        .any(|m| m.len() == end - start && m.iter().copied().eq(start..end))
+            };
+            let as_sent = bin_groups
+                .iter()
+                .zip(&bin_blobs)
+                .zip(&bin_spans)
+                .filter(|(_, span)| whole(span))
+                .map(|(pair, _)| pair);
+            if self.early_codec() {
+                for (g, raw) in as_sent {
+                    codec::preseed(raw, g.z.to_vec());
+                }
+            } else if self.offload && *FORWARD_STORED_FORMS {
+                // Another node leads: the stored forms travel beside the
+                // forwarded command, and the leader files them the same way.
+                let forms: Vec<super::StoredForm> = as_sent
+                    .map(|(g, raw)| super::StoredForm {
+                        key: codec::early_key(raw),
+                        raw_len: raw.len() as u32,
+                        z: bytes::Bytes::copy_from_slice(g.z),
+                    })
+                    .collect();
+                if !forms.is_empty() {
+                    ctx.stored_forms = Some(Arc::new(forms));
+                }
+            }
         }
         let mut targets: Vec<AckTarget> = Vec::new();
         for (group, mut flats) in acks_by_group {
@@ -2522,13 +2660,21 @@ impl RaftFacade {
                 results[kv_base + i] = serde_json::Value::Object(obj);
             }
         }
+        // With `short` (the binary body's flag) the pushes' and the acks'
+        // results are counted, not rendered: the client built the messages and
+        // their ids itself, and a committed bundle settled every ack.
         let mut verdict_mid: Vec<Option<String>> = vec![None; pushes.len()];
+        let mut stored = 0usize;
         for (g, members) in push_members.iter().enumerate() {
             for (k, &i) in members.iter().enumerate() {
                 let created = matches!(
                     out.pushes.get(g).and_then(|o| o.items.get(k)),
                     Some(PushVerdict::Created { .. })
                 );
+                stored += created as usize;
+                if short {
+                    continue;
+                }
                 verdict_mid[i] = Some(pushes[i].message_id.clone());
                 results[pushes[i].flat] = serde_json::json!({
                     "index": pushes[i].flat,
@@ -2540,7 +2686,7 @@ impl RaftFacade {
                 });
             }
         }
-        for p in &pushes {
+        for p in pushes.iter().filter(|_| !short) {
             if let Some(leader) = p.follower_of {
                 results[p.flat] = serde_json::json!({
                     "index": p.flat,
@@ -2579,7 +2725,8 @@ impl RaftFacade {
             .iter()
             .filter(|(_, _, st)| matches!(st, AckStatus::Dlq))
             .count() as u64;
-        for (i, txn, status) in ack_txn {
+        let acked = ack_txn.len();
+        for (i, txn, status) in ack_txn.into_iter().filter(|_| !short) {
             results[i] = serde_json::json!({
                 "index": i,
                 "type": "ack",
@@ -2635,14 +2782,26 @@ impl RaftFacade {
                     .fetch_add(txn_dlq, std::sync::atomic::Ordering::Relaxed);
             }
         }
-        Ok(super::TxnOut {
-            status: 200,
-            body: serde_json::json!({
+        let body = if short {
+            results.retain(|r| !r.is_null());
+            serde_json::json!({
+                "transactionId": txn_id,
+                "success": true,
+                "results": results,
+                "pushed": stored,
+                "duplicate": pushes.len() - stored,
+                "acked": acked,
+            })
+        } else {
+            serde_json::json!({
                 "transactionId": txn_id,
                 "success": true,
                 "results": results,
             })
-            .to_string(),
+        };
+        Ok(super::TxnOut {
+            status: 200,
+            body: body.to_string(),
         })
     }
 }
@@ -2679,6 +2838,133 @@ static FORWARD_STORED_FORMS: std::sync::LazyLock<bool> = std::sync::LazyLock::ne
 });
 /// Largest uncompressed binary push body accepted.
 const PUSH_BINARY_MAX_RAW: usize = 256 * 1024 * 1024;
+/// First bytes of a binary transaction body ([`RaftFacade::txn_impl`]).
+pub(crate) const TXN_BINARY_MAGIC: &[u8] = b"QTB1";
+/// Binary transaction flag: the answer leaves out the pushes' and the acks'
+/// results and counts them; the riders' results stay, with their flat indices.
+pub(crate) const TXN_BINARY_SHORT: u8 = 2;
+
+/// One group of a body made of client-built frames ([`frame_groups`]).
+struct FrameGroup<'a> {
+    queue: &'a str,
+    partition: &'a str,
+    count: usize,
+    /// The group's frames as the client compressed them: one zstd frame.
+    z: &'a [u8],
+}
+
+/// One frame of a decompressed group ([`client_frames`]).
+struct ClientFrame<'a> {
+    id: [u8; 16],
+    txn: &'a str,
+    payload: &'a [u8],
+    /// Where the whole frame lies in its group's bytes.
+    at: std::ops::Range<usize>,
+}
+
+fn wire_take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8], String> {
+    let end = p.checked_add(n).ok_or_else(|| "truncated".to_string())?;
+    let s = b.get(*p..end).ok_or_else(|| "truncated".to_string())?;
+    *p = end;
+    Ok(s)
+}
+
+fn wire_u16(b: &[u8], p: &mut usize) -> Result<usize, String> {
+    Ok(u16::from_le_bytes(wire_take(b, p, 2)?.try_into().expect("2 bytes")) as usize)
+}
+
+fn wire_u32(b: &[u8], p: &mut usize) -> Result<usize, String> {
+    Ok(u32::from_le_bytes(wire_take(b, p, 4)?.try_into().expect("4 bytes")) as usize)
+}
+
+/// The groups of client-built frames that a binary push
+/// ([`PUSH_BINARY_FRAMES`]) and a binary transaction ([`TXN_BINARY_MAGIC`])
+/// carry, read from `body` at `*p`:
+///
+/// ```text
+/// u32 groups | per group: u16 len, queue | u16 len, partition | u32 n | u32 z_len | z
+/// ```
+///
+/// `z` is ONE zstd frame of the group's `n` frames. Each group is decompressed
+/// by the codec's own decoder, the one every later read of it uses. Returns
+/// the groups, their decompressed bytes, and what those weigh.
+#[allow(clippy::type_complexity)]
+fn frame_groups<'a>(
+    body: &'a [u8],
+    p: &mut usize,
+) -> Result<(Vec<FrameGroup<'a>>, Vec<bytes::Bytes>, usize), String> {
+    use crate::rsm::qlog::codec;
+    let n_groups = wire_u32(body, p)?;
+    let mut groups: Vec<FrameGroup<'a>> = Vec::with_capacity(n_groups.min(1024));
+    let mut blobs: Vec<bytes::Bytes> = Vec::with_capacity(n_groups.min(1024));
+    let mut weight = 2usize;
+    for _ in 0..n_groups {
+        let n = wire_u16(body, p)?;
+        let queue = std::str::from_utf8(wire_take(body, p, n)?).map_err(|_| "queue".to_string())?;
+        let n = wire_u16(body, p)?;
+        let partition =
+            std::str::from_utf8(wire_take(body, p, n)?).map_err(|_| "partition".to_string())?;
+        let count = wire_u32(body, p)?;
+        let n = wire_u32(body, p)?;
+        let z = wire_take(body, p, n)?;
+        if zstd::zstd_safe::find_frame_compressed_size(z).ok() != Some(z.len()) {
+            return Err("a group is not exactly one zstd frame".into());
+        }
+        let raw = codec::decompress(z).map_err(|e| format!("zstd: {e}"))?;
+        weight = weight.saturating_add(raw.len());
+        if weight > PUSH_BINARY_MAX_RAW {
+            return Err("the uncompressed body is too large".into());
+        }
+        groups.push(FrameGroup {
+            queue,
+            partition,
+            count,
+            z,
+        });
+        blobs.push(bytes::Bytes::from(raw));
+    }
+    Ok((groups, blobs, weight))
+}
+
+/// The `count` frames of one decompressed group, each checked: the storage
+/// layout with no flags, a version-7 message id, a transaction id, and one
+/// JSON document as payload; and nothing after the last frame.
+fn client_frames(raw: &[u8], count: usize) -> Result<Vec<ClientFrame<'_>>, String> {
+    let mut frames = Vec::with_capacity(count.min(4096));
+    let mut p = 0usize;
+    for _ in 0..count {
+        let start = p;
+        let n = wire_u32(raw, &mut p)?;
+        let b = wire_take(raw, &mut p, n)?;
+        if b.len() < 19 || b[0] != 0 {
+            return Err("a frame is malformed or carries flags".into());
+        }
+        let id: [u8; 16] = b[1..17].try_into().expect("16 bytes");
+        if id[6] >> 4 != 7 || id[8] & 0xc0 != 0x80 {
+            return Err("a message id is not a version-7 UUID".into());
+        }
+        let tl = u16::from_le_bytes([b[17], b[18]]) as usize;
+        let txn = b.get(19..19 + tl).ok_or_else(|| "truncated".to_string())?;
+        let txn = std::str::from_utf8(txn).map_err(|_| "transactionId".to_string())?;
+        if txn.is_empty() || txn.len() > MAX_TXN_BYTES {
+            return Err("a transactionId is empty or exceeds the limit".into());
+        }
+        let payload = &b[19 + tl..];
+        if !is_json(payload) {
+            return Err("a payload is not one JSON document".into());
+        }
+        frames.push(ClientFrame {
+            id,
+            txn,
+            payload,
+            at: start..p,
+        });
+    }
+    if p != raw.len() {
+        return Err("a group holds more bytes than its frames".into());
+    }
+    Ok(frames)
+}
 
 // `pub(crate)` for the W7 fuzz entry point (`crate::fuzzing::push_body`).
 #[derive(Deserialize)]
@@ -3079,51 +3365,9 @@ impl RaftFacade {
                 message: format!("bad push body: {m}"),
             }
         }
-        fn take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8], RsmError> {
-            let end = p.checked_add(n).ok_or_else(|| bad("truncated"))?;
-            let s = b.get(*p..end).ok_or_else(|| bad("truncated"))?;
-            *p = end;
-            Ok(s)
-        }
-        fn u16le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
-            Ok(u16::from_le_bytes(take(b, p, 2)?.try_into().expect("2 bytes")) as usize)
-        }
-        fn u32le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
-            Ok(u32::from_le_bytes(take(b, p, 4)?.try_into().expect("4 bytes")) as usize)
-        }
-        // 1. The groups: names, counts, and each one's frames decompressed by
-        //    the codec's own decoder, the one every later read of them uses.
-        struct Group<'a> {
-            queue: &'a str,
-            partition: &'a str,
-            count: usize,
-            z: &'a [u8],
-        }
+        // 1. The groups: names, counts, and each one's frames decompressed.
         let mut p = 0usize;
-        let n_groups = u32le(body, &mut p)?;
-        let mut groups: Vec<Group<'_>> = Vec::with_capacity(n_groups.min(1024));
-        let mut blobs: Vec<bytes::Bytes> = Vec::with_capacity(n_groups.min(1024));
-        let mut weight = 2usize;
-        for _ in 0..n_groups {
-            let n = u16le(body, &mut p)?;
-            let queue = std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("queue"))?;
-            let n = u16le(body, &mut p)?;
-            let partition =
-                std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("partition"))?;
-            let count = u32le(body, &mut p)?;
-            let n = u32le(body, &mut p)?;
-            let z = take(body, &mut p, n)?;
-            if zstd::zstd_safe::find_frame_compressed_size(z).ok() != Some(z.len()) {
-                return Err(bad("a group is not exactly one zstd frame"));
-            }
-            let raw = codec::decompress(z).map_err(|e| bad(&format!("zstd: {e}")))?;
-            weight = weight.saturating_add(raw.len());
-            if weight > PUSH_BINARY_MAX_RAW {
-                return Err(bad("the uncompressed body is too large"));
-            }
-            groups.push(Group { queue, partition, count, z });
-            blobs.push(bytes::Bytes::from(raw));
-        }
+        let (groups, blobs, weight) = frame_groups(body, &mut p).map_err(|m| bad(&m))?;
         let _admitted = self.admit_push(weight).await?;
         let t_prep = crate::rsm::timing::stamp();
         // 2. Every frame, checked.
@@ -3131,45 +3375,20 @@ impl RaftFacade {
         let mut txns: std::collections::HashSet<&str> = std::collections::HashSet::new();
         let mut unique = true;
         for (g, blob) in groups.iter().zip(&blobs) {
-            let raw: &[u8] = blob;
-            let mut p = 0usize;
-            for _ in 0..g.count {
-                let start = p;
-                let n = u32le(raw, &mut p)?;
-                let b = take(raw, &mut p, n)?;
-                if b.len() < 19 || b[0] != 0 {
-                    return Err(bad("a frame is malformed or carries flags"));
-                }
-                let id: [u8; 16] = b[1..17].try_into().expect("16 bytes");
-                if id[6] >> 4 != 7 || id[8] & 0xc0 != 0x80 {
-                    return Err(bad("a message id is not a version-7 UUID"));
-                }
-                let tl = u16::from_le_bytes([b[17], b[18]]) as usize;
-                let txn = b.get(19..19 + tl).ok_or_else(|| bad("truncated"))?;
-                let txn = std::str::from_utf8(txn).map_err(|_| bad("transactionId"))?;
-                if txn.is_empty() || txn.len() > MAX_TXN_BYTES {
-                    return Err(bad("a transactionId is empty or exceeds the limit"));
-                }
-                let payload = &b[19 + tl..];
-                if !is_json(payload) {
-                    return Err(bad("a payload is not one JSON document"));
-                }
-                unique &= txns.insert(txn);
+            for f in client_frames(blob, g.count).map_err(|m| bad(&m))? {
+                unique &= txns.insert(f.txn);
                 inputs.push(PushInput {
                     queue: g.queue,
                     partition: Some(g.partition),
-                    payload,
+                    payload: f.payload,
                     txn: None,
                     prebuilt: Some(Prebuilt {
-                        id,
-                        txn,
-                        frame: blob.slice(start..p),
+                        id: f.id,
+                        txn: f.txn,
+                        frame: blob.slice(f.at),
                         unique: true,
                     }),
                 });
-            }
-            if p != raw.len() {
-                return Err(bad("a group holds more bytes than its frames"));
             }
         }
         if inputs.is_empty() {
