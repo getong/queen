@@ -36,7 +36,23 @@ export const CLIENT_DEFAULTS = {
   // retries unboundedly (paced by backoff) unless maxAttempts is set here, in
   // which case it applies to both. baseMs (500) / capMs (30000) size the
   // exponential backoff used when the server doesn't send Retry-After.
-  retry429: undefined
+  retry429: undefined,
+  // The three below need a broker that has the binary push body and the framed
+  // pop answer. Off, the client sends and reads the JSON every broker knows.
+  //
+  // binaryPush: a push goes out as the binary push body (http/pushBinary.js)
+  // instead of JSON. Items with a trace id stay JSON.
+  binaryPush: false,
+  // pushCompression (with binaryPush): the client frames the messages as the
+  // broker stores them, mints their ids and zstd-compresses each partition's
+  // batch once; the broker keeps those bytes as they are. A transaction that
+  // pushes sends its pushes the same way, and the rest of the bundle as JSON
+  // in front of them.
+  pushCompression: false,
+  // framedPop: pops ask for the messages as the stored records (frames=true)
+  // and unpack them here (http/popFrames.js). A broker that does not know the
+  // parameter answers JSON, which is read as always.
+  framedPop: false
 }
 
 export const QUEUE_DEFAULTS = {

@@ -3,6 +3,8 @@
  */
 
 import * as logger from '../utils/logger.js'
+import { binaryPushBody, transactionFrames, restoreResultOrder, PUSH_BINARY_CONTENT_TYPE } from './pushBinary.js'
+import { decodePopFrames, isPopFrames } from './popFrames.js'
 
 /**
  * The error a request ends with when its caller aborted it (a consumer being
@@ -142,6 +144,12 @@ export class HttpClient {
   // carries the same virtual Host.
   #hostOverride = null
   #pinnedDispatchers = new Map()
+  // The binary push body and the framed pop answer (pushBinary.js,
+  // popFrames.js). All three off by default: the client then sends and reads
+  // the JSON every broker knows.
+  #binaryPush
+  #pushCompression
+  #framedPop
 
   constructor(options = {}) {
     const {
@@ -169,7 +177,21 @@ export class HttpClient {
       // unbounded (retry forever, paced by backoff) unless maxAttempts is
       // explicitly set here, in which case it applies to both.
       // See PLAN_QUEEN_PROXY_CLOUD.md §4/§9 (client 429 backoff, blocker B4).
-      retry429 = {}
+      retry429 = {},
+      // A push to /api/v1/push goes out as the binary push body instead of
+      // JSON. It needs a broker that accepts that body. Items with a trace id
+      // stay JSON.
+      binaryPush = false,
+      // With binaryPush: the messages are framed as the broker stores them and
+      // each partition's batch is zstd-compressed once, here; the broker keeps
+      // those bytes as they are. The client then mints the message ids. A
+      // transaction that pushes sends its pushes the same way (the binary
+      // transaction body), and the rest of the bundle as JSON in front of them.
+      pushCompression = false,
+      // Pops ask the broker for the messages as the stored records
+      // (frames=true) and unpack them here. A broker that does not know the
+      // parameter answers JSON, which is read as always.
+      framedPop = false
     } = options
 
     this.#baseUrl = baseUrl
@@ -180,6 +202,9 @@ export class HttpClient {
     this.#enableFailover = enableFailover
     this.#bearerToken = bearerToken
     this.#retry429 = retry429 || {}
+    this.#binaryPush = binaryPush === true
+    this.#pushCompression = pushCompression === true
+    this.#framedPop = framedPop === true
 
     // A Host in `headers` can never go out over fetch(); rather than let it be
     // dropped, map it onto the supported mechanism and say so out loud.
@@ -408,11 +433,15 @@ export class HttpClient {
         }
       }
 
-      if (body) {
+      if (body instanceof Uint8Array) {
+        // Already encoded (the binary push body): sent as it is.
+        headers['Content-Type'] = PUSH_BINARY_CONTENT_TYPE
+        options.body = body
+      } else if (body) {
         options.body = JSON.stringify(body)
       }
 
-      const response = await fetch(requestUrl, options)
+      let response = await fetch(requestUrl, options)
 
       // The broker granted the leases of a pop when it sent these headers. From
       // here the caller's abort no longer cuts the read: the body says which
@@ -458,6 +487,19 @@ export class HttpClient {
 
         logger.error('HttpClient.request', { method, url, status: error.status, error: error.message, code: error.code })
         throw error
+      }
+
+      // A pop that asked for frames: its first bytes say which answer came
+      // back, whatever a proxy made of the Content-Type on the way. The framed
+      // one is unpacked into the object the JSON answer parses to, so its
+      // readers do not tell the two apart; a JSON one (a broker that does not
+      // know the parameter) goes on to be read as always.
+      if (this.#framedPop && isPop(method, url)) {
+        const bytes = new Uint8Array(await response.arrayBuffer())
+        if (isPopFrames(bytes)) {
+          return await decodePopFrames(bytes)
+        }
+        response = new Response(bytes, { status: response.status, headers: response.headers })
       }
 
       // Parse successful response
@@ -608,10 +650,32 @@ export class HttpClient {
   // `signal`: aborting it closes the request, which then rejects with an
   // error carrying `aborted: true` -- never retried and never failed over.
   async get(path, requestTimeoutMillis = null, affinityKey = null, retryKind = null, signal = null) {
+    if (this.#framedPop && path.startsWith('/api/v1/pop')) {
+      path += `${path.includes('?') ? '&' : '?'}frames=true`
+    }
     return this.#requestWithFailover('GET', path, null, requestTimeoutMillis, affinityKey, retryKind, signal)
   }
 
   async post(path, body = null, requestTimeoutMillis = null, affinityKey = null, retryKind = null, signal = null) {
+    if (this.#binaryPush && path === '/api/v1/push' && body && Array.isArray(body.items)) {
+      // Encoded once, before any retry: every attempt sends the same bytes
+      // (with pushCompression, the same message ids). null = an item the
+      // binary body does not carry, and the push stays JSON.
+      body = (await binaryPushBody(body.items, this.#pushCompression)) ?? body
+    }
+    if (this.#binaryPush && this.#pushCompression && path === '/api/v1/transaction') {
+      // The pushes of a bundle as frames built and compressed here, the rest
+      // of it as the JSON head in front of them. null = no push, or one the
+      // binary body does not carry: the bundle stays JSON.
+      const framed = await transactionFrames(body)
+      if (framed) {
+        const answer = await this.#requestWithFailover('POST', path, framed.body, requestTimeoutMillis, affinityKey, retryKind, signal)
+        // The broker answers the head's operations before the pushes: the
+        // caller gets the results in the order of its own operations.
+        restoreResultOrder(answer, framed.order)
+        return answer
+      }
+    }
     return this.#requestWithFailover('POST', path, body, requestTimeoutMillis, affinityKey, retryKind, signal)
   }
 
