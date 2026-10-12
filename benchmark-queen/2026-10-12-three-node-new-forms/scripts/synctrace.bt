@@ -1,0 +1,17 @@
+#!/usr/bin/env bpftrace
+// synctrace.bt <pid> : every file sync, unlink, truncate, rename and preallocation of the broker that took
+// 2 ms or more, with its thread, its file descriptor and its duration; and at the end the count and the total
+// time of each kind per thread name.  bpftrace synctrace.bt <pid>, stop it with a signal.
+tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync, tracepoint:syscalls:sys_enter_sync_file_range, tracepoint:syscalls:sys_enter_ftruncate, tracepoint:syscalls:sys_enter_fallocate
+/pid == $1/ { @t[tid] = nsecs; @fd[tid] = args.fd; }
+
+tracepoint:syscalls:sys_enter_msync, tracepoint:syscalls:sys_enter_unlinkat, tracepoint:syscalls:sys_enter_unlink, tracepoint:syscalls:sys_enter_renameat2, tracepoint:syscalls:sys_enter_rename
+/pid == $1/ { @t[tid] = nsecs; @fd[tid] = -1; }
+
+tracepoint:syscalls:sys_exit_fsync, tracepoint:syscalls:sys_exit_fdatasync, tracepoint:syscalls:sys_exit_sync_file_range, tracepoint:syscalls:sys_exit_ftruncate, tracepoint:syscalls:sys_exit_fallocate, tracepoint:syscalls:sys_exit_msync, tracepoint:syscalls:sys_exit_unlinkat, tracepoint:syscalls:sys_exit_unlink, tracepoint:syscalls:sys_exit_renameat2, tracepoint:syscalls:sys_exit_rename
+/@t[tid]/ {
+  $d = (nsecs - @t[tid]) / 1000;
+  if ($d >= 2000) { printf("%s %s %s fd=%d %llu us\n", strftime("%H:%M:%S.%f", nsecs), comm, probe, @fd[tid], $d); }
+  @calls[comm, probe] = count(); @total_us[comm, probe] = sum($d); @max_us[comm, probe] = max($d);
+  delete(@t[tid]); delete(@fd[tid]);
+}

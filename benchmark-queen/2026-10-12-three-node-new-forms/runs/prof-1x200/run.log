@@ -1,0 +1,7 @@
+[11:46:32] run prof-1x200: binary new, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 22 per process, retention completed, steps of 60s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[11:46:49] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 200 partitions
+[11:48:23] 2,000,000: offered 1,999,957 pushed 1,886,477 consumed 1,886,239 shed 2,568,300 errors 0 lag 0 | push p50 235.5 p99 2621.4 | e2e p50 307.2 p99 2687.0 | n1 9.5c apply 38% raft 112%; n2 5.3c apply 41% raft 39%; n3 4.6c apply 35% raft 33% | loaders 15.6c  NOT CARRIED 
+RUN_DONE

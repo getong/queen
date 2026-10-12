@@ -1,0 +1,20 @@
+total 10.64 cores over 12.0s
+tokio-rt-worker    threads  49  cores  5.68  user  4.94  sys  0.74
+queen-raft         threads   6  cores  1.29  user  0.72  sys  0.57
+queen-rsm-apply    threads   4  cores  0.46  user  0.41  sys  0.05
+queen-qlog-writ    threads   8  cores  0.36  user  0.09  sys  0.27
+queen-rsm-ckpt     threads   1  cores  0.26  user  0.12  sys  0.14
+queen-lane-7       threads   1  cores  0.25  user  0.23  sys  0.02
+queen-lane-0       threads   1  cores  0.25  user  0.24  sys  0.02
+queen-lane-2       threads   1  cores  0.25  user  0.23  sys  0.02
+queen-lane-5       threads   1  cores  0.25  user  0.23  sys  0.02
+queen-lane-6       threads   1  cores  0.25  user  0.23  sys  0.01
+queen-lane-1       threads   1  cores  0.25  user  0.23  sys  0.01
+queen-lane-4       threads   1  cores  0.25  user  0.23  sys  0.01
+queen-lane-3       threads   1  cores  0.25  user  0.23  sys  0.02
+queen-raft-log     threads   1  cores  0.19  user  0.17  sys  0.02
+consume-serve      threads   1  cores  0.11  user  0.09  sys  0.01
+queen-planner      threads   1  cores  0.10  user  0.08  sys  0.01
+queen-raft-sync    threads   1  cores  0.08  user  0.00  sys  0.08
+queen-qlog-drop    threads   1  cores  0.06  user  0.00  sys  0.06
+queen-rsm-drop     threads   1  cores  0.03  user  0.03  sys  0.00

@@ -1,0 +1,4 @@
+3f2c2bd50d14dce9cc3999e60bc9c1ef  220/queen    server tree of de1a4cc54 (release 2.2.0)
+805b7fa5d403a94af32ab0ccc2d7912c  new/queen    server tree of 4f8119304 (binary push, ack counts, framed pop, checkpoint in steps)
+ab0aab077c8f81d5d4db95c74fef239a  b32/queen    new + 4 B per hash for hot filter generations, the cap still at 2 GiB
+7f246f683894c1d7e6ffc3bac1d45f05  b32c/queen   server tree of 1d0981c57 (b32 + the cap at 4 GiB)

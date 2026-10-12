@@ -1,0 +1,8 @@
+[12:55:46] run b32c-1x200-spin: binary b32c, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 22 per process, retention completed, steps of 45s at: 2500000 3000000 3500000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 QUEEN_LANES_SPIN_US=5000 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[12:56:02] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 200 partitions
+[12:57:21] 2,500,000: offered 2,499,945 pushed 1,860,894 consumed 1,857,935 shed 19,996,200 errors 0 lag 0 | push p50 380.9 p99 3473.4 | e2e p50 835.6 p99 3768.3 | n1 11.8c apply 32% raft 92%; n2 4.6c apply 33% raft 34%; n3 4.4c apply 31% raft 32% | loaders 16.1c  NOT CARRIED 
+[12:57:21] stopping at 2500000
+RUN_DONE

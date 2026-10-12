@@ -1,0 +1,18 @@
+[10:42:36] run disks-g1: binary new, groups 1, sync, checkpoint 5 ms, tenants 3, partitions 500000, consumers 33 per process, retention completed, steps of 75s at: 1000000 1300000 1600000 1900000 2200000 2500000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=1 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[10:42:43] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[10:44:39] 1,000,000: offered 999,983 pushed 999,993 consumed 999,967 shed 0 errors 0 lag 0 | push p50 5.8 p99 11.5 | e2e p50 13.2 p99 44.5 | n1 6.3c apply 52% raft 125%; n2 4.1c apply 54% raft 55%; n3 3.8c apply 51% raft 51% | loaders 8.7c  OK 
+[10:46:26] 1,300,000: offered 1,299,984 pushed 1,299,986 consumed 1,300,041 shed 0 errors 0 lag 0 | push p50 8.1 p99 20.2 | e2e p50 17.9 p99 87.0 | n1 7.2c apply 60% raft 124%; n2 4.7c apply 64% raft 46%; n3 4.4c apply 59% raft 43% | loaders 10.9c  OK 
+[10:48:14] 1,600,000: offered 1,600,001 pushed 1,600,097 consumed 1,600,271 shed 0 errors 0 lag 0 | push p50 11.8 p99 32.0 | e2e p50 26.4 p99 94.2 | n1 8.4c apply 73% raft 127%; n2 5.4c apply 73% raft 44%; n3 5.1c apply 69% raft 42% | loaders 13.2c  OK 
+[10:50:01] 1,900,000: offered 1,900,004 pushed 1,900,064 consumed 1,900,393 shed 0 errors 0 lag 0 | push p50 20.7 p99 73.7 | e2e p50 46.6 p99 274.4 | n1 9.5c apply 82% raft 127%; n2 6.1c apply 81% raft 44%; n3 5.8c apply 77% raft 41% | loaders 15.3c  OK 
+[10:51:49] 2,200,000: offered 2,199,955 pushed 2,135,159 consumed 2,137,520 shed 1,512,000 errors 0 lag 0 | push p50 1327.1 p99 2457.6 | e2e p50 1409.0 p99 2654.2 | n1 10.7c apply 90% raft 125%; n2 7.1c apply 90% raft 46%; n3 6.8c apply 86% raft 43% | loaders 17.8c  NOT CARRIED 
+[10:51:49] stopping at 2200000
+RUN_DONE

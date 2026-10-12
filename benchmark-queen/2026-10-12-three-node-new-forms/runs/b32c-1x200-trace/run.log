@@ -1,0 +1,7 @@
+[12:35:03] run b32c-1x200-trace: binary b32c, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 22 per process, retention completed, steps of 45s at: 3000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 QUEEN_RAFT_CYCLE_TRACE=1 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[12:35:10] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 200 partitions
+[12:36:29] 3,000,000: offered 3,000,066 pushed 2,471,668 consumed 2,470,602 shed 15,472,400 errors 0 lag 0 | push p50 622.6 p99 2818.0 | e2e p50 778.2 p99 2916.4 | n1 10.3c apply 44% raft 126%; n2 6.9c apply 47% raft 47%; n3 6.4c apply 44% raft 44% | loaders 21.0c  NOT CARRIED 
+RUN_DONE
