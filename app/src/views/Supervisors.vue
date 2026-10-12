@@ -2,7 +2,7 @@
   <div class="view-container">
     <PageHead title="Supervisors">
       <template #sub>
-        <template v-if="readAt && !error"><b>{{ metric(groups.length) }}</b> applications · <b>{{ metric(rows.length) }}</b> instances · <b>{{ metric(workers) }}</b> workers reporting<template v-if="stale"> · {{ stale }} with unconfirmed health</template></template>
+        <template v-if="readAt && !error"><b>{{ metric(groups.length) }}</b> applications · <b>{{ metric(rows.length) }}</b> instances · <b>{{ metric(workers) }}</b> workers reporting<template v-if="stopped"> · {{ stopped }} stopped</template><template v-if="stale"> · {{ stale }} with unconfirmed health</template></template>
         <template v-else>{{ fleetLabel }}</template>
       </template>
       <template #actions>
@@ -29,7 +29,7 @@
         </div>
         <label class="tool-field">
           <span class="tool-label">Show</span>
-          <select v-model="filter" class="input"><option value="all">All applications</option><option value="attention">Needs attention</option><option value="stale">Stale / unreadable</option><option v-for="engine in engines" :key="engine" :value="`engine:${engine}`">{{ engine }} engine</option></select>
+          <select v-model="filter" class="input"><option value="all">All applications</option><option value="attention">Needs attention</option><option value="stale">Stale / unreadable</option><option value="stopped">Stopped instances</option><option v-for="engine in engines" :key="engine" :value="`engine:${engine}`">{{ engine }} engine</option></select>
         </label>
         <label class="tool-field">
           <span class="tool-label">Group</span>
@@ -96,7 +96,8 @@
             <dl class="supervisor-runtime"><div><dt>Engine version</dt><dd>{{ selected.engineVersion || 'Not reported' }}</dd></div><div><dt>Client version</dt><dd>{{ selected.clientVersion || 'Not reported' }}</dd></div><div><dt>{{ selected.consumer ? 'Process PID' : 'Master PID' }}</dt><dd>{{ number(selected.pid) }}</dd></div><div><dt>Uptime at heartbeat</dt><dd>{{ uptimeLabel(selected.uptime) }}</dd></div></dl>
             <p v-if="selected.startedAt" class="supervisor-heartbeat">Instance started {{ new Date(selected.startedAt).toLocaleString() }}</p>
             <div class="supervisor-next"><span>Next check</span><p>{{ selected.next }}</p></div>
-            <p v-if="!selected.fresh" class="supervisor-last-values">Last reported values. Current worker health is unconfirmed.</p>
+            <p v-if="selected.terminal" class="supervisor-last-values">Final report. This instance has stopped; no further heartbeats are expected.</p>
+            <p v-else-if="!selected.fresh" class="supervisor-last-values">Last reported values. Current worker health is unconfirmed.</p>
             <section class="supervisor-pools" aria-labelledby="supervisor-pools-title">
               <div class="supervisor-pools-heading"><h3 id="supervisor-pools-title">Queues and pools</h3><span>{{ number(selected.queueCount) }} queues · {{ number(selected.poolCount) }} pools</span></div>
               <div class="supervisor-pool-tools">
@@ -270,7 +271,8 @@ useAutoRefresh(() => refresh())
 onBeforeUnmount(() => { sequence++; controller?.abort(); activityReader.clear(); drawer.value?.close() })
 const rows = computed(() => supervisorObservations(entries.value, readAt.value || Date.now(), Boolean(error.value)))
 const attention = computed(() => groups.value.filter(group => ['bad', 'warn'].includes(group.tone)).length)
-const stale = computed(() => rows.value.filter(row => !row.fresh).length)
+const stale = computed(() => rows.value.filter(row => !row.fresh && !row.terminal).length)
+const stopped = computed(() => rows.value.filter(row => row.terminal).length)
 const workers = computed(() => {
   const recent = rows.value.filter(row => row.fresh && row.state === 'running')
   return recent.some(row => row.workers === null) ? null : recent.reduce((n, row) => n + row.workers, 0)

@@ -194,7 +194,7 @@ export function supervisorObservation(entry, now = Date.now(), unconfirmed = fal
   const base = { slot: entry.slot, group: entry.group, legacy: entry.legacy, instance: entry.instance, pools: [], workers: null, desired: null, budget: null,
     queueCount: null, poolCount: null, affectedPools: null, draining: null, missingWorkers: null,
     readiness: null, capacity: null, pid: null, startedAt: null, uptime: null, engineVersion: null, clientVersion: null,
-    hostname: null, engine: null, state: null, updatedAt: null, age: null, timeout: null, fresh: false, severity: 'warn', priority: 4 }
+    hostname: null, engine: null, state: null, terminal: false, updatedAt: null, age: null, timeout: null, fresh: false, severity: 'warn', priority: 4 }
   if (!entry.document) return { ...base, label: 'Status unavailable', next: entry.reason }
   if (entry.document.schema === 'queen.consumer.status/v1') return consumerObservation(entry, base, now, unconfirmed)
   const raw = entry.document, config = raw.configuration
@@ -224,6 +224,11 @@ export function supervisorObservation(entry, now = Date.now(), unconfirmed = fal
     pools: validPools.map(pool => ({ ...pool, ...poolFinding(pool, budget) })).sort((a, b) => b.priority - a.priority || a.queue.localeCompare(b.queue)),
   }
   if (unconfirmed) return { ...row, label: 'Current state unconfirmed', next: 'The latest read failed. These values come from the last successful reading.' }
+  // A completed shutdown is final for this instance id. Its publication may
+  // outlive the pod, but it must not become a missed-heartbeat alarm.
+  if (row.state === 'stopped' && age !== null && age >= -5 && timeout !== null) return { ...row,
+    terminal: true, fresh: !entry.expired && age <= timeout, label: 'Stopped', severity: '', priority: 1,
+    next: 'This instance reported a completed shutdown. No further heartbeats are expected.' }
   if (entry.expired) return { ...row, label: 'Publication expired', next: 'The KV record has expired. Check the supervisor and its remote-status publisher.' }
   if (age === null || age < -5 || timeout === null) return { ...row, label: 'Heartbeat unconfirmed', next: 'Check the heartbeat timestamp, timing configuration and host clocks.' }
   if (age > timeout) return { ...row, label: 'Heartbeat overdue', next: 'Check the master process and remote-status publication. Current worker health is unknown.' }
