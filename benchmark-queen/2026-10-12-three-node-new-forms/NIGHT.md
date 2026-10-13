@@ -327,3 +327,101 @@ core each, so they wait rather than compute: not looked into). 10M partitions: m
 (the 60 s of dedup, outcomes and rows on top of 10M partitions), free memory falls to 2 GB on the three 32 GB
 machines from second 67, one follower falls behind (4.8 → 2 cores, "the append stream took no bytes within 75 ms")
 and the p99 goes to 2 s. Alice: say that 10M partitions with dedup does not fit these nodes, no further run.
+
+## 2026-10-13, 09:18-09:38 UTC: shards without code (one raft group against three)
+
+Alice: "What if we implement queue shard?" then "Do it, fast". Three tenants, each with its own queue, in ONE raft
+group against the same three tenants in THREE groups (`QUEEN_RAFT_GROUPS=3`, tenant t in group t, leaders
+spread), binary `p7`, dedup and retention at 60 s. Launcher `s1.sh` (session scratchpad); rows in
+`runs/shards.jsonl`, lines in `runs/shards.out`, runs `sh-single-g1|g3`, `sh-real100k-g1|g3`. Brokers and loaders
+are 16 vCPU, 31 GB.
+
+A. One message a request, 3,000 partitions, 60 s steps (last 30 s):
+
+| req/s offered | 1 group: e2e p50 / p99, cores | 3 groups: e2e p50 / p99, cores |
+|---|---|---|
+| 50,000 | 11.5 / 38.4, 21.0 | 10.4 / 21.5, 29.7 |
+| 100,000 | 93.2 / 188.4, 26.6 | 43.0 / 200.7, 35.3 |
+| 150,000 | not carried: 124,014 pushed, 1.39M shed | not carried by the rule: 147,785 pushed, 205,086 shed; 38.6 cores |
+
+The ceiling moves from 124,000 to 148,000 req/s (+19%), not by three: with three groups the brokers are at 11.5 /
+13.6 / 13.5 of 16 cores, about 260 us of broker CPU for a single-message request across the three nodes, and
+the loaders at 40% of theirs. My estimate before the run ("should scale with N") was wrong for req/s.
+
+B. 100 messages a request, 99,999 partitions, 2M msg/s, 200 s (seconds 140-200):
+
+| | 1 group | 3 groups |
+|---|---|---|
+| e2e p50 / p99 (median window) | 71 / 127 ms, rising (33 → 75) | 38 / 59 ms |
+| leader's longest apply per 10 s | 39-103 ms | 12-22 ms |
+| durable points per 10 s | 2 | 7 to 35 a group |
+| broker cores | 10.3 / 6.9 / 6.7 | 8.7 / 10.8 / 10.5 |
+
+Here three groups halve the latency and bring it to what one group reads with no dedup and no deletes at the same
+load (30 / 56). With 2026-10-12's pair (100 messages a request, nothing deleted: 2.5M carried on three groups,
+not on one) that is the measured picture: shards cure what is one thread or one store per group (apply with
+retention, the checkpoint's pace, the planner cycle), and add about a fifth to the ceilings on three 16-core
+machines, for 25-40% more CPU. Not run: transactions (`txnrun.sh` has no tenants or groups). The stand-in has no
+pop across shards: a sharded queue pays for that on top.
+
+## 2026-10-13, 10:06-10:36 UTC: Kafka on the same six machines (Alice's plan: 1M, 2M, 4M on 100 partitions, then 2M at every partition count it carries)
+
+September's harness (`../2026-09-30-kafka-pulsar`, `kafka/run.sh`, its `hosts.env` pointed at today's machines),
+Kafka with three replicas and `acks=all`, 70 s of load, a fresh cluster per point, launcher `kf.sh`; rows in
+`runs/kafka-oct13.out`, raw runs in `../2026-09-30-kafka-pulsar/runs/kafka/*-oct13/`. End-to-end p50 / p99 in ms
+at seconds 30-60, the worst process's worst window on both sides (Queen = the clean matrix of this folder,
+`runs/grid-final.jsonl`, `mid_e50` / `mid_e99_worst`); cores = the three brokers summed.
+
+| msg/s | partitions | Kafka e2e | Kafka cores | Queen e2e | Queen cores |
+|---|---|---|---|---|---|
+| 1M | 100 | 8 / 11 | 9.8 | 10 / 19 | 15.1 |
+| 2M | 100 | 8 / 43 | 15.8 | 31 / 63 | 19.9 |
+| 4M | 100 | 13 / 243 | 21.8 | not carried (2.5M is not carried at 1,000 partitions) | |
+| 2M | 10 | 11 / 403 | 10.7 | 44 / 100 | 16.4 |
+| 2M | 1,000 | 9 / 25 | 19.5 | 27 / 70 | 20.1 |
+| 2M | 10,000 | 64 / 134 | 29.8 | 31 / 63 | 20.2 |
+| 2M | 100,000 | not carried: 1.92M pushed, 1.67M consumed, 12k/s shed, 10.4 s / 15.1 s (the rerun, see below) | 33.3 | 30 / 59 | 20.2 |
+| 2M | 1,000,000 | not run (the ladder stops at the first point not carried) | | 30 / 66 | 20.4 |
+
+Kafka is ahead to 1,000 partitions (a third of Queen's median at 2M, and it carries 4M where Queen stops before
+2.5M); from 10,000 partitions Queen is ahead, flat at 30 / 60 to a million partitions on 20 cores, while Kafka
+pays 30 cores at 10,000 and does not carry 100,000 (the topic alone takes 356 to 387 s to create). Kafka's 10
+partitions carry the rate with a 403 ms p99 (nine consumers).
+
+The 100,000-partition row is the RERUN of 11:17 UTC (`1x100000-2000k-oct13b`). The first run (10:26 UTC, tag
+without the b: 1.74M pushed, 1.37M consumed, 17 s / 26 s) was not a measurement of Kafka: four of its nine kload
+processes were killed by the load machines' out-of-memory killer 40 to 86 s into the load (exit code 137, 11 to 16
+GB each, three a machine of 31 GB). The rerun gives kload `GOMEMLIMIT=9GiB`, as the 100,000-partition runs of
+2026-10-02 had; all nine processes ended with exit code 0, and the end to end p50 rises from 1.5 s in the first
+window to 15 s in the last, in every process. The other six points had nine clean processes each.
+Consumers: Kafka 99 at 100 partitions, 9 at 10, 297 from 1,000; Queen 297.
+
+The same hour: the committed tree (`e8d460cbf`, 2.3.0-beta.1) was built as an amd64 image and rolled on stage
+(helm revision 29, 10:22:15 to 10:26:23 UTC).
+
+## 2026-10-13, 10:56-11:13 UTC: the Kafka facade on the committed build, five tactical points
+
+Alice: "start the queen kafka facade on VMs: only interested in some tactical points to see we have not broke
+things". Binary `b1` (the committed tree, 2.3.0-beta.1) with `QUEEN_KAFKA_EMBEDDED=true` on the three brokers, a
+fresh cluster per point, the leader on n1; the load is September's `kafka/run.sh TARGET=queen` as on 2026-10-01/02
+(`runs/queen-kafka/c3-*`, `c5-*` of that folder): kload, acks=all, idempotent, lz4, classic groups, 9 processes,
+`retention.ms=600000`. Launcher `kfac2.sh`, rows in `runs/kfacade-oct13.out`, raw runs in
+`../2026-09-30-kafka-pulsar/runs/queen-kafka/b1-*`. End to end p50 / p99 in ms, the worst load process.
+
+| point | pushed / consumed | today (b1) | 10-02 (qk3; qk5 where named) |
+|---|---|---|---|
+| 300k, 200 partitions | 300k / 300k | 9 / 11 | 10 / 19 |
+| 1M, 200 partitions | 1,000k / 1,000k | 12 / 48 | 44 / 108; qk5 35 / 91 |
+| 1.5M, 200 partitions | 1,499k / 1,498k | 98 / 175 | 185 / 3,785 |
+| 1M, 10,000 partitions | 1,000k / 1,000k | 13 / 26 | 45 / 142 |
+| 2M, 200 partitions | 2,007k / 1,992k | 334 / 20,578 | 1,909k in, 105k out, p50 43 s |
+
+No error and nothing shed at any point. Nothing is broken, and every point is better than on 10-02 (other machines
+of the same size, so no exact gain is claimed). At 2M the collapse of 10-02 is gone: consumption keeps the rate. Seven
+of the nine load processes end at 220 / 350 ms; two hold consumers that fall steadily behind (p99 3 s in the second
+window, 18 and 25 s in the last), the "late consumers" seen at 1.5M on 10-02.
+
+Two harness notes. The first launch used kload's default group protocol (`consumer`) and died at group formation
+("group-wide ? members=0"): the 10-02 runs were `GROUP_PROTOCOL=classic`. And the 1M point is marked FAILED in the
+harness log because the copy of one load machine's files to this Mac failed; all nine processes had ended with exit
+code 0, and the row above is from the files fetched afterwards.

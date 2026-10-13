@@ -11,6 +11,11 @@ and the branch 2.45M. At 1M a second the push takes 8.1 / 39.9 ms (median / p99)
 
 One run per point, steps of 45 to 75 seconds. Jepsen was not run on any of this code.
 
+This page is the afternoon of 2026-10-12. The night that followed and 2026-10-13 are in
+[`NIGHT.md`](NIGHT.md): the stalls found and removed, the partition matrix on the builds that
+became 2.3.0, the runs with deduplication and retention on, Kafka on the same machines and the
+Kafka facade. Their headline tables are [below](#the-matrix-of-2026-10-13).
+
 ## The machines
 
 Six DigitalOcean droplets in one private network, each 16 vCPU and 31 GB, Ubuntu 24.04 (kernel
@@ -175,6 +180,48 @@ reached when 6,000 are offered) and plain pushes wait behind the control phase f
 `scripts/txncheck.sh` is the check of correctness: the same pipeline on one loader through every
 broker, then qload's verifier over the id ledgers. Both bodies: every message once, none missing
 (`txncheck-bin`, `txncheck-json`).
+
+## The matrix of 2026-10-13
+
+One queue, 100 messages a request, a fresh cluster for every point (`scripts/grid3.sh`), 90 s of
+load, deduplication off and nothing deleted while a point runs, the brokers at their defaults
+(the 10M row with `QUEEN_CONSUME_IDLE_UNLOAD_S=30`). End to end median / p99 in ms at seconds 30
+to 60, the worst load process's worst window (`mid_e50` / `mid_e99_worst` of
+`runs/grid-final.jsonl`; `scripts/finaltable.py` prints the median process too). Builds `p3` to
+`p5` of `NIGHT.md`; every point is carried.
+
+| Partitions | 100k msg/s | 500k | 1M | 1.5M | 2M |
+|---|---|---|---|---|---|
+| 10 | 4 / 8 | 6 / 11 | 12 / 21 | 20 / 57 | 44 / 100 |
+| 100 | 3 / 6 | 5 / 9 | 10 / 19 | 20 / 41 | 31 / 63 |
+| 1,000 | 4 / 8 | 6 / 10 | 10 / 18 | 17 / 36 | 27 / 70 |
+| 10,000 | 4 / 7 | 5 / 10 | 10 / 19 | 17 / 37 | 31 / 63 |
+| 100,000 | 4 / 7 | 6 / 10 | 10 / 18 | 18 / 38 | 30 / 59 |
+| 1,000,000 | 4 / 7 | 5 / 12 | 10 / 32 | 17 / 36 | 30 / 66 |
+| 10,000,000 | 4 / 7 | 5 / 10 | 10 / 38 | 19 / 37 | 39 / 73 |
+
+2.5M msg/s on 1,000 partitions is not carried: every push is taken and 2.35M a second are
+consumed, 101 / 198 ms. The three brokers use 4.2 to 4.7 cores at 100k msg/s, 11.7 to 15.1 at 1M
+and 16.4 to 20.6 at 2M; the leader's memory at 100k msg/s is 0.4 GB with 10 partitions, 2.5 GB
+with a million and 11.4 GB with ten million.
+
+With a 60 s deduplication window and completed messages deleted after 60 s (build `p7`, 200 s a
+point, the last 60 pooled, `runs/tactical-ret.jsonl`), 1.5M msg/s reads 24.6 / 44.5 on 100
+partitions, 19.2 / 35.8 on 1,000, 26.6 / 47.6 on 10,000, 27.9 / 51.2 on 100,000 and 20.7 / 39.9
+on a million; it is not carried on 10 partitions nor on ten million.
+
+Kafka 4.3.1 on the same brokers, 2026-10-13 (September's harness, 70 s of load, the same seconds;
+raw runs in `../2026-09-30-kafka-pulsar/runs/kafka/*-oct13*`), next to the rows above:
+
+| msg/s | Partitions | Kafka e2e, cores | Queen e2e, cores |
+|---|---|---|---|
+| 1M | 100 | 8 / 11, 9.8 | 10 / 19, 15.1 |
+| 2M | 100 | 8 / 43, 15.8 | 31 / 63, 19.9 |
+| 4M | 100 | 13 / 243, 21.8 | not run; 2.5M is not carried |
+| 2M | 10 | 11 / 403, 10.7 | 44 / 100, 16.4 |
+| 2M | 1,000 | 9 / 25, 19.5 | 27 / 70, 20.1 |
+| 2M | 10,000 | 64 / 134, 29.8 | 31 / 63, 20.2 |
+| 2M | 100,000 | not carried: 1.67M of 1.92M consumed, 10.4 s / 15.1 s; 33.3 | 30 / 59, 20.2 |
 
 ## What was read wrongly on the way
 
