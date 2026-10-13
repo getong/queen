@@ -31,8 +31,8 @@
 import { describeApiError, refusalCode, serverSentence } from '../api/errors.js'
 
 // Bytes, not characters: every cap downstream of this form — the proxy's
-// per-item `max_payload_bytes`, its 16 MiB body cap, the broker's 64 MiB one —
-// is counted in bytes, and a payload of emoji is four times its string length.
+// 16 MiB body cap and its byte rate, the broker's 64 MiB cap — is counted in
+// bytes, and a payload of emoji is four times its string length.
 const encoder = typeof TextEncoder === 'function' ? new TextEncoder() : null
 const byteLength = (text) => (encoder ? encoder.encode(text).length : text.length)
 
@@ -331,9 +331,9 @@ export function describePushRefusal(err) {
     case 'cluster_suspended':
       return 'This cluster is suspended, so nothing can be pushed to it.'
     case 'payload_too_large':
-      // The proxy names the cap and the overage ("item 0: payload N bytes
-      // exceeds max_payload_bytes (M)"), which is more useful than anything
-      // this function could say about a limit it cannot read.
+      // The proxy names the cap in its own sentence ("request body exceeds
+      // cap"), which is more useful than anything this function could say
+      // about a limit it cannot read.
       return serverSentence(err) || 'The payload exceeds the size this cluster accepts.'
     default:
       return describeApiError(err)

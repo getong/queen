@@ -80,6 +80,27 @@ log's lock released, as a pop does (the appends to that log waited behind a read
 once a record waits for the disk the kernel is asked to read ahead (`QUEEN_QLOG_READ_AHEAD_MB`, 1;
 `0` is off). Not measured yet.
 
+**Proxy: a plan counts requests and uncompressed bytes, no longer messages.** A plan limited what a
+tenant sends with three caps counted in messages: a rate (`max_msgs_per_sec`, `msgs_burst`), a size
+for one payload (`max_payload_bytes`) and a number of items for one push (`max_batch_items`). The
+proxy could answer them only by parsing the body as JSON, and the binary push and transaction bodies
+the broker now reads (`QPB1`, `QTB1`) were forwarded without any of them. One rate replaces the
+three: `max_bytes_per_sec`, with `bytes_burst`, counted in uncompressed bytes. A push, a
+transaction, an ephemeral push and a streams cycle that emits are weighed on the way in, and a pop's
+answer leaves the same bucket once the broker has answered. The proxy reads the weight off the
+body's headers and inflates nothing: a body compressed as a whole carries its `raw_len`, each group
+of a framed push or of a binary transaction is one zstd frame that declares its content size, and
+the broker refuses a body that holds more than it declares. A binary body whose headers do not say
+what it weighs answers 400 `invalid_request` at the proxy, and the broker now refuses a binary push
+with flags 1 and 8 together (a framed body compressed again as a whole), which hid the groups and
+their sizes. No seeded plan has a byte rate: it is unlimited until `max_bytes_per_sec` is set in a
+cluster's overrides, so set it before a cell that enforces its limits takes this build. An override
+that still names one of the four retired keys is accepted and changes nothing, so a control plane
+that sends them keeps provisioning. `QUEEN_PROXY_MAX_BATCH_ITEMS` is no longer read, and the limits
+log line says `kind=bytes` where it said `kind=msgs`. Still read from a JSON body only: the queues
+and partitions a push names (the plan's `max_queues` and `max_partitions_per_queue`), and the
+messages the meter books.
+
 **Server: a standby cluster can run several raft groups.** A standby replayed one log, so a link
 needed `QUEEN_RAFT_GROUPS=1` on both clusters and a standby started with more refused to boot.
 Each raft group of a standby now replays the source's group of the same number: it reads the nodes

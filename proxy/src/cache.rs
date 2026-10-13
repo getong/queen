@@ -833,13 +833,11 @@ pub(crate) fn merge_limits(base: EffectiveLimits, overrides: &serde_json::Value)
     EffectiveLimits {
         max_req_per_sec: override_or(overrides, "max_req_per_sec", base.max_req_per_sec),
         req_burst: override_or(overrides, "req_burst", base.req_burst),
-        max_msgs_per_sec: override_or(overrides, "max_msgs_per_sec", base.max_msgs_per_sec),
-        msgs_burst: override_or(overrides, "msgs_burst", base.msgs_burst),
+        max_bytes_per_sec: override_or(overrides, "max_bytes_per_sec", base.max_bytes_per_sec),
+        bytes_burst: override_or(overrides, "bytes_burst", base.bytes_burst),
         max_queues: override_or(overrides, "max_queues", base.max_queues),
         max_partitions_per_queue: override_or(overrides, "max_partitions_per_queue", base.max_partitions_per_queue),
         max_parked_pops: override_or(overrides, "max_parked_pops", base.max_parked_pops),
-        max_payload_bytes: override_or(overrides, "max_payload_bytes", base.max_payload_bytes),
-        max_batch_items: override_or(overrides, "max_batch_items", base.max_batch_items),
         max_retained_bytes: override_or(overrides, "max_retained_bytes", base.max_retained_bytes),
         max_retention_seconds: override_or(overrides, "max_retention_seconds", base.max_retention_seconds),
     }

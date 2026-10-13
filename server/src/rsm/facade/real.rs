@@ -3261,6 +3261,13 @@ impl RaftFacade {
     ///
     /// A payload must be one JSON document, as in the JSON body, and is checked.
     /// With [`PUSH_BINARY_FRAMES`] the body is [`RaftFacade::push_frames`]'s.
+    ///
+    /// [`PUSH_BINARY_ZSTD`] and [`PUSH_BINARY_FRAMES`] together are refused. A
+    /// framed body is already compressed, group by group, and each group's
+    /// frame declares what it holds; compressed again as a whole, the groups
+    /// and those sizes are hidden inside the outer frame. What a body weighs
+    /// uncompressed has to be readable from its headers: the proxy limits a
+    /// tenant on it without inflating anything.
     async fn push_binary(&self, ctx: ReqCtx, raw: &[u8]) -> Result<PushOut, RsmError> {
         fn bad(m: &str) -> RsmError {
             RsmError::Rejected {
@@ -3283,6 +3290,11 @@ impl RaftFacade {
         let mut p = PUSH_BINARY_MAGIC.len();
         let flags = *raw.get(p).ok_or_else(|| bad("truncated"))?;
         p += 1;
+        if flags & PUSH_BINARY_ZSTD != 0 && flags & PUSH_BINARY_FRAMES != 0 {
+            return Err(bad(
+                "flags 1 and 8 together: a framed body is already compressed, group by group",
+            ));
+        }
         let inflated;
         let body: &[u8] = if flags & PUSH_BINARY_ZSTD != 0 {
             let raw_len = u32le(raw, &mut p)?;

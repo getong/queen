@@ -37,3 +37,6 @@ pub mod store;
 /// broker it runs inside.
 pub mod upstream;
 pub mod webapp;
+/// What a produce body or a pop answer weighs uncompressed, from its headers:
+/// the quantity the byte rate counts.
+pub mod wire;

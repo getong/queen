@@ -59,6 +59,9 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): config.rs,
 # facade/real.rs change what /health answers (raft.quorumAckMs; ready needs the leader's majority
 # within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-12 (the byte rate): proxy/src/config.rs no longer reads
+# QUEEN_PROXY_MAX_BATCH_ITEMS (its row is removed), and what QUEEN_PROXY_ENFORCE=false still enforces is
+# the body cap and the two quotas.
 # sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/real.rs no longer refuses `QUEEN_LINK_SOURCE` beside `QUEEN_RAFT_GROUPS` above 1 and opens each group with its own source, link/driver.rs reads the same `QUEEN_LINK_*` variables and moves the configured addresses to the group's port, and raft/mod.rs tells each group's link routes which group they serve and hands a group's leadership to its preferred member only once that member is a voter. No variable was added or removed and no default changed: the tables and the paragraph on the nine `QUEEN_LINK_*` variables stand.
 # sourceOfTruth re-read 2026-10-13 (the latency fixes and the fetch ceiling): QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS
 # (batcher.rs), QUEEN_CONSUME_CHECKPOINT_EAGER (consume/mod.rs) and QUEEN_QLOG_READ_AHEAD_MB (qlog/mod.rs) join the
@@ -200,7 +203,7 @@ inside your network; that port must not face the internet. Plans and limits are 
 |---|---|---|
 | `QUEEN_PROXY_PORT` | unset | Give the proxy its own port (see above). |
 | `QUEEN_TLS_CERT`, `QUEEN_TLS_KEY` | unset | PEM file paths. Set both to serve TLS on the proxy's listener. |
-| `QUEEN_PROXY_ENFORCE` | `false` | `false` is shadow mode: rate limits and the queue and partition counts are computed, logged and metered but not refused. The size caps and the storage and monthly message quotas are enforced either way. |
+| `QUEEN_PROXY_ENFORCE` | `false` | `false` is shadow mode: rate limits and the queue and partition counts are computed, logged and metered but not refused. The body cap and the storage and monthly message quotas are enforced either way. |
 | `QUEEN_PROXY_TENANT_HEADER` | `true` | Send each cluster's broker tenant to the broker in `x-queen-tenant`. Off, every cluster shares the broker's default tenant. |
 | `QUEEN_PROXY_CP_TOKEN` | unset | Turns on the [control-plane API](/reference/http/#control-plane-apicp). Unset, `/api/cp/*` and `/metrics*` answer 404 on the proxy's port. |
 | `QUEEN_PROXY_PUBLIC_URL` | unset | The public base URL: OAuth callbacks are built on it, and the session audience and allowed origin default to it. |
@@ -208,7 +211,6 @@ inside your network; that port must not face the internet. Plans and limits are 
 | `QUEEN_PROXY_DEFAULT_CLUSTER` | unset | Development only: the cluster a `Host` that names none falls back to. |
 | `QUEEN_PROXY_DEV_INSECURE` | `false` | Development only: skip authentication. |
 | `QUEEN_PROXY_MAX_BODY_BYTES` | `16777216` (16 MiB) | The largest body the proxy reads on the routes it buffers: push, transaction, `/configure`, DLQ replay, the streams cycle, KV batches and ephemeral push. A larger body gets 413 `payload_too_large`. Other routes go to the broker, where `QUEEN_MAX_BODY_BYTES` applies. |
-| `QUEEN_PROXY_MAX_BATCH_ITEMS` | `10000` | Items per push when the plan sets no `max_batch_items`. |
 | `QUEEN_PROXY_UPSTREAM_TIMEOUT_MS` | `35000` | How long a call to the broker may take. |
 | `QUEEN_PROXY_UPSTREAM_CONNECT_TIMEOUT_MS` | `5000` | Connect timeout to the broker. |
 | `QUEEN_PROXY_LONGPOLL_MAX_MS` | `90000` | How long the proxy waits for a long-poll pop at most, plus `QUEEN_PROXY_LONGPOLL_MARGIN_MS`; the broker's own wait is not shortened ([limits](/reference/limits/#pop-and-long-poll)). |

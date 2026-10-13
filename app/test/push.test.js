@@ -348,10 +348,10 @@ test('refusal: 429 keeps the Retry-After the shell already renders', () => {
 test('refusal: a 413 repeats the cap the proxy named', () => {
   // The proxy says which cap and by how much; nothing this function could
   // invent about a limit it cannot read would be more useful.
-  const tooBig = new ApiError('item 0: payload 900000 bytes exceeds max_payload_bytes (262144)', {
+  const tooBig = new ApiError('request body exceeds cap', {
     status: 413, code: 'payload_too_large',
   })
-  assert.match(describePushRefusal(tooBig), /max_payload_bytes \(262144\)/)
+  assert.match(describePushRefusal(tooBig), /request body exceeds cap/)
 })
 
 // ---------------------------------------------------------------------------

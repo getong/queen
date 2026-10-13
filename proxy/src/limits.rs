@@ -6,7 +6,7 @@
 //! either side of a limit pair means unlimited: the check returns `Allow`
 //! without ever touching a shard.
 //!
-//! Shadow mode: `check_req`/`check_msgs` always return the *true* computed
+//! Shadow mode: `check_req`/`check_bytes` always return the *true* computed
 //! Decision, enforce or not — the gateway is the one that consults
 //! `enforcing()` and decides whether to actually reject. `parked_slot` is the
 //! one exception: because it's a stateful RAII acquisition (the gauge must
@@ -128,7 +128,7 @@ impl Drop for ParkedGuard {
     }
 }
 
-/// One side (req or msgs) of a cluster's dual bucket. `initialized` lets a
+/// One side (req or bytes) of a cluster's dual bucket. `initialized` lets a
 /// freshly-created bucket start *full* (burst immediately available) on its
 /// first `configure()` call, since capacity/refill aren't known until then.
 struct TokenBucket {
@@ -182,8 +182,8 @@ impl TokenBucket {
     }
 
     /// Unconditional debit — may drive the bucket negative. Post-completion
-    /// delivery accounting only (rev 2.3: parked pops exempt at entry, debited
-    /// at completion).
+    /// accounting of what a pop answered only (rev 2.3: pops exempt at entry,
+    /// debited at completion).
     fn force_take(&mut self, n: f64) {
         self.tokens -= n;
     }
@@ -191,13 +191,13 @@ impl TokenBucket {
 
 struct ClusterBuckets {
     req: TokenBucket,
-    msgs: TokenBucket,
+    bytes: TokenBucket,
     last_seen: Instant,
 }
 
 impl ClusterBuckets {
     fn new(now: Instant) -> ClusterBuckets {
-        ClusterBuckets { req: TokenBucket::new(now), msgs: TokenBucket::new(now), last_seen: now }
+        ClusterBuckets { req: TokenBucket::new(now), bytes: TokenBucket::new(now), last_seen: now }
     }
 }
 
@@ -209,14 +209,14 @@ struct ParkedEntry {
 #[derive(Clone, Copy)]
 enum Kind {
     Req,
-    Msgs,
+    Bytes,
 }
 
 impl Kind {
     fn as_str(self) -> &'static str {
         match self {
             Kind::Req => "req",
-            Kind::Msgs => "msgs",
+            Kind::Bytes => "bytes",
         }
     }
 }
@@ -286,40 +286,50 @@ impl Limits {
         decision
     }
 
-    /// n message tokens (push items / transaction push-ops). May also be
-    /// debited post-completion for deliveries (bucket may go negative).
-    pub fn check_msgs(&self, ctx: &ClusterCtx, n: u64) -> Decision {
+    /// `n` bytes of a produce body, UNCOMPRESSED: what `wire::request_bytes`
+    /// reads off its headers, so a body weighs the same whatever the client
+    /// did to it on the wire. A request heavier than the burst can never pass:
+    /// the burst is also the largest single request a plan takes.
+    ///
+    /// Until 2026-10-12 this bucket counted messages. A count needs the body
+    /// read, and a body the proxy could not read (the binary push, the binary
+    /// transaction) was counted as nothing and forwarded.
+    pub fn check_bytes(&self, ctx: &ClusterCtx, n: u64) -> Decision {
         if n == 0 {
             return Decision::Allow;
         }
-        let Some(rate) = ctx.limits.max_msgs_per_sec else { return Decision::Allow };
+        let Some(rate) = ctx.limits.max_bytes_per_sec else { return Decision::Allow };
         let rate = rate.max(0) as f64;
-        let capacity = ctx.limits.msgs_burst.map(|b| b.max(0) as f64).unwrap_or(rate * 2.0);
+        let capacity = ctx.limits.bytes_burst.map(|b| b.max(0) as f64).unwrap_or(rate * 2.0);
         let now = Instant::now();
         self.maybe_gc(now);
-        let decision = self.decide(ctx.cluster_id, now, capacity, rate, n as f64, Kind::Msgs);
+        let decision = self.decide(ctx.cluster_id, now, capacity, rate, n as f64, Kind::Bytes);
         if let Decision::Deny { retry_after_s, .. } = &decision {
-            self.log_deny(Kind::Msgs.as_str(), ctx.cluster_id, *retry_after_s);
+            self.log_deny(Kind::Bytes.as_str(), ctx.cluster_id, *retry_after_s);
         }
         decision
     }
 
-    pub fn debit_deliveries(&self, ctx: &ClusterCtx, n: u64) {
+    /// The bytes of a pop answer, uncompressed (`wire::pop_answer_bytes`),
+    /// taken from the same bucket once the broker has answered. A pop cannot
+    /// be refused for what it has not read yet, so the bucket goes negative
+    /// instead and the next `check_bytes` waits for it.
+    pub fn debit_bytes(&self, ctx: &ClusterCtx, n: u64) {
         if n == 0 {
             return;
         }
-        let Some(rate) = ctx.limits.max_msgs_per_sec else { return };
+        let Some(rate) = ctx.limits.max_bytes_per_sec else { return };
         let rate = rate.max(0) as f64;
-        let capacity = ctx.limits.msgs_burst.map(|b| b.max(0) as f64).unwrap_or(rate * 2.0);
+        let capacity = ctx.limits.bytes_burst.map(|b| b.max(0) as f64).unwrap_or(rate * 2.0);
         let now = Instant::now();
         self.maybe_gc(now);
         let idx = shard_index(&ctx.cluster_id);
         let mut shard = self.buckets[idx].lock().unwrap();
         let entry = shard.entry(ctx.cluster_id).or_insert_with(|| ClusterBuckets::new(now));
         entry.last_seen = now;
-        entry.msgs.configure(capacity, rate);
-        entry.msgs.refill(now);
-        entry.msgs.force_take(n as f64);
+        entry.bytes.configure(capacity, rate);
+        entry.bytes.refill(now);
+        entry.bytes.force_take(n as f64);
     }
 
     /// Acquire a parked-consumer slot (wait=true pop). Err -> 429.
@@ -434,10 +444,9 @@ impl Limits {
     /// response: an over-count (the broker later rejects the batch) is
     /// conservative and is erased by the next computation, whereas waiting for
     /// the response would reopen the window this whole mechanism exists to
-    /// close. The measure is the raw JSON payload text, the same basis every
-    /// other size cap in gateway.rs uses; the broker stores those bytes
-    /// COMPRESSED, so the estimate runs high, which again only ever refuses
-    /// earlier.
+    /// close. The measure is the raw JSON text of each item's payload; the
+    /// broker stores those bytes COMPRESSED, so the estimate runs high, which
+    /// again only ever refuses earlier.
     pub fn note_accepted_bytes(&self, cluster_id: Uuid, bytes: u64) {
         if bytes == 0 {
             return;
@@ -492,7 +501,7 @@ impl Limits {
         entry.last_seen = now;
         let bucket = match kind {
             Kind::Req => &mut entry.req,
-            Kind::Msgs => &mut entry.msgs,
+            Kind::Bytes => &mut entry.bytes,
         };
         bucket.configure(capacity, refill);
         bucket.refill(now);
@@ -610,13 +619,13 @@ impl Limits {
         Limits::with_params(enforce, cell_parked_max)
     }
 
-    /// White-box peek for tests only: current raw msgs-bucket token count, if
+    /// White-box peek for tests only: current raw bytes-bucket token count, if
     /// the cluster has an entry at all.
     #[cfg(test)]
-    fn debug_msgs_tokens(&self, cluster_id: Uuid) -> Option<f64> {
+    fn debug_bytes_tokens(&self, cluster_id: Uuid) -> Option<f64> {
         let idx = shard_index(&cluster_id);
         let shard = self.buckets[idx].lock().unwrap();
-        shard.get(&cluster_id).map(|e| e.msgs.tokens)
+        shard.get(&cluster_id).map(|e| e.bytes.tokens)
     }
 
     /// White-box peek for tests only: measured + in-flight for the cluster, if
@@ -696,7 +705,7 @@ mod tests {
         assert_eq!(b.tokens, 5.0, "an upgrade doesn't hand out free tokens");
     }
 
-    // ---- Limits::check_req / check_msgs end-to-end (real Instant::now(), fast rates) ----
+    // ---- Limits::check_req / check_bytes end-to-end (real Instant::now(), fast rates) ----
 
     #[test]
     fn check_req_burst_then_denied_then_gateway_would_still_see_deny_in_shadow() {
@@ -729,22 +738,22 @@ mod tests {
     }
 
     #[test]
-    fn check_msgs_zero_is_free() {
+    fn check_bytes_zero_is_free() {
         let limits = Limits::new_for_test(true);
-        let ctx = test_ctx(EffectiveLimits { max_msgs_per_sec: Some(1), msgs_burst: Some(1), ..Default::default() });
+        let ctx = test_ctx(EffectiveLimits { max_bytes_per_sec: Some(1), bytes_burst: Some(1), ..Default::default() });
         // Drain the bucket, then confirm n=0 is still always Allow and doesn't
         // touch bucket state.
-        assert!(matches!(limits.check_msgs(&ctx, 1), Decision::Allow));
-        assert!(matches!(limits.check_msgs(&ctx, 0), Decision::Allow));
-        assert_eq!(limits.debug_msgs_tokens(ctx.cluster_id), Some(0.0));
+        assert!(matches!(limits.check_bytes(&ctx, 1), Decision::Allow));
+        assert!(matches!(limits.check_bytes(&ctx, 0), Decision::Allow));
+        assert_eq!(limits.debug_bytes_tokens(ctx.cluster_id), Some(0.0));
     }
 
     #[test]
-    fn check_msgs_n_over_capacity_always_denies() {
+    fn check_bytes_n_over_capacity_always_denies() {
         let limits = Limits::new_for_test(true);
         let ctx =
-            test_ctx(EffectiveLimits { max_msgs_per_sec: Some(10), msgs_burst: Some(5), ..Default::default() });
-        match limits.check_msgs(&ctx, 999) {
+            test_ctx(EffectiveLimits { max_bytes_per_sec: Some(10), bytes_burst: Some(5), ..Default::default() });
+        match limits.check_bytes(&ctx, 999) {
             Decision::Deny { retry_after_s, .. } => assert_eq!(retry_after_s, 60, "n far above capacity clamps to 60s"),
             Decision::Allow => panic!("n > capacity can never be satisfied"),
         }
@@ -755,17 +764,17 @@ mod tests {
         let limits = Limits::new_for_test(true);
         // capacity=5, refill=5/s: draining 5 then asking for 2 more needs a
         // 0.4s wait, which clamps up to the 1s floor.
-        let ctx = test_ctx(EffectiveLimits { max_msgs_per_sec: Some(5), msgs_burst: Some(5), ..Default::default() });
-        assert!(matches!(limits.check_msgs(&ctx, 5), Decision::Allow));
-        match limits.check_msgs(&ctx, 2) {
+        let ctx = test_ctx(EffectiveLimits { max_bytes_per_sec: Some(5), bytes_burst: Some(5), ..Default::default() });
+        assert!(matches!(limits.check_bytes(&ctx, 5), Decision::Allow));
+        match limits.check_bytes(&ctx, 2) {
             Decision::Deny { retry_after_s, .. } => assert_eq!(retry_after_s, 1, "sub-1s deficit floors to 1"),
             Decision::Allow => panic!("bucket should be empty"),
         }
 
         // A big deficit at a slow rate clamps at the 60s ceiling.
-        let ctx2 = test_ctx(EffectiveLimits { max_msgs_per_sec: Some(1), msgs_burst: Some(1), ..Default::default() });
-        assert!(matches!(limits.check_msgs(&ctx2, 1), Decision::Allow));
-        match limits.check_msgs(&ctx2, 1) {
+        let ctx2 = test_ctx(EffectiveLimits { max_bytes_per_sec: Some(1), bytes_burst: Some(1), ..Default::default() });
+        assert!(matches!(limits.check_bytes(&ctx2, 1), Decision::Allow));
+        match limits.check_bytes(&ctx2, 1) {
             Decision::Deny { retry_after_s, .. } => assert_eq!(retry_after_s, 1),
             Decision::Allow => panic!("bucket should be empty"),
         }
@@ -777,39 +786,39 @@ mod tests {
         let ctx = test_ctx(EffectiveLimits::default()); // everything None
         for _ in 0..5 {
             assert!(matches!(limits.check_req(&ctx), Decision::Allow));
-            assert!(matches!(limits.check_msgs(&ctx, 1_000_000), Decision::Allow));
+            assert!(matches!(limits.check_bytes(&ctx, 1_000_000), Decision::Allow));
         }
         assert_eq!(
-            limits.debug_msgs_tokens(ctx.cluster_id),
+            limits.debug_bytes_tokens(ctx.cluster_id),
             None,
             "unlimited checks must never touch the shard map"
         );
     }
 
-    // ---- debit_deliveries: unconditional, can go negative, never denies ----
+    // ---- debit_bytes: unconditional, can go negative, never denies ----
 
     #[test]
-    fn debit_deliveries_goes_negative_and_then_throttles_checks() {
+    fn debit_bytes_goes_negative_and_then_throttles_checks() {
         let limits = Limits::new_for_test(true);
         let ctx =
-            test_ctx(EffectiveLimits { max_msgs_per_sec: Some(10), msgs_burst: Some(10), ..Default::default() });
+            test_ctx(EffectiveLimits { max_bytes_per_sec: Some(10), bytes_burst: Some(10), ..Default::default() });
 
-        // Parked-pop delivery debited after the fact, well beyond the bucket.
-        limits.debit_deliveries(&ctx, 50);
-        let tokens = limits.debug_msgs_tokens(ctx.cluster_id).expect("entry created");
-        assert!(tokens < 0.0, "debit_deliveries must be able to drive the bucket negative, got {tokens}");
+        // What a pop answered, debited after the fact, well beyond the bucket.
+        limits.debit_bytes(&ctx, 50);
+        let tokens = limits.debug_bytes_tokens(ctx.cluster_id).expect("entry created");
+        assert!(tokens < 0.0, "debit_bytes must be able to drive the bucket negative, got {tokens}");
         assert_eq!(tokens, -40.0);
 
         // A subsequent check for even 1 token must deny while in debt.
-        assert!(matches!(limits.check_msgs(&ctx, 1), Decision::Deny { .. }));
+        assert!(matches!(limits.check_bytes(&ctx, 1), Decision::Deny { .. }));
     }
 
     #[test]
-    fn debit_deliveries_is_a_noop_when_unlimited() {
+    fn debit_bytes_is_a_noop_when_unlimited() {
         let limits = Limits::new_for_test(true);
         let ctx = test_ctx(EffectiveLimits::default());
-        limits.debit_deliveries(&ctx, 1_000_000);
-        assert_eq!(limits.debug_msgs_tokens(ctx.cluster_id), None, "unlimited debit must not touch the shard");
+        limits.debit_bytes(&ctx, 1_000_000);
+        assert_eq!(limits.debug_bytes_tokens(ctx.cluster_id), None, "unlimited debit must not touch the shard");
     }
 
     // ---- parked_slot / ParkedGuard ----

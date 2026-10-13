@@ -153,13 +153,17 @@ pub struct PlanDoc {
     pub cell_class: String,
     pub max_req_per_sec: Option<i64>,
     pub req_burst: Option<i64>,
-    pub max_msgs_per_sec: Option<i64>,
-    pub msgs_burst: Option<i64>,
+    /// Uncompressed bytes a second and their burst. Absent from a plan written
+    /// before 2026-10-12, which reads as unlimited; such a plan still carries
+    /// the message caps of that time (`max_msgs_per_sec`, `msgs_burst`,
+    /// `max_payload_bytes`, `max_batch_items`), which nothing reads any more.
+    #[serde(default)]
+    pub max_bytes_per_sec: Option<i64>,
+    #[serde(default)]
+    pub bytes_burst: Option<i64>,
     pub max_queues: Option<i64>,
     pub max_partitions_per_queue: Option<i64>,
     pub max_parked_pops: Option<i64>,
-    pub max_payload_bytes: Option<i64>,
-    pub max_batch_items: Option<i64>,
     pub max_retained_bytes: Option<i64>,
     pub max_retention_seconds: Option<i64>,
     pub monthly_msgs_quota: Option<i64>,

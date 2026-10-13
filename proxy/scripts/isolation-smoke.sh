@@ -36,7 +36,7 @@
 # and a fresh api key per run per cluster (revoked again on exit).
 #
 # LIMIT OVERRIDES: every working cluster (dev/two/pro1/pro2) gets a generous
-# max_req_per_sec/max_msgs_per_sec/max_queues override for the duration of the
+# max_req_per_sec/max_queues override for the duration of the
 # run, so that a cell started with QUEEN_PROXY_ENFORCE=true does not 429 the
 # smoke itself. `rl` deliberately keeps the stock free plan. The EXIT trap
 # clears every override it set -- important, since the storage-quota section
@@ -138,8 +138,8 @@ set_ovr() { # cluster-uuid json|NULL
 # Wide enough that the smoke's own traffic never trips a limit; `rl` is the
 # cluster left on the stock free plan for the 429 check. WIDE_Q is the same set
 # plus the tiny storage cap section 16 parks on cluster `dev`.
-WIDE='{"max_req_per_sec":500,"req_burst":2000,"max_msgs_per_sec":5000,"msgs_burst":20000,"max_queues":500}'
-WIDE_Q='{"max_req_per_sec":500,"req_burst":2000,"max_msgs_per_sec":5000,"msgs_burst":20000,"max_queues":500,"max_retained_bytes":64}'
+WIDE='{"max_req_per_sec":500,"req_burst":2000,"max_queues":500}'
+WIDE_Q='{"max_req_per_sec":500,"req_burst":2000,"max_queues":500,"max_retained_bytes":64}'
 
 CID_A=""; CID_B=""; CID_P1=""; CID_P2=""; CID_RL=""
 KEY_B=""; KEY_P1=""

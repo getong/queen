@@ -31,6 +31,11 @@ sourceOfTruth:
 # declares the locks module; proxy/src/routes.rs puts POST /api/v1/locks behind the KV plan flag, never
 # quota-blocked; proxy/src/gateway.rs counts `check` as an op that cannot grow storage. The scopes section
 # says where locks sit.
+# sourceOfTruth re-read 2026-10-12 (the byte rate): limits.rs, gateway.rs, cache.rs, store/data.rs and
+# store/schema.rs count uncompressed bytes where they counted messages: `max_bytes_per_sec` and
+# `bytes_burst` replace the message rate, the payload cap and the items-per-push cap, and the new
+# proxy/src/wire.rs reads what a body weighs off its headers. The plan table, the overrides example and
+# the shadow-mode paragraph say so; no plan is seeded with a byte rate.
 ---
 
 The broker on its own has no users: anything that reaches its port can use it. The proxy compiled
@@ -179,10 +184,9 @@ single limits:
 | | `free` | `dev` | `pro` | `dedicated-s` |
 |---|---|---|---|---|
 | requests/s (burst) | 5 (25) | 10 (50) | 50 (200) | 200 (800) |
-| messages/s (burst) | 20 (100) | 40 (200) | 200 (800) | 600 (2000) |
+| uncompressed bytes/s (burst) | not set | not set | not set | not set |
 | queues, partitions per queue | 20, 8 | 50, 16 | 200, 32 | 1000, 64 |
 | parked long-poll pops | 50 | 150 | 1000 | 5000 |
-| payload, items per batch | 256 KiB, 1000 | 512 KiB, 2000 | 1 MiB, 5000 | 4 MiB, 10000 |
 | retained bytes, longest retention | 1 GiB, 7 days | 3 GiB, 14 days | 20 GiB, 30 days | 200 GiB, 90 days |
 | features | KV, timers, ephemeral | KV, timers, ephemeral | the same, plus streams and traces | the same, plus streams and traces |
 
@@ -194,12 +198,34 @@ curl -s -X PUT localhost:6711/api/cp/clusters/$CLUSTER_ID/overrides \
 
 A `null` limit is unlimited, and a body of `null` clears every override.
 
+The byte rate is `max_bytes_per_sec`, with `bytes_burst` (twice the rate when unset). No plan is
+seeded with one, so it is unlimited until an override sets it:
+
+```bash
+curl -s -X PUT localhost:6711/api/cp/clusters/$CLUSTER_ID/overrides \
+  -H "x-queen-cp-token: $CP_TOKEN" -H 'content-type: application/json' \
+  -d '{"max_bytes_per_sec": 1048576, "bytes_burst": 8388608}'
+```
+
+It counts **uncompressed** bytes: the body of a push, a transaction, an ephemeral push or a streams
+cycle that emits on the way in, and a pop's answer on the way out. The proxy reads that size off
+the headers and inflates nothing, so the same messages weigh about the same as JSON, as a binary
+body or compressed, and a compressed body is counted for what the broker will have to hold. A
+request heavier than the burst is always refused, which makes the burst the largest single
+request. A pop is never refused for its answer: the answer leaves the bucket after the fact, and the
+next push waits for it. A binary body whose headers do not say what it weighs answers
+`400 invalid_request`.
+
+The byte rate replaced the limits that counted messages: a rate in messages a second, a size for
+one payload and a number of items for one push. An override that still names `max_msgs_per_sec`,
+`msgs_burst`, `max_payload_bytes` or `max_batch_items` is accepted and changes nothing.
+
 The proxy starts in shadow mode (`QUEEN_PROXY_ENFORCE=false`): rate limits, queue and partition
 caps and parked-pop caps are computed and logged with `target: limits` and `would_block=true`, and
 the request goes through. That lets you watch a plan against real traffic before it bites. With
 `QUEEN_PROXY_ENFORCE=true` the same decisions answer `429` with `Retry-After`, or `403`. Three
 limits apply in shadow mode too, because they bound what the proxy itself has to hold or store: the
-size caps (`413 payload_too_large`), the storage quota (`max_retained_bytes`, after which pushes
+body cap (`413 payload_too_large`, `QUEEN_PROXY_MAX_BODY_BYTES`), the storage quota (`max_retained_bytes`, after which pushes
 answer `403 storage_quota_exceeded`) and the monthly message quota (`monthly_msgs_quota`, unset on
 every seeded plan).
 

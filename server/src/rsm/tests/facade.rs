@@ -2867,3 +2867,41 @@ async fn a_framed_push_stores_the_clients_messages() {
     facade.shutdown().await;
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// A framed body compressed again as a whole (flags 1 and 8) hides its groups,
+/// and the size each one declares, inside the outer frame: it is refused, and
+/// nothing is stored.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_framed_push_compressed_again_as_a_whole_is_refused() {
+    let dir = scratch("push-frames-twice");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+    let (g, _) = frames_group(
+        "framed-twice",
+        "Default",
+        &[("f1", serde_json::json!({"n": 1}))],
+    );
+    let mut groups = 1u32.to_le_bytes().to_vec();
+    groups.extend_from_slice(&g);
+    // "QPB1" | flags (1 = one zstd frame, 8 = client-built frames) | u32 raw_len | the frame
+    let mut raw = b"QPB1".to_vec();
+    raw.push(1 | 8);
+    raw.extend_from_slice(&(groups.len() as u32).to_le_bytes());
+    raw.extend_from_slice(&zstd::bulk::compress(&groups, 1).expect("zstd"));
+    let err = facade
+        .push(ctx(), PushReq { raw })
+        .await
+        .expect_err("flags 1 and 8 together must be refused");
+    let shown = format!("{err:?}");
+    assert!(
+        shown.contains("bad_body") && shown.contains("flags 1 and 8 together"),
+        "{shown}"
+    );
+    assert_eq!(
+        popped(&pop_q(&facade, "framed-twice").await).len(),
+        0,
+        "nothing was stored"
+    );
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}

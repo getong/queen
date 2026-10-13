@@ -29,19 +29,19 @@ fn plans(now: i64) -> Vec<PlanDoc> {
         }
         f
     };
-    let p = |code: &str, class: &str, rps, rb, mps, mb, q, ppq, parked, payload, batch, retained: i64, ret_days: i64, features| PlanDoc {
+    let p = |code: &str, class: &str, rps, rb, q, ppq, parked, retained: i64, ret_days: i64, features| PlanDoc {
         id: Uuid::new_v4(),
         code: code.into(),
         cell_class: class.into(),
         max_req_per_sec: Some(rps),
         req_burst: Some(rb),
-        max_msgs_per_sec: Some(mps),
-        msgs_burst: Some(mb),
+        // No byte rate is seeded: unlimited until a number is put on the plan
+        // or on a cluster (`max_bytes_per_sec` in its overrides).
+        max_bytes_per_sec: None,
+        bytes_burst: None,
         max_queues: Some(q),
         max_partitions_per_queue: Some(ppq),
         max_parked_pops: Some(parked),
-        max_payload_bytes: Some(payload),
-        max_batch_items: Some(batch),
         max_retained_bytes: Some(retained),
         max_retention_seconds: Some(ret_days * 86_400),
         monthly_msgs_quota: None,
@@ -50,10 +50,10 @@ fn plans(now: i64) -> Vec<PlanDoc> {
     };
     const MIB: i64 = 1024 * 1024;
     vec![
-        p("free", "shared", 5, 25, 20, 100, 20, 8, 50, 256 * 1024, 1000, 1024 * MIB, 7, fam(&[])),
-        p("dev", "shared", 10, 50, 40, 200, 50, 16, 150, 512 * 1024, 2000, 3 * 1024 * MIB, 14, fam(&[])),
-        p("pro", "shared", 50, 200, 200, 800, 200, 32, 1000, MIB, 5000, 20 * 1024 * MIB, 30, fam(&[("streams", true), ("traces", true)])),
-        p("dedicated-s", "dedicated", 200, 800, 600, 2000, 1000, 64, 5000, 4 * MIB, 10000, 200 * 1024 * MIB, 90, fam(&[("streams", true), ("traces", true)])),
+        p("free", "shared", 5, 25, 20, 8, 50, 1024 * MIB, 7, fam(&[])),
+        p("dev", "shared", 10, 50, 50, 16, 150, 3 * 1024 * MIB, 14, fam(&[])),
+        p("pro", "shared", 50, 200, 200, 32, 1000, 20 * 1024 * MIB, 30, fam(&[("streams", true), ("traces", true)])),
+        p("dedicated-s", "dedicated", 200, 800, 1000, 64, 5000, 200 * 1024 * MIB, 90, fam(&[("streams", true), ("traces", true)])),
     ]
 }
 
