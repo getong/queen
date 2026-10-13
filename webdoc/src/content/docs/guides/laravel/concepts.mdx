@@ -98,6 +98,10 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (pop start, PHP client 2.4.3): QueenQueue::pop tells a
 # supervised worker's WorkerPopGuard when each pop begins, so a failed pop counts from its start.
 # Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-11 (stability fixes, unreleased): ForkServerCommand releases the
+# boot's cache stores before forking, so the fork server holds no connection, as this page says;
+# TuningAdvisor uses no null offset; the QueenQueue, QueenConnector, SupervisorConfiguration and
+# prefork.rs fixes change nothing this page states.
 # sourceOfTruth re-read 2026-10-13 (2.3.0, PHP client 2.5.0): config/queen.php gains three keys,
 # binary_push, push_compression and framed_pop, all false by default and read from no environment
 # variable; QueenConnector validates them as booleans and gives them to the driver's client,

@@ -2,7 +2,7 @@
   <div class="qhg" :class="{ 'qhg-no-hot': !showHot }">
     <!-- header row (column labels) -->
     <div class="qhead">
-      <div></div>
+      <div class="qstatus-compact"></div>
       <div class="h-name">Queue</div>
       <div class="h-status">Status</div>
       <div class="h-c h-density">Density</div>
@@ -17,15 +17,15 @@
     <!-- skeleton -->
     <template v-if="loading && !queues.length">
       <div v-for="i in 8" :key="`s-${i}`" class="qrow qrow-skeleton">
-        <span></span>
+        <span class="qstatus-compact"></span>
         <span class="skeleton" style="height: 12px; width: 60%;"></span>
-        <span class="skeleton" style="height: 12px; width: 70px;"></span>
+        <span class="skeleton qstatus" style="height: 12px; width: 70px;"></span>
         <span class="skeleton h-density" style="height: 12px; width: 50px; margin-left: auto;"></span>
-        <span v-if="showHot" class="skeleton" style="height: 12px; width: 50px; margin-left: auto;"></span>
+        <span v-if="showHot" class="skeleton cc-hot" style="height: 12px; width: 50px; margin-left: auto;"></span>
         <span class="skeleton" style="height: 12px; width: 60px; margin-left: auto;"></span>
         <span class="skeleton" style="height: 12px; width: 50px; margin-left: auto;"></span>
-        <span class="skeleton h-parts" style="height: 12px; width: 40px; margin-left: auto;"></span>
-        <span class="skeleton h-store" style="height: 12px; width: 50px; margin-left: auto;"></span>
+        <span class="skeleton cc-parts" style="height: 12px; width: 40px; margin-left: auto;"></span>
+        <span class="skeleton cc-store" style="height: 12px; width: 50px; margin-left: auto;"></span>
         <span></span>
       </div>
     </template>
@@ -49,11 +49,11 @@
         :class="`sev-${cardSev(q)}`"
         @click="$emit('select', q)"
       >
-        <span class="g" :class="glyph(cardSev(q))" aria-hidden="true"></span>
+        <span class="g qstatus-compact" :class="glyph(cardSev(q))" aria-hidden="true"></span>
         <span class="qname">
           <span class="ns">{{ q._nsPrefix }}</span><span class="nm">{{ q._namePart }}</span>
         </span>
-        <span class="qstatus" :class="`sev-${cardSev(q)}`">{{ verdict(q).word }}</span>
+        <QueueStatus class="qstatus" :severity="cardSev(q)" :label="verdict(q).word" />
         <span class="cell-c h-density">
           <span class="cc">{{ densityVal(q.density) }}<i>msg/p</i></span>
         </span>
@@ -101,6 +101,7 @@ import { computed } from 'vue'
 
 import { formatBytes } from '@/composables/useApi'
 import { laggingPartitionsSeverity } from '@/composables/useSeverity'
+import QueueStatus from '@/components/QueueStatus.vue'
 
 const props = defineProps({
   /**
@@ -259,9 +260,9 @@ const displayed = computed(() => {
 </script>
 
 <style scoped>
-/* One card, rows on hairlines, plain right-aligned numbers. The verdict is a
-   glyph and a word per row; a number is coloured only when its own rule
-   says warn or bad. No stripes, no tinted rows, no pills. */
+/* One card, rows on hairlines, plain right-aligned numbers. The status badge
+   keeps its glyph beside the verdict; narrow rows retain the leading glyph
+   when the status column is hidden. */
 .qhg {
   background: var(--ink-2);
   border: 1px solid var(--bd);
@@ -271,14 +272,14 @@ const displayed = computed(() => {
 
 .qhead, .qrow {
   display: grid;
-  grid-template-columns: 14px minmax(200px, 1fr) 118px 92px 82px 104px 84px 86px 88px 32px;
+  grid-template-columns: minmax(200px, 1fr) 118px 92px 82px 104px 84px 86px 88px 32px;
   gap: 12px;
   align-items: center;
   padding: 0 12px 0 16px;
 }
 .qhg-no-hot .qhead,
 .qhg-no-hot .qrow {
-  grid-template-columns: 14px minmax(200px, 1fr) 118px 92px 104px 84px 86px 88px 32px;
+  grid-template-columns: minmax(200px, 1fr) 118px 92px 104px 84px 86px 88px 32px;
 }
 
 .qhead {
@@ -316,9 +317,8 @@ const displayed = computed(() => {
 .qname .ns { color: var(--text-low); font-weight: 400; }
 .qname .nm { color: var(--text-hi); }
 
-.qstatus { font-size: 12px; color: var(--text-low); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.qstatus.sev-warn { color: var(--warn-400); }
-.qstatus.sev-bad { color: var(--ember-400); }
+.qstatus { justify-self: start; }
+.qstatus-compact { display: none; }
 
 .cell-c { text-align: right; }
 .cc {
@@ -358,7 +358,7 @@ const displayed = computed(() => {
 /* narrower: drop the columns a triage does not need first */
 @media (max-width: 1180px) {
   .qhead, .qrow, .qhg-no-hot .qhead, .qhg-no-hot .qrow {
-    grid-template-columns: 14px minmax(180px, 1fr) 110px 104px 84px 86px 32px;
+    grid-template-columns: minmax(180px, 1fr) 118px 104px 84px 86px 32px;
   }
   .h-density, .qrow .h-density, .qrow .cc-hot, .qhead .h-hot, .qrow .cc-store, .qhead .h-store { display: none; }
 }
@@ -368,5 +368,6 @@ const displayed = computed(() => {
     gap: 10px;
   }
   .qstatus, .qhead .h-status, .qrow .cc-parts, .qhead .h-parts { display: none; }
+  .qstatus-compact { display: inline-block; }
 }
 </style>

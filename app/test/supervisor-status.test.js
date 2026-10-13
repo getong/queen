@@ -52,7 +52,7 @@ test('application cards merge replicas for every SDK and PHP/Rust supervisors, d
   }
 })
 
-test('a healthy sibling cannot mask critical pools or overdue publications', () => {
+test('reporting capacity stays visible without masking critical pools or overdue publications', () => {
   const healthy = replica(observe(), 'a')
   const critical = replica(observe({ pool_status: [pool({ running: 0 })] }), 'b')
   const overdue = replica(observe({ updated_at_epoch: NOW - 31 }), 'c')
@@ -60,9 +60,14 @@ test('a healthy sibling cannot mask critical pools or overdue publications', () 
   assert.equal(group.tone, 'bad')
   assert.equal(group.rows[0].slot, critical.slot)
   assert.deepEqual(group.counts, { good: 1, warn: 1, bad: 1, idle: 0 })
-  assert.equal(group.workers, null)
-  assert.equal(group.desired, null)
-  assert.equal(group.oldestAge, 31)
+  assert.equal(group.workers, 4)
+  assert.equal(group.desired, 8)
+  assert.equal(group.reportingCount, 2)
+  assert.equal(group.missingWorkers, 4)
+  assert.equal(group.poolCount, 2)
+  assert.equal(group.affectedPools, 1)
+  assert.equal(group.oldestAge, 5)
+  assert.equal(group.queues[0].tone, 'bad')
   assert.equal(supervisorGroups([healthy, overdue])[0].tone, 'warn')
 })
 
@@ -107,14 +112,137 @@ test('missing allocations are summed per replica and cannot be offset by surplus
   assert.equal(group.tone, 'warn')
 })
 
-test('stopped replicas are neutral alone, visible as attention beside running replicas', () => {
+test('completed instances stay inspectable without invalidating their replacement capacity', () => {
   const stopped = replica(observeConsumer(consumer({ state: 'stopped' })), 'b')
   assert.equal(supervisorGroups([stopped])[0].tone, 'idle')
   assert.equal(supervisorGroups([stopped])[0].workers, null)
   const [mixed] = supervisorGroups([replica(observe(), 'a'), stopped])
-  assert.equal(mixed.tone, 'warn')
-  assert.equal(mixed.workers, null)
+  assert.equal(mixed.tone, 'good')
+  assert.equal(mixed.workers, 4)
+  assert.equal(mixed.desired, 4)
+  assert.equal(mixed.reportingCount, 1)
+  assert.equal(mixed.stoppedCount, 1)
+  assert.equal(mixed.poolCount, 1)
+  assert.equal(mixed.affectedPools, 0)
+  assert.equal(mixed.draining, 0)
+  assert.equal(mixed.headroom, 0)
+  assert.equal(mixed.processOnly, true)
+  assert.equal(mixed.rows.at(-1).slot, stopped.slot)
   assert.equal(mixed.counts.idle, 1)
+})
+
+test('a replaced pod final report stays stopped after its heartbeat and publication expire', () => {
+  const replacement = replica(observe({ engine: 'rust' }), 'new')
+  for (const engine of ['php', 'rust']) for (const expired of [false, true]) {
+    const publication = wire(document({ engine, state: 'stopped', stopping: true, ready: false,
+      updated_at_epoch: NOW - 300, pool_status: [pool({ running: 0, desired: 0, ready: false })] }))
+    publication.forEach(row => { row.expired = expired })
+    const stopped = replica(supervisorObservation(decode(publication), NOW * 1000), 'old')
+    assert.equal(stopped.fresh, false)
+    assert.equal(stopped.terminal, true)
+    assert.equal(stopped.label, 'Stopped')
+    const [group] = supervisorGroups([stopped, replacement])
+    assert.equal(group.tone, 'good')
+    assert.equal(group.count, 2)
+    assert.equal(group.workers, 4)
+    assert.equal(group.desired, 4)
+    assert.equal(group.poolCount, 1)
+    assert.equal(group.affectedPools, 0)
+    assert.equal(group.oldestAge, 5)
+    assert.deepEqual(group.queues, [{ name: 'orders', running: 4, desired: 4, tone: 'good' }])
+    assert.equal(filterSupervisorGroups([group], { filter: 'attention' }).length, 0)
+    assert.equal(filterSupervisorGroups([group], { filter: 'stale' }).length, 0)
+    assert.equal(filterSupervisorGroups([group], { filter: 'stopped' }).length, 1)
+    assert.equal(filterSupervisorGroups([group], { search: 'worker-old' }).length, 1)
+    const [alone] = supervisorGroups([stopped])
+    assert.equal(alone.tone, 'idle')
+    assert.equal(alone.label, 'Stopped')
+    assert.equal(alone.workers, null)
+    assert.equal(alone.reportingCount, 0)
+    assert.equal(alone.queues[0].tone, 'idle')
+  }
+})
+
+test('stopped SDK consumers remain final across heartbeat and KV expiry', () => {
+  for (const expired of [false, true]) {
+    const publication = wire(consumer({ state: 'stopped', updated_at_epoch: NOW - 300, started_at_epoch: NOW - 600,
+      pool_status: [{ ...consumer().pool_status[0], last_completed_at_epoch: NOW - 310 }] }))
+    publication.forEach(row => { row.expired = expired })
+    const stopped = replica(supervisorObservation(decode(publication), NOW * 1000), 'old')
+    assert.equal(stopped.label, 'Stopped')
+    assert.equal(stopped.terminal, true)
+    const [group] = supervisorGroups([replica(observeConsumer(), 'new'), stopped])
+    assert.equal(group.tone, 'good')
+    assert.equal(group.workers, 4)
+    assert.equal(group.busy, 1)
+    assert.equal(group.handlerFailures, 2)
+    assert.equal(group.poolCount, 1)
+  }
+})
+
+test('an overdue or expired running pod remains uncertain while fresh capacity is reported', () => {
+  for (const expired of [false, true]) {
+    const publication = wire(document({ updated_at_epoch: NOW - 300 }))
+    publication.forEach(row => { row.expired = expired })
+    const old = replica(supervisorObservation(decode(publication), NOW * 1000), 'old')
+    const [group] = supervisorGroups([old, replica(observe(), 'new')])
+    assert.equal(old.terminal, false)
+    assert.equal(old.label, expired ? 'Publication expired' : 'Heartbeat overdue')
+    assert.equal(group.tone, 'warn')
+    assert.equal(group.workers, 4)
+    assert.equal(group.desired, 4)
+    assert.equal(group.reportingCount, 1)
+    assert.equal(group.stoppedCount, 0)
+    assert.equal(group.poolCount, 1)
+    assert.deepEqual(group.queues, [{ name: 'orders', running: 4, desired: 4, tone: 'warn' }])
+    assert.equal(filterSupervisorGroups([group], { filter: 'stale' }).length, 1)
+    const [alone] = supervisorGroups([old])
+    assert.equal(alone.tone, 'warn')
+    assert.equal(alone.workers, null)
+    assert.equal(alone.desired, null)
+    assert.equal(alone.poolCount, null)
+    assert.equal(alone.queues[0].running, null)
+  }
+})
+
+test('queues from final reports do not inflate the replacement inventory', () => {
+  const stopped = replica(observe({ state: 'stopped', pool_status: [pool({ queue: 'retired' })] }), 'old')
+  const [group] = supervisorGroups([replica(observe(), 'new'), stopped])
+  assert.equal(group.queueCount, 1)
+  assert.deepEqual(group.queues.map(queue => queue.name), ['orders'])
+  const overdue = replica(observe({ updated_at_epoch: NOW - 300, pool_status: [pool({ queue: 'unconfirmed' })] }), 'missing')
+  const [uncertain] = supervisorGroups([replica(observe(), 'new'), overdue, stopped])
+  assert.equal(uncertain.queueCount, 2)
+  assert.deepEqual(uncertain.queues.find(queue => queue.name === 'unconfirmed'), { name: 'unconfirmed', running: null, desired: null, tone: 'warn' })
+})
+
+test('paused, starting and terminating instances cannot be mistaken for completed shutdowns', () => {
+  for (const state of ['paused', 'starting', 'terminating']) {
+    for (const updated_at_epoch of [NOW - 5, NOW - 300]) {
+      const row = replica(observe({ state, updated_at_epoch }), 'old')
+      const [group] = supervisorGroups([replica(observe(), 'new'), row])
+      assert.equal(row.terminal, false)
+      assert.equal(group.tone, 'warn')
+      assert.equal(group.workers, 4)
+      assert.equal(group.stoppedCount, 0)
+    }
+  }
+})
+
+test('failed refreshes and partial inventories remain unconfirmed after a replacement', () => {
+  const stopped = replica(observe({ state: 'stopped', updated_at_epoch: NOW - 300 }), 'old')
+  const [partial] = supervisorGroups([replica(observe(), 'new'), stopped], { partial: true })
+  assert.equal(partial.tone, 'warn')
+  assert.equal(partial.label, 'Partial view')
+  assert.equal(partial.workers, 4)
+  for (const row of [observe({ state: 'stopped' }, true), observeConsumer(consumer({ state: 'stopped' }), true)]) {
+    assert.equal(row.label, 'Current state unconfirmed')
+    assert.equal(row.terminal, false)
+    const [failed] = supervisorGroups([replica(observe({}, true), 'new'), replica(row, 'old')])
+    assert.equal(failed.tone, 'warn')
+    assert.equal(failed.workers, null)
+    assert.equal(failed.reportingCount, 0)
+  }
 })
 
 test('unreadable telemetry and dynamic scopes do not invent queue counts', () => {
@@ -434,9 +562,20 @@ test('dashboard diagnostics aggregate SDK counters and PHP process slots without
   assert.deepEqual(processes.queues, [{ name: 'orders', running: 8, desired: 8, tone: 'good' }])
 })
 
-test('stale or incomplete pool inventories cannot produce confirmed runtime and allocation totals', () => {
+test('stale consumer inventories are excluded from reporting subtotals and retain their warning', () => {
+  const stale = consumer({ updated_at_epoch: NOW - 60, pool_status: [{ ...consumer().pool_status[0], last_completed_at_epoch: NOW - 65 }] })
+  const [group] = supervisorGroups([replica(observeConsumer(), 'a'), replica(observeConsumer(stale), 'b')])
+  assert.equal(group.tone, 'warn')
+  assert.equal(group.reportingCount, 1)
+  assert.equal(group.busy, 1)
+  assert.equal(group.handlerFailures, 2)
+  assert.equal(group.affectedPools, 0)
+  assert.deepEqual(group.queues, [{ name: 'orders', running: 4, desired: 4, tone: 'warn' }])
+})
+
+test('incomplete reporting inventories cannot produce confirmed runtime and allocation totals', () => {
   const healthy = replica(observeConsumer(), 'a')
-  for (const invalid of [consumer({ updated_at_epoch: NOW - 60 }), consumer({ pool_status: [consumer().pool_status[0], null] })]) {
+  for (const invalid of [consumer({ pool_status: [consumer().pool_status[0], null] }), consumer({ pool_status: [] })]) {
     const [group] = supervisorGroups([healthy, replica(observeConsumer(invalid), 'b')])
     assert.equal(group.busy, null)
     assert.equal(group.handlerFailures, null)

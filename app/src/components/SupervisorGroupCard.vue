@@ -16,7 +16,7 @@
     <div class="card-body">
       <div class="stat-grid supervisor-stats">
         <div class="stat">
-          <div class="stat-label">Workers</div>
+          <div class="stat-label">Workers reporting</div>
           <div class="stat-value" :class="{ warn: group.missingWorkers }">{{ number(group.workers) }}<small>/ {{ number(group.desired) }}</small></div>
           <div class="stat-foot">{{ group.workers === null ? 'capacity unconfirmed' : group.missingWorkers ? `${number(group.missingWorkers)} below target` : 'running / desired' }}</div>
         </div>
@@ -29,7 +29,7 @@
             <div class="stat-label">Busy workers</div>
             <div class="stat-value">{{ number(group.busy) }}</div>
           </div>
-          <div class="stat" title="Handler failures across the loaded instances, counted since each instance started">
+          <div class="stat" title="Handler failures across reporting instances, counted since each instance started">
             <div class="stat-label">Handler failures</div>
             <div class="stat-value">{{ number(group.handlerFailures) }}</div>
             <div class="stat-foot">since start</div>
@@ -46,11 +46,12 @@
           </div>
         </template>
         <div class="stat">
-          <div class="stat-label">Oldest heartbeat</div>
+          <div class="stat-label">{{ group.reportingCount ? 'Oldest reporting heartbeat' : 'Oldest heartbeat' }}</div>
           <div class="stat-value">{{ group.oldestAge === null ? '—' : age(group.oldestAge) }}</div>
           <div class="stat-foot">before this read</div>
         </div>
       </div>
+      <p v-if="group.reportingCount !== group.count" class="supervisor-note">{{ reportingLabel }}<template v-if="group.stoppedCount"> · {{ group.stoppedCount }} stopped</template></p>
       <p v-if="group.partial || group.scopedConsumers" class="supervisor-note">{{ group.partial ? 'Loaded instances only: a partial view.' : 'Includes consumers with a dynamic scope.' }}</p>
       <SupervisorActivity :queues="group.queues" :read-at="readAt" />
     </div>
@@ -96,6 +97,9 @@ const number = value => value == null ? '—' : value.toLocaleString()
 const age = seconds => seconds < 60 ? `${seconds}s` : seconds < 3600 ? `${Math.floor(seconds / 60)}m` : `${Math.floor(seconds / 3600)}h`
 const engineLabel = computed(() => props.group.engines.map(engine => engine.toUpperCase()).join(' / ') || 'Unknown engine')
 const instanceLabel = computed(() => `${props.group.count} ${props.group.count === 1 ? 'instance' : 'instances'}`)
+const reportingLabel = computed(() => props.group.reportingCount
+  ? `Figures from ${props.group.reportingCount} of ${props.group.count} instances with recent running heartbeats`
+  : 'No instances with a recent running heartbeat')
 const replicaLabel = computed(() => tones.filter(tone => props.group.counts[tone]).map(tone => `${props.group.counts[tone]} ${toneLabels[tone]}`).join(' · '))
 </script>
 

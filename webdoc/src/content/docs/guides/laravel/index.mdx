@@ -90,6 +90,10 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (pop start, PHP client 2.4.3): QueenQueue::pop tells a
 # supervised worker's WorkerPopGuard when each pop begins, so a failed pop counts from its start.
 # Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-11 (stability fixes, unreleased): QueenConnector, QueenQueue,
+# SupervisorConfiguration: a job whose timeout its lease cannot cover fails alone (migrate-from-
+# horizon says so), and the budget refusal names its parts. The lease and timeout rules here are
+# unchanged; the version table gains its row at the release.
 # sourceOfTruth re-read 2026-10-13 (2.3.0, PHP client 2.5.0): config/queen.php gains three keys,
 # binary_push, push_compression and framed_pop, all false by default and read from no environment
 # variable; QueenConnector validates them as booleans and gives them to the driver's client,
