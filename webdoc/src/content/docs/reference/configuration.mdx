@@ -115,7 +115,7 @@ on by default turns off only with `0`, `false`, `off` or `no`.
 | `QUEEN_RAFT_ENTRY_MAX_BYTES` | `100663296` (96 MiB) | The largest planned command: a push to one partition, one KV or timers call, one positions list. A larger one is refused. |
 | `QUEEN_RAFT_COMMAND_QUEUE_DEPTH` | `16384` | The planner's command channel. |
 | `QUEEN_RAFT_REQUEST_ID_WINDOW_S` | `60` | How long a committed command's outcome answers a retry under the same request id. |
-| `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` | `10` | How often the leader looks whether the oldest recorded outcome has left `QUEEN_RAFT_REQUEST_ID_WINDOW_S`, and retires what has in its next cycle. `0` leaves that to a 10 s tick, which retires ten seconds of outcomes at once. |
+| `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` | `10` | How often the leader looks whether 256 recorded outcomes have left `QUEEN_RAFT_REQUEST_ID_WINDOW_S`, and retires what has in its next cycle. Fewer wait for the 10 s tick. `0` leaves everything to that tick, which retires ten seconds of outcomes at once. |
 | `QUEEN_RAFT_ANSWER_AT_COMMIT` | on | Answer pushes and acks when their entry commits, without waiting for it to apply on the leader. |
 | `QUEEN_RAFT_DEDUP_INDEX` | `txns` | How each append's `transactionId` hashes are indexed: `txns` (one row per append), `segment` (read back from the queue log) or `rows`. |
 | `QUEEN_RAFT_ROWS_WINDOW` | on | A push's index row leaves memory when it leaves the queue's dedup window (never before 900 s), whether or not the message is still retained; older messages are read through the queue log's own index. Needs cluster version 6. Off: a row stays for as long as its message. |

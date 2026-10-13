@@ -18,15 +18,15 @@ partition) nor on 10M (memory: more than the 32 GB of these brokers). 2M msg/s w
 1,000 partitions and rises slowly there. The runs, their method and what is not solved are in
 `benchmark-queen/2026-10-12-three-node-new-forms/NIGHT.md`.
 
-**A command's recorded outcome leaves when its window ends, not ten seconds' worth at a time.** Every
-command's outcome is kept `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s) to answer a retry. The step that
-retires them ran on a 10 s tick, so ten seconds of outcomes left together, in steps of 4,096 rows one
-after the other, and apply did nothing else for 50 to 150 ms: from second 70 of every load the p99
-doubled or tripled. The leader now looks every `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` (10; `0` leaves it
-to the tick) whether the oldest outcome has left the window, and retires what has in its next cycle.
-The step and its limit are unchanged. 1,000 partitions, last 30 s of a 90 s load, end to end p50 /
-p99: 11.8 / 29.9 → 10.6 / 16.3 ms at 1M msg/s, 17.4 / 78.8 → 17.4 / 32.8 at 1.5M, 29.4 / 127 → 30.0 /
-60.4 at 2M.
+**A command's recorded outcome leaves when its window ends, not ten seconds' worth at a time.**
+Every command's outcome is kept `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s) to answer a retry. The step
+that retires them ran on a 10 s tick, so ten seconds of outcomes left together, in steps of 4,096
+rows one after the other, and apply did nothing else for 50 to 150 ms: from second 70 of every load
+the p99 doubled or tripled. The leader now looks every `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` (10; `0`
+leaves it to the tick) whether 256 outcomes have left the window, and retires what has in its next
+cycle; fewer wait for the tick, so an idle cluster writes no entry for them. The step and its limit
+are unchanged. 1,000 partitions, last 30 s of a 90 s load, end to end p50 / p99: 11.8 / 29.9 → 10.6
+/ 16.3 ms at 1M msg/s, 17.4 / 78.8 → 17.4 / 32.8 at 1.5M, 29.4 / 127 → 30.0 / 60.4 at 2M.
 
 **Ten million partitions: the leader's idle scan works in turns.** The scan that unloads idle consumer
 state walked 625,000 partitions under one lock once a second, on the thread that serves pops: with
