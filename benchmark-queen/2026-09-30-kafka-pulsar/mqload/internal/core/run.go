@@ -137,8 +137,9 @@ type Run struct {
 
 	readyAt, t0, prodEnd, endAt time.Time
 	late                        time.Duration
-	plannedEnd                  time.Time     // t0 + duration (read by the reporter)
-	pacerDone                   chan struct{} // closed when the pacer stopped offering
+	plannedEnd                  time.Time            // t0 + duration (read by the reporter)
+	tail                        atomic.Pointer[snap] // -tail: the counters when the last -tail of the producing time began
+	pacerDone                   chan struct{}        // closed when the pacer stopped offering
 
 	repStop chan time.Time
 	repDone chan struct{}
@@ -327,6 +328,12 @@ func (r *Run) Produce(ctx context.Context, t0 time.Time, send func(*Unit)) {
 	defer close(r.pacerDone)
 	r.Picker.SetStart(t0.UnixMicro())
 	r.startReporter(t0)
+	if c.Tail > 0 && c.Tail < c.Duration {
+		go func(at time.Time) {
+			time.Sleep(time.Until(at))
+			r.tail.Store(r.takeSnap())
+		}(r.plannedEnd.Add(-c.Tail))
+	}
 	if c.Rate <= 0 || send == nil {
 		select {
 		case <-ctx.Done():
@@ -827,6 +834,13 @@ func (r *Run) Finish(end time.Time) {
 		"load_cpu_pct": loadCPU, "cpu_s": cpu.Seconds(), "wall_s": wall.Seconds(),
 		"payload_avg_raw_bytes": r.Pool.AvgRaw, "payload_avg_bytes": r.Pool.AvgStamped,
 		"steady": steady, "windows": wins, "errors": r.errs,
+	}
+	// -tail: the same histograms for the end of the run alone, from the mark to the last message consumed.
+	if t := r.tail.Load(); t != nil {
+		res["tail_from_ms"] = ms(t.t)
+		res["hist_produce_tail_us"] = sparse(diff(t.prodH, fin.prodH))
+		res["hist_e2e_tail_us"] = sparse(diff(t.e2eH, fin.e2eH))
+		res["hist_e2e_local_tail_us"] = sparse(diff(t.e2eLH, fin.e2eLH))
 	}
 	if txnRes != nil {
 		res["txn"] = txnRes

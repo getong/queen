@@ -1,0 +1,19 @@
+#!/usr/bin/env bpftrace
+// offcpu.bt <tid> <pid>: where one thread of the broker waits. Every period the thread spends off the CPU, as a
+// histogram, and those of 1 ms or more by the kernel stack it went to sleep on (a lock, the disk, a page fault that
+// waits). Also the process's calls that give memory back or map it (madvise, munmap, mmap), by thread, with their time.
+tracepoint:sched:sched_switch /args->prev_pid == $1/ { @off[args->prev_pid] = nsecs; @st[args->prev_pid] = kstack(16); }
+tracepoint:sched:sched_switch /args->next_pid == $1 && @off[args->next_pid]/
+{
+  $us = (nsecs - @off[args->next_pid]) / 1000;
+  @off_us = hist($us);
+  if ($us >= 1000) { @long_us[@st[args->next_pid]] = stats($us); }
+  delete(@off[args->next_pid]);
+}
+tracepoint:syscalls:sys_enter_madvise, tracepoint:syscalls:sys_enter_munmap, tracepoint:syscalls:sys_enter_mmap /pid == $2/ { @t[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_madvise, tracepoint:syscalls:sys_exit_munmap, tracepoint:syscalls:sys_exit_mmap /pid == $2 && @t[tid]/
+{
+  @mem_us[comm, probe] = stats((nsecs - @t[tid]) / 1000);
+  delete(@t[tid]);
+}
+END { clear(@off); clear(@st); clear(@t); }

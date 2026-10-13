@@ -168,6 +168,11 @@ def main():
             t0 = int(go) / 1000; ramp = secs(env.get("RAMP"), 10); dur = secs(env.get("DURATION"), 70)
             win = (t0 + ramp, t0 + dur)
         st = [x for x in (node_stats(r, win) for r in S.values()) if x]
+        # a loader host is never a broker: on the queen-kafka runs the sampler's "/queen" pattern also matched the
+        # Kafka-client loader (its path names Queen), which put the loaders' CPU and RSS into Queen's columns
+        for p, x in zip([p for p, r in S.items() if node_stats(r, win)], st):
+            if re.search(r"(^|/)(l\d+\.txt|loader\d*/)", p):
+                x["system"] = []
         brokers = [x for x in st if x["system"]]
         loaders = [x for x in st if not x["system"]]
         sd = [steady(x["windows"]) for x in L]

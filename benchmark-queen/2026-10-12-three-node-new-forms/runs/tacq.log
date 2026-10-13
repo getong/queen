@@ -1,0 +1,181 @@
+[19:40:23] start ./tac.sh t1-p1-p1000-r1500000 1000 1500000
+t1-p1-p1000-r1500000/1500000
+   pushed  1,500,089 consumed  1,500,182 of  1,499,963 | shed 0 errors 0
+   30-60 s: e2e p50 17.3 p99 38.1 (worst 41.2) | push p50 8.0 p99 20.1 (worst 21.1)
+   last 30 s: e2e p50 17.4 p99 32.8 | push p50 8.0 p99 16.6
+   e2e p99 per 10 s: [42, 55, 42, 34, 38, 35, 30, 35, 31]  pushed k/s: [749, 1500, 1500, 1500, 1500, 1500, 1500, 1499, 1500]
+   cores [7.1, 4.8, 4.5] (sum 16.4) | leader mem GB 4.7 at 60 s, 5.9 at the end | disk MB/s [415, 411, 412] | net tx MB/s [455, 317, 316]
+   leader apply max ms per 10 s: [5, 13, 8, 7, 5, 5, 8, 7, 10, 6, 6]
+[19:43:08] end
+[19:43:08] start ./tac.sh t2-p1-p1000-r1000000 1000 1000000
+t2-p1-p1000-r1000000/1000000
+   pushed    999,996 consumed  1,000,013 of  1,000,016 | shed 0 errors 0
+   30-60 s: e2e p50 10.0 p99 18.3 (worst 19.1) | push p50 5.3 p99 8.8 (worst 9.7)
+   last 30 s: e2e p50 10.6 p99 16.3 | push p50 5.3 p99 8.3
+   e2e p99 per 10 s: [16, 17, 16, 18, 17, 17, 16, 16, 15]  pushed k/s: [500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+   cores [5.9, 3.9, 3.7] (sum 13.5) | leader mem GB 3.2 at 60 s, 4.0 at the end | disk MB/s [316, 309, 314] | net tx MB/s [308, 213, 211]
+   leader apply max ms per 10 s: [2, 3, 3, 3, 4, 3, 4, 3, 6, 4, 9]
+[19:45:49] end
+[19:45:49] start ./tac.sh t3-p1-p1000-r100000 1000 100000
+t3-p1-p1000-r100000/100000
+   pushed     99,994 consumed     99,991 of    100,001 | shed 0 errors 0
+   30-60 s: e2e p50 3.6 p99 5.7 (worst 7.5) | push p50 2.6 p99 4.0 (worst 4.5)
+   last 30 s: e2e p50 3.9 p99 6.8 | push p50 2.8 p99 4.2
+   e2e p99 per 10 s: [6, 5, 6, 6, 6, 6, 6, 6, 6]  pushed k/s: [50, 100, 100, 100, 100, 100, 100, 100, 100]
+   cores [1.7, 1.4, 1.3] (sum 4.4) | leader mem GB 0.4 at 60 s, 0.5 at the end | disk MB/s [58, 57, 57] | net tx MB/s [37, 22, 22]
+   leader apply max ms per 10 s: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+[19:48:26] end
+[19:48:26] start ./tac.sh t4-p1-noeager-p1000-r100000 1000 100000
+t4-p1-noeager-p1000-r100000/100000
+   pushed    100,012 consumed     99,996 of     99,999 | shed 0 errors 0
+   30-60 s: e2e p50 6.1 p99 9.8 (worst 11.8) | push p50 2.7 p99 4.0 (worst 4.6)
+   last 30 s: e2e p50 6.6 p99 11.0 | push p50 2.8 p99 4.3
+   e2e p99 per 10 s: [10, 10, 10, 10, 10, 10, 10, 10, 10]  pushed k/s: [50, 100, 100, 100, 100, 100, 100, 100, 100]
+   cores [1.2, 1.0, 0.9] (sum 3.1) | leader mem GB 0.4 at 60 s, 0.5 at the end | disk MB/s [52, 52, 52] | net tx MB/s [34, 22, 22]
+   leader apply max ms per 10 s: [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+[19:50:52] end
+[19:50:52] start ./tac.sh t5-p1-p10000000-r100000 10000000 100000
+t5-p1-p10000000-r100000/100000
+   pushed     99,994 consumed    100,001 of    100,001 | shed 0 errors 0
+   30-60 s: e2e p50 3.6 p99 5.7 (worst 7.5) | push p50 2.6 p99 3.7 (worst 4.6)
+   last 30 s: e2e p50 4.0 p99 6.9 | push p50 2.8 p99 4.2
+   e2e p99 per 10 s: [6, 6, 6, 6, 6, 6, 6, 6, 6]  pushed k/s: [50, 100, 100, 100, 100, 100, 100, 100, 100]
+   cores [1.9, 1.4, 1.3] (sum 4.6) | leader mem GB 18.1 at 60 s, 18.1 at the end | disk MB/s [54, 54, 54] | net tx MB/s [37, 22, 22]
+   leader apply max ms per 10 s: [4, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1]
+[19:59:04] end
+Q1_DONE
+[20:00:01] start ./tac.sh t6-p1-p1000-r500000 1000 500000
+t6-p1-p1000-r500000/500000
+   pushed    499,985 consumed    499,948 of    500,015 | shed 0 errors 0
+   30-60 s: e2e p50 5.6 p99 11.1 (worst 15.3) | push p50 3.4 p99 6.3 (worst 11.6)
+   last 30 s: e2e p50 6.0 p99 10.4 | push p50 3.6 p99 5.8
+   e2e p99 per 10 s: [11, 10, 10, 10, 11, 10, 10, 9, 9]  pushed k/s: [250, 500, 500, 500, 500, 500, 500, 500, 500]
+   cores [4.7, 3.2, 3.1] (sum 11.0) | leader mem GB 1.7 at 60 s, 2.1 at the end | disk MB/s [249, 243, 248] | net tx MB/s [162, 107, 107]
+   leader apply max ms per 10 s: [2, 8, 3, 5, 15, 2, 7, 9, 2, 3, 4]
+[20:02:39] end
+[20:02:39] start ./tac.sh t7-p1-p1000-r2000000 1000 2000000
+t7-p1-p1000-r2000000/2000000
+   pushed  2,000,300 consumed  2,000,072 of  2,000,006 | shed 0 errors 0
+   30-60 s: e2e p50 30.8 p99 70.1 (worst 76.3) | push p50 15.0 p99 35.6 (worst 37.1)
+   last 30 s: e2e p50 30.0 p99 60.4 | push p50 14.2 p99 31.5
+   e2e p99 per 10 s: [50, 72, 102, 59, 54, 70, 54, 51, 66]  pushed k/s: [997, 1994, 2006, 2001, 2000, 2000, 1999, 1998, 2001]
+   cores [8.7, 5.8, 5.5] (sum 20.0) | leader mem GB 6.4 at 60 s, 7.9 at the end | disk MB/s [520, 518, 518] | net tx MB/s [603, 422, 421]
+   leader apply max ms per 10 s: [16, 12, 14, 10, 10, 11, 16, 11, 11, 7, 8]
+[20:05:15] end
+[20:05:15] start ./tac.sh t8-p1-p10000000-r1000000 10000000 1000000
+t8-p1-p10000000-r1000000/1000000
+   pushed    999,989 consumed  1,000,046 of  1,000,009 | shed 0 errors 0
+   30-60 s: e2e p50 10.9 p99 23.4 (worst 41.2) | push p50 5.3 p99 11.2 (worst 11.7)
+   last 30 s: e2e p50 11.1 p99 17.2 | push p50 5.4 p99 8.4
+   e2e p99 per 10 s: [15, 17, 18, 17, 17, 23, 17, 17, 17]  pushed k/s: [500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+   cores [6.3, 3.9, 3.7] (sum 13.9) | leader mem GB 20.7 at 60 s, 21.5 at the end | disk MB/s [284, 279, 283] | net tx MB/s [307, 212, 211]
+   leader apply max ms per 10 s: [3, 6, 4, 4, 6, 5, 4, 4, 5, 5, 5]
+[20:13:17] end
+[20:13:17] start ./tac.sh t9-p1-idle30-p10000000-r1000000 10000000 1000000
+t9-p1-idle30-p10000000-r1000000/1000000
+   pushed  1,000,018 consumed    999,984 of    999,998 | shed 0 errors 0
+   30-60 s: e2e p50 11.1 p99 37.6 (worst 77.3) | push p50 5.4 p99 9.4 (worst 10.2)
+   last 30 s: e2e p50 11.3 p99 17.7 | push p50 5.6 p99 8.6
+   e2e p99 per 10 s: [15, 18, 19, 17, 17, 38, 17, 19, 17]  pushed k/s: [500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+   cores [6.3, 4.1, 3.8] (sum 14.2) | leader mem GB 14.4 at 60 s, 15.2 at the end | disk MB/s [284, 278, 282] | net tx MB/s [307, 212, 212]
+   leader apply max ms per 10 s: [3, 4, 7, 4, 4, 7, 3, 9, 4, 4, 4]
+[20:21:34] end
+[20:21:34] start ./tac.sh t10-p1-idle30-p10000000-r1500000 10000000 1500000
+t10-p1-idle30-p10000000-r1500000/1500000
+   pushed  1,499,922 consumed  1,499,985 of  1,500,035 | shed 0 errors 0
+   30-60 s: e2e p50 19.6 p99 81.4 (worst 101.9) | push p50 9.2 p99 39.2 (worst 41.7)
+   last 30 s: e2e p50 20.2 p99 409.6 | push p50 9.2 p99 368.6
+   e2e p99 per 10 s: [30, 39, 39, 81, 39, 37, 741, 61, 60]  pushed k/s: [748, 1500, 1500, 1500, 1499, 1501, 1500, 1500, 1500]
+   cores [7.6, 4.9, 4.7] (sum 17.2) | leader mem GB 15.9 at 60 s, 17.6 at the end | disk MB/s [383, 379, 382] | net tx MB/s [454, 317, 316]
+   leader apply max ms per 10 s: [6, 7, 8, 12, 8, 12, 24, 10, 18, 5, 6]
+[20:29:38] end
+Q2_DONE
+[20:29:41] start ./tac.sh t11-p1-real-p1000-r1000000 1000 1000000
+t11-p1-real-p1000-r1000000/1000000
+   pushed  1,000,005 consumed  1,000,008 of    999,975 | shed 0 errors 0
+   30-60 s: e2e p50 10.6 p99 17.5 (worst 18.8) | push p50 5.3 p99 8.9 (worst 9.4)
+   last 30 s: e2e p50 11.4 p99 35.8 | push p50 5.7 p99 13.6
+   e2e p99 per 10 s: [16, 16, 16, 17, 17, 18, 21, 36, 30, 36, 28, 43, 36, 40, 31]  pushed k/s: [499, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+   cores [6.2, 3.9, 3.7] (sum 13.8) | leader mem GB 3.7 at 60 s, 4.6 at the end | disk MB/s [324, 317, 322] | net tx MB/s [308, 212, 212]
+   leader apply max ms per 10 s: [3, 3, 6, 4, 13, 15, 44, 44, 46, 59, 44, 52, 48, 58, 44, 41, 35]
+[20:33:27] end
+[20:33:27] start single ramp p1
+[20:35:30]    50,000: last 30 s: offered 49,995 pushed 49,996 consumed 49,993 | run: shed 0 errors 0 | push p50 4.3 p99 11.1 | e2e p50 9.6 p99 24.6 worst 25.9 | cores 8.4 / 5.8 / 5.3 | mem GB 1.8 / 1.6 / 1.6 | loaders 8.9c  OK 
+[20:37:07]   100,000: last 30 s: offered 99,998 pushed 100,071 consumed 100,088 | run: shed 0 errors 0 | push p50 9.5 p99 28.2 | e2e p50 32.0 p99 73.7 worst 77.8 | cores 10.1 / 7.8 / 7.5 | mem GB 3.4 / 3.1 / 3.2 | loaders 13.6c  OK 
+[20:38:44]   200,000: last 30 s: offered 199,994 pushed 145,315 consumed 131,626 | run: shed 2,841,107 errors 26 | push p50 198.7 p99 745.5 | e2e p50 442.4 p99 3014.7 worst 3702.8 | cores 10.8 / 8.1 / 9.3 | mem GB 6.1 / 6.4 / 6.4 | loaders 16.9c  NOT CARRIED 
+[20:38:48] end
+Q3_DONE
+[20:50:49] start ./tac.sh t12-p2-real-p1000-r1000000 1000 1000000
+t12-p2-real-p1000-r1000000/1000000
+   pushed  1,000,006 consumed  1,000,003 of    999,953 | shed 0 errors 0
+   30-60 s: e2e p50 10.7 p99 19.1 (worst 23.4) | push p50 5.3 p99 8.9 (worst 9.7)
+   last 30 s: e2e p50 11.8 p99 19.5 | push p50 5.8 p99 9.2
+   e2e p99 per 10 s: [17, 18, 17, 16, 17, 19, 17, 19, 19, 19, 19, 22, 18, 19, 20]  pushed k/s: [500, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000]
+   cores [6.1, 3.9, 3.6] (sum 13.6) | leader mem GB 3.7 at 60 s, 4.6 at the end | disk MB/s [324, 318, 323] | net tx MB/s [307, 212, 212]
+   leader apply max ms per 10 s: [2, 4, 3, 3, 4, 21, 3, 6, 4, 14, 4, 15, 4, 16, 21, 12, 9]
+[20:54:30] end
+[20:54:30] start t13-p2-single-real-p1000
+[20:57:40]   100,000: last 30 s: offered 99,998 pushed 100,006 consumed 100,149 | run: shed 0 errors 0 | push p50 11.9 p99 27.6 | e2e p50 123.9 p99 174.1 worst 176.1 | cores 10.3 / 7.9 / 7.6 | mem GB 4.1 / 3.6 / 3.7 | loaders 13.2c  OK 
+[20:57:46] end
+[20:57:46] start t14-p2-single-clean-p1000
+[20:59:58]   100,000: last 30 s: offered 99,998 pushed 99,979 consumed 99,921 | run: shed 0 errors 0 | push p50 9.1 p99 29.4 | e2e p50 30.0 p99 61.4 worst 64.0 | cores 10.1 / 7.9 / 7.5 | mem GB 3.3 / 3.1 / 3.1 | loaders 13.4c  OK 
+[21:01:35]   150,000: last 30 s: offered 149,992 pushed 145,529 consumed 145,504 | run: shed 139,075 errors 0 | push p50 38.4 p99 165.9 | e2e p50 114.7 p99 2883.6 worst 3178.5 | cores 10.6 / 9.3 / 9.9 | mem GB 6.0 / 6.0 / 6.3 | loaders 17.9c  NOT CARRIED 
+[21:01:39] end
+[21:01:39] start ./tac.sh t15-p2-idle30-p10000000-r1500000 10000000 1500000
+t15-p2-idle30-p10000000-r1500000/1500000
+   pushed  1,500,076 consumed  1,500,073 of  1,499,976 | shed 0 errors 0
+   30-60 s: e2e p50 19.1 p99 107.0 (worst 120.3) | push p50 8.9 p99 54.0 (worst 56.6)
+   last 30 s: e2e p50 19.7 p99 85.0 | push p50 9.0 p99 39.4
+   e2e p99 per 10 s: [27, 39, 45, 107, 35, 40, 163, 37, 35]  pushed k/s: [748, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+   cores [7.6, 4.9, 4.6] (sum 17.1) | leader mem GB 15.9 at 60 s, 17.5 at the end | disk MB/s [383, 380, 381] | net tx MB/s [454, 317, 316]
+   leader apply max ms per 10 s: [5, 8, 7, 9, 7, 7, 18, 7, 24, 6, 7]
+[21:09:38] end
+[21:09:38] start ./tac.sh t16-p2-idle30-p10000000-r2000000 10000000 2000000
+t16-p2-idle30-p10000000-r2000000/2000000
+   pushed  1,999,730 consumed  1,999,892 of  2,000,016 | shed 6,581,500 errors 1259
+   30-60 s: e2e p50 36.6 p99 238.6 (worst 250.9) | push p50 17.5 p99 181.2 (worst 187.4)
+   last 30 s: e2e p50 241.7 p99 2588.7 | push p50 180.2 p99 8781.8
+   e2e p99 per 10 s: [48, 80, 120, 56, 67, 239, 63, 2245, 2605]  pushed k/s: [998, 2000, 2000, 2000, 2000, 2000, 2000, 1515, 1571]
+   cores [9.3, 6.0, 5.7] (sum 21.0) | leader mem GB 18.1 at 60 s, 22.1 at the end | disk MB/s [492, 489, 491] | net tx MB/s [604, 421, 420]
+   leader apply max ms per 10 s: [11, 13, 20, 16, 51, 30, 27, 168, 51, 28, 28]
+[21:17:27] end
+Q4_DONE
+[21:26:40] start ./tac.sh t17-p3-idle30-p10000000-r1500000 10000000 1500000
+t17-p3-idle30-p10000000-r1500000/1500000
+   pushed  1,499,921 consumed  1,499,933 of  1,499,971 | shed 0 errors 0
+   30-60 s: e2e p50 18.8 p99 60.2 (worst 72.2) | push p50 8.6 p99 34.6 (worst 36.6)
+   last 30 s: e2e p50 20.0 p99 130.0 | push p50 9.1 p99 557.1
+   e2e p99 per 10 s: [31, 47, 48, 60, 39, 35, 73, 73, 131]  pushed k/s: [749, 1500, 1500, 1500, 1500, 1499, 1501, 1499, 1500]
+   cores [7.6, 5.0, 4.7] (sum 17.3) | leader mem GB 15.9 at 60 s, 17.6 at the end | disk MB/s [383, 380, 381] | net tx MB/s [454, 317, 316]
+   leader apply max ms per 10 s: [3, 8, 9, 11, 9, 7, 11, 52, 30, 7, 6]
+[21:35:06] end
+[21:35:06] start ./tac.sh t18-p3-real-p1000-r2000000 1000 2000000
+t18-p3-real-p1000-r2000000/2000000
+   pushed  1,998,901 consumed  1,997,938 of  2,000,008 | shed 0 errors 0
+   30-60 s: e2e p50 33.0 p99 74.2 (worst 75.3) | push p50 15.9 p99 36.6 (worst 37.1)
+   last 30 s: e2e p50 43.0 p99 78.8 | push p50 19.2 p99 37.4
+   e2e p99 per 10 s: [70, 264, 69, 60, 74, 72, 57, 62, 67, 61, 74, 103, 73, 99, 68, 68, 72, 75, 72, 67, 80, 79, 80, 76]  pushed k/s: [997, 2001, 2000, 1998, 2001, 1997, 2003, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 1999, 1999, 2001, 1998, 2001, 1999, 1999, 2001, 2002, 1998]
+   cores [9.2, 5.8, 5.6] (sum 20.6) | leader mem GB 7.7 at 60 s, 9.2 at the end | disk MB/s [535, 534, 533] | net tx MB/s [602, 423, 421]
+   leader apply max ms per 10 s: [17, 25, 18, 14, 11, 13, 13, 16, 18, 22, 21, 24, 21, 26, 14, 32, 16, 18, 22, 17, 21, 20, 22, 14, 12, 9]
+[21:40:21] end
+[21:40:21] start t19-p3-single-real-sh8-p1000
+[21:43:23]   100,000: last 30 s: offered 99,999 pushed 99,971 consumed 100,026 | run: shed 0 errors 0 | push p50 13.4 p99 32.0 | e2e p50 182.3 p99 225.3 worst 227.3 | cores 10.0 / 8.0 / 7.6 | mem GB 4.2 / 3.7 / 3.7 | loaders 13.0c  OK 
+[21:43:27] end
+[21:43:27] start t20-p3-single-real-p1000
+[21:46:22]    25,000: last 30 s: offered 24,993 pushed 24,993 consumed 24,993 | run: shed 0 errors 0 | push p50 2.8 p99 5.2 | e2e p50 5.7 p99 12.2 worst 13.4 | cores 6.8 / 4.8 / 4.5 | mem GB 1.2 / 1.1 / 1.1 | loaders 6.1c  OK 
+[21:48:29]    50,000: last 30 s: offered 49,995 pushed 49,996 consumed 49,987 | run: shed 0 errors 0 | push p50 4.5 p99 12.9 | e2e p50 10.6 p99 28.2 worst 31.7 | cores 8.4 / 6.0 / 5.6 | mem GB 2.1 / 1.9 / 1.9 | loaders 8.8c  OK 
+[21:50:36]    75,000: last 30 s: offered 74,997 pushed 74,997 consumed 74,993 | run: shed 0 errors 0 | push p50 8.0 p99 21.8 | e2e p50 30.2 p99 61.4 worst 65.0 | cores 9.8 / 7.3 / 6.9 | mem GB 3.1 / 2.8 / 2.8 | loaders 11.6c  OK 
+[21:50:39] end
+Q5_DONE
+[21:50:42] start t21-p3-single-real-sh1-p1000
+[21:53:40]   100,000: last 30 s: offered 99,998 pushed 93,561 consumed 94,544 | run: shed 302,227 errors 0 | push p50 19.7 p99 991.2 | e2e p50 639.0 p99 2457.6 worst 2916.4 | cores 8.4 / 5.9 / 5.8 | mem GB 5.4 / 5.8 / 5.0 | loaders 12.9c  NOT CARRIED 
+[21:53:44] end
+[21:53:44] start t22-p3-single-real-min512-p1000
+[21:56:47]   100,000: last 30 s: offered 99,998 pushed 99,986 consumed 100,013 | run: shed 0 errors 0 | push p50 14.8 p99 34.3 | e2e p50 241.7 p99 294.9 worst 294.9 | cores 9.5 / 7.3 / 6.9 | mem GB 4.3 / 3.7 / 3.7 | loaders 12.9c  OK 
+[21:56:51] end
+Q6_DONE
+[21:56:53] start t23-p3-single-real-noeager-p1000
+[21:59:13]    50,000: last 30 s: offered 49,995 pushed 49,994 consumed 49,989 | run: shed 0 errors 0 | push p50 4.5 p99 16.6 | e2e p50 12.7 p99 35.3 worst 106.5 | cores 8.2 / 5.8 / 5.4 | mem GB 2.1 / 2.1 / 1.9 | loaders 8.8c  OK 
+[22:01:21]    75,000: last 30 s: offered 74,996 pushed 74,987 consumed 74,969 | run: shed 0 errors 1 | push p50 7.9 p99 22.5 | e2e p50 29.7 p99 60.9 worst 65.0 | cores 9.7 / 7.2 / 6.9 | mem GB 3.1 / 2.8 / 2.8 | loaders 11.6c  NOT CARRIED 
+[22:01:27] end
+Q7_DONE

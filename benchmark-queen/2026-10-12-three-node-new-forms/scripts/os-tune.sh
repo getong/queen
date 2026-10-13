@@ -29,6 +29,15 @@ set_kv net.core.wmem_max 67108864
 set_kv net.ipv4.tcp_rmem "4096 131072 67108864"
 set_kv net.ipv4.tcp_wmem "4096 131072 67108864"
 set_kv net.ipv4.tcp_slow_start_after_idle 0
+if [ "$ROLE" = broker ]; then
+  # 2026-10-12: room for the kernel to free memory ahead of need. With 66 MB of reserve (the droplet's default) and the
+  # background reclaim starting 31 MB above it, a broker that fills its memory at 200 MB/s (ten million partitions,
+  # 1.5M msg/s: page cache for the logs and rows in RAM) outran it, and the threads that asked for memory freed it
+  # themselves: every client stalled for 0.7 s when the three nodes ran out together. 512 MB of reserve, and the
+  # background reclaim working from 2% of memory above it.
+  set_kv vm.min_free_kbytes 524288
+  set_kv vm.watermark_scale_factor 200
+fi
 if [ "$ROLE" = loader ]; then
   set_kv net.ipv4.ip_local_port_range "10240 65535"
   set_kv net.ipv4.tcp_tw_reuse 1

@@ -1,0 +1,142 @@
+[16:09:13] run nd-p1000-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:09:30] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[16:11:33]   100,000: last 30 s: offered 99,996 pushed 100,006 consumed 100,006 | run: shed 0 errors 0 | push p50 2.8 p99 4.4 | e2e p50 6.5 p99 10.2 worst 10.9 | cores 1.2 / 1.0 / 0.9 | mem GB 0.6 / 0.5 / 0.5 | loaders 1.3c  OK 
+[16:11:38] run nd-p1000-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:11:56] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[16:14:00]   500,000: last 30 s: offered 499,992 pushed 499,996 consumed 499,992 | run: shed 0 errors 0 | push p50 3.5 p99 6.6 | e2e p50 7.9 p99 18.7 worst 39.9 | cores 4.3 / 3.1 / 2.9 | mem GB 2.2 / 2.0 / 2.0 | loaders 4.8c  OK 
+[16:14:05] run nd-p1000-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:14:21] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[16:16:25] 1,000,000: last 30 s: offered 999,993 pushed 999,993 consumed 1,000,037 | run: shed 0 errors 0 | push p50 5.2 p99 9.1 | e2e p50 11.8 p99 30.0 worst 36.9 | cores 5.8 / 3.9 / 3.7 | mem GB 4.1 / 3.8 / 3.8 | loaders 8.4c  OK 
+[16:16:26] run nd-p1000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:16:40] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[16:18:43] 1,500,000: last 30 s: offered 1,499,996 pushed 1,499,803 consumed 1,499,643 | run: shed 0 errors 0 | push p50 7.9 p99 18.9 | e2e p50 17.4 p99 78.8 worst 89.1 | cores 7.2 / 4.9 / 4.6 | mem GB 6.0 / 5.6 / 5.6 | loaders 12.1c  OK 
+[16:18:46] run nd-p1000-r2000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:18:52] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[16:20:56] 2,000,000: last 30 s: offered 1,999,966 pushed 1,999,356 consumed 1,999,500 | run: shed 0 errors 0 | push p50 14.0 p99 43.5 | e2e p50 29.4 p99 127.0 worst 133.1 | cores 8.7 / 6.0 / 5.7 | mem GB 8.3 / 7.6 / 7.5 | loaders 15.7c  OK 
+[16:20:57] run nd-p100000-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:21:13] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100000 partitions
+[16:23:18]   100,000: last 30 s: offered 99,996 pushed 99,999 consumed 99,999 | run: shed 0 errors 0 | push p50 2.7 p99 4.0 | e2e p50 6.3 p99 10.2 worst 10.6 | cores 1.3 / 1.0 / 0.9 | mem GB 0.9 / 0.6 / 0.6 | loaders 1.3c  OK 
+[16:23:19] run nd-p100000-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:23:25] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100000 partitions
+[16:25:30]   500,000: last 30 s: offered 499,985 pushed 499,982 consumed 499,965 | run: shed 0 errors 0 | push p50 3.5 p99 5.8 | e2e p50 7.9 p99 13.2 worst 14.2 | cores 4.4 / 3.1 / 2.9 | mem GB 2.6 / 2.1 / 2.1 | loaders 4.8c  OK 
+[16:25:34] run nd-p100000-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:26:17] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100000 partitions
+[16:28:29] 1,000,000: last 30 s: offered 1,000,030 pushed 999,933 consumed 999,967 | run: shed 0 errors 0 | push p50 5.6 p99 10.0 | e2e p50 12.7 p99 31.2 worst 36.4 | cores 5.8 / 3.9 / 3.7 | mem GB 4.6 / 3.9 / 3.9 | loaders 8.4c  OK 
+[16:28:35] run nd-p100000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:29:01] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100000 partitions
+[16:31:12] 1,500,000: last 30 s: offered 1,499,993 pushed 1,499,969 consumed 1,499,856 | run: shed 0 errors 0 | push p50 8.6 p99 20.2 | e2e p50 18.7 p99 55.3 worst 58.9 | cores 7.3 / 5.0 / 4.7 | mem GB 6.7 / 5.9 / 5.8 | loaders 12.1c  OK 
+[16:31:16] run nd-p100000-r2000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:31:47] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100000 partitions
+[16:33:58] 2,000,000: last 30 s: offered 1,999,957 pushed 1,999,531 consumed 1,999,721 | run: shed 0 errors 0 | push p50 16.9 p99 49.7 | e2e p50 35.8 p99 93.2 worst 106.5 | cores 9.0 / 6.2 / 5.8 | mem GB 9.2 / 8.1 / 8.0 | loaders 15.8c  OK 
+[16:34:03] run nd-p1000000-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:34:27] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000000 partitions
+[16:36:50]   100,000: last 30 s: offered 99,992 pushed 99,995 consumed 99,992 | run: shed 0 errors 0 | push p50 2.8 p99 4.4 | e2e p50 6.6 p99 10.9 worst 11.6 | cores 1.3 / 1.0 / 0.9 | mem GB 3.0 / 1.5 / 1.5 | loaders 1.3c  OK 
+[16:36:57] run nd-p1000000-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:37:29] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000000 partitions
+[16:39:51]   500,000: last 30 s: offered 500,004 pushed 499,980 consumed 500,004 | run: shed 0 errors 0 | push p50 3.6 p99 6.1 | e2e p50 8.1 p99 15.5 worst 17.7 | cores 4.4 / 3.0 / 2.8 | mem GB 4.6 / 2.9 / 2.9 | loaders 4.8c  OK 
+[16:40:00] run nd-p1000000-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:40:46] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000000 partitions
+[16:43:24] 1,000,000: last 30 s: offered 999,979 pushed 1,000,149 consumed 1,000,308 | run: shed 0 errors 0 | push p50 5.4 p99 9.7 | e2e p50 12.4 p99 31.5 worst 49.7 | cores 6.0 / 3.8 / 3.6 | mem GB 6.9 / 4.8 / 4.8 | loaders 8.3c  OK 
+[16:43:28] run nd-p1000000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:43:49] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000000 partitions
+[16:46:11] 1,500,000: last 30 s: offered 1,499,953 pushed 1,499,850 consumed 1,499,663 | run: shed 0 errors 0 | push p50 8.4 p99 27.4 | e2e p50 18.7 p99 103.4 worst 108.5 | cores 7.4 / 4.9 / 4.6 | mem GB 9.0 / 6.6 / 6.6 | loaders 12.1c  OK 
+[16:46:16] run nd-p1000000-r2000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:46:44] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000000 partitions
+[16:49:06] 2,000,000: last 30 s: offered 1,999,962 pushed 2,000,122 consumed 1,999,916 | run: shed 0 errors 0 | push p50 15.5 p99 37.4 | e2e p50 32.8 p99 78.8 worst 91.1 | cores 9.1 / 6.0 / 5.7 | mem GB 11.7 / 8.6 / 8.6 | loaders 15.8c  OK 
+[16:49:13] run nd-p10000-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:49:35] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10000 partitions
+[16:51:47]   100,000: last 30 s: offered 100,003 pushed 100,003 consumed 100,006 | run: shed 0 errors 0 | push p50 2.8 p99 4.4 | e2e p50 6.5 p99 10.5 worst 11.1 | cores 1.2 / 1.0 / 0.9 | mem GB 0.6 / 0.5 / 0.5 | loaders 1.3c  OK 
+[16:51:54] run nd-p10000-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:52:27] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10000 partitions
+[16:54:39]   500,000: last 30 s: offered 499,968 pushed 499,988 consumed 499,991 | run: shed 0 errors 0 | push p50 3.4 p99 5.6 | e2e p50 7.8 p99 12.8 worst 14.0 | cores 4.4 / 3.1 / 2.9 | mem GB 2.4 / 2.0 / 2.0 | loaders 4.8c  OK 
+[16:54:43] run nd-p10000-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:55:11] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10000 partitions
+[16:57:20] 1,000,000: last 30 s: offered 999,975 pushed 999,969 consumed 999,842 | run: shed 0 errors 0 | push p50 5.4 p99 10.6 | e2e p50 12.2 p99 50.2 worst 66.6 | cores 5.8 / 3.9 / 3.7 | mem GB 4.4 / 3.9 / 3.9 | loaders 8.4c  OK 
+[16:57:25] run nd-p10000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:57:37] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10000 partitions
+[16:59:48] 1,500,000: last 30 s: offered 1,500,015 pushed 1,499,868 consumed 1,499,685 | run: shed 0 errors 0 | push p50 8.4 p99 20.5 | e2e p50 18.7 p99 71.7 worst 80.9 | cores 7.2 / 5.0 / 4.7 | mem GB 6.4 / 5.7 / 5.8 | loaders 12.1c  OK 
+[16:59:52] run nd-p10000-r2000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:00:02] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10000 partitions
+[17:02:14] 2,000,000: last 30 s: offered 1,999,988 pushed 1,999,955 consumed 2,000,305 | run: shed 0 errors 0 | push p50 16.4 p99 42.5 | e2e p50 34.3 p99 93.2 worst 96.3 | cores 8.9 / 6.1 / 5.8 | mem GB 9.2 / 7.9 / 7.9 | loaders 15.8c  OK 
+[17:02:18] run nd-p100-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100, consumers 11 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:02:47] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100 partitions
+[17:04:58]   100,000: last 30 s: offered 100,007 pushed 99,997 consumed 100,000 | run: shed 0 errors 0 | push p50 2.7 p99 4.3 | e2e p50 6.3 p99 10.5 worst 11.3 | cores 1.2 / 1.0 / 0.9 | mem GB 0.5 / 0.5 / 0.5 | loaders 1.3c  OK 
+[17:05:03] run nd-p100-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100, consumers 11 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:05:17] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100 partitions
+[17:07:27]   500,000: last 30 s: offered 500,008 pushed 500,005 consumed 500,018 | run: shed 0 errors 0 | push p50 3.4 p99 5.7 | e2e p50 7.6 p99 12.9 worst 14.0 | cores 4.5 / 3.2 / 3.0 | mem GB 2.0 / 1.9 / 1.9 | loaders 5.1c  OK 
+[17:07:32] run nd-p100-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100, consumers 11 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:07:43] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100 partitions
+[17:09:53] 1,000,000: last 30 s: offered 1,000,004 pushed 999,948 consumed 1,000,008 | run: shed 0 errors 0 | push p50 5.7 p99 10.2 | e2e p50 13.1 p99 46.1 worst 59.9 | cores 6.5 / 4.5 / 4.1 | mem GB 4.0 / 3.6 / 3.7 | loaders 10.0c  OK 
+[17:09:57] run nd-p100-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100, consumers 11 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:10:27] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100 partitions
+[17:12:38] 1,500,000: last 30 s: offered 1,499,970 pushed 1,500,094 consumed 1,500,103 | run: shed 0 errors 0 | push p50 7.9 p99 21.8 | e2e p50 22.0 p99 85.0 worst 87.0 | cores 7.6 / 5.4 / 5.0 | mem GB 6.1 / 5.7 / 5.7 | loaders 13.8c  OK 
+[17:12:42] run nd-p100-r2000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100, consumers 11 per process, retention completed 1800s, dedup 0s, steps of 90s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:13:01] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100 partitions
+[17:15:11] 2,000,000: last 30 s: offered 1,999,988 pushed 1,999,948 consumed 2,000,315 | run: shed 0 errors 0 | push p50 12.7 p99 42.0 | e2e p50 34.8 p99 122.9 worst 139.3 | cores 8.5 / 6.0 / 5.7 | mem GB 8.1 / 7.6 / 7.6 | loaders 17.0c  OK 
+[17:15:15] run nd-p10-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10, consumers 1 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:15:28] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10 partitions
+[17:17:39]   100,000: last 30 s: offered 99,996 pushed 99,996 consumed 100,003 | run: shed 0 errors 0 | push p50 2.8 p99 4.2 | e2e p50 7.1 p99 13.8 worst 15.1 | cores 1.2 / 1.0 / 0.9 | mem GB 0.5 / 0.4 / 0.4 | loaders 1.3c  OK 
+[17:17:45] run nd-p10-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10, consumers 1 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:17:57] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10 partitions
+[17:20:07]   500,000: last 30 s: offered 499,993 pushed 499,980 consumed 500,006 | run: shed 0 errors 0 | push p50 3.2 p99 5.3 | e2e p50 10.0 p99 18.2 worst 20.7 | cores 3.9 / 2.9 / 2.7 | mem GB 2.0 / 1.9 / 1.8 | loaders 4.3c  OK 
+[17:20:11] run nd-p10-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10, consumers 1 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:20:37] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10 partitions
+[17:22:49] 1,000,000: last 30 s: offered 1,000,014 pushed 999,981 consumed 999,922 | run: shed 0 errors 0 | push p50 4.8 p99 8.1 | e2e p50 15.7 p99 38.4 worst 50.2 | cores 5.0 / 3.4 / 3.2 | mem GB 4.0 / 3.7 / 3.7 | loaders 7.7c  OK 
+[17:22:53] run nd-p10-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10, consumers 1 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:23:24] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10 partitions
+[17:25:35] 1,500,000: last 30 s: offered 1,499,964 pushed 1,499,987 consumed 1,500,433 | run: shed 0 errors 0 | push p50 6.8 p99 16.6 | e2e p50 22.8 p99 73.7 worst 78.8 | cores 6.1 / 4.2 / 3.9 | mem GB 6.1 / 5.7 / 5.7 | loaders 11.2c  OK 
+[17:25:39] run nd-p10-r2000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10, consumers 1 per process, retention completed 1800s, dedup 0s, steps of 90s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:26:06] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 10 partitions
+[17:28:15] 2,000,000: last 30 s: offered 1,999,986 pushed 2,000,109 consumed 2,000,082 | run: shed 0 errors 0 | push p50 11.6 p99 40.4 | e2e p50 46.6 p99 180.2 worst 190.5 | cores 7.2 / 5.1 / 4.8 | mem GB 8.1 / 7.5 / 7.5 | loaders 14.9c  OK 
+[17:28:20] run nd-p10000000-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:28:49] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+FATAL warm drain bench: 0 of 10000000 messages came out
+[17:34:15] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 1485
+[17:36:22]   100,000: last 30 s: offered 99,996 pushed 99,999 consumed 100,009 | run: shed 0 errors 0 | push p50 2.8 p99 4.4 | e2e p50 6.8 p99 73.7 worst 80.9 | cores 1.4 / 1.0 / 0.9 | mem GB 18.2 / 10.1 / 10.5 | loaders 1.3c  OK 
+[17:36:28] run nd-p10000000-r500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:36:40] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+FATAL warm drain bench: 0 of 10000000 messages came out
+[17:42:04] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 1485
+[17:44:12]   500,000: last 30 s: offered 499,954 pushed 500,004 consumed 500,017 | run: shed 0 errors 0 | push p50 3.7 p99 33.3 | e2e p50 8.6 p99 86.0 worst 89.1 | cores 4.5 / 3.0 / 2.9 | mem GB 19.8 / 11.4 / 11.6 | loaders 4.7c  OK 
+[17:44:17] run nd-p10000000-r1000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:44:46] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+FATAL warm drain bench: 0 of 10000000 messages came out
+[17:50:10] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 1485
+[17:52:17] 1,000,000: last 30 s: offered 999,970 pushed 1,000,020 consumed 999,880 | run: shed 0 errors 0 | push p50 5.8 p99 99.3 | e2e p50 13.4 p99 130.0 worst 135.2 | cores 6.0 / 3.9 / 3.6 | mem GB 22.1 / 13.5 / 13.5 | loaders 8.4c  OK 
+[17:52:23] run nd-p10000000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:52:52] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+FATAL warm drain bench: 0 of 10000000 messages came out
+[17:58:16] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 1485
+[18:00:23] 1,500,000: last 30 s: offered 1,500,045 pushed 1,348,246 consumed 1,388,410 | run: shed 3,049,400 errors 1153 | push p50 110.6 p99 5505.0 | e2e p50 163.8 p99 1622.0 worst 2129.9 | cores 7.7 / 4.5 / 1.9 | mem GB 26.1 / 16.3 / 19.5 | loaders 11.9c  NOT CARRIED 
+[18:00:28] 10000000 partitions: not carried at 1500000, the column stops here
+GRID2_DONE

@@ -1,0 +1,4 @@
+[21:40:21] run t19-p3-single-real-sh8-p1000: binary p3, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 120s at: 100000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_APPLY_SHARDS=8 | QEXTRA=-push-wire bin -ack-counts -pop-frames -tail 30s
+[21:40:44] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[21:43:23]   100,000: last 30 s: offered 99,999 pushed 99,971 consumed 100,026 | run: shed 0 errors 0 | push p50 13.4 p99 32.0 | e2e p50 182.3 p99 225.3 worst 227.3 | cores 10.0 / 8.0 / 7.6 | mem GB 4.2 / 3.7 / 3.7 | loaders 13.0c  OK 

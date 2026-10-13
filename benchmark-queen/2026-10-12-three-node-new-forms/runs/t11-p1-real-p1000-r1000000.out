@@ -1,0 +1,4 @@
+[20:29:41] run t11-p1-real-p1000-r1000000: binary p1, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 150s at: 1000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[20:30:02] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[20:33:23] 1,000,000: last 30 s: offered 1,000,005 pushed 1,000,025 consumed 999,875 | run: shed 0 errors 0 | push p50 5.7 p99 13.6 | e2e p50 11.4 p99 35.8 worst 41.0 | cores 6.3 / 4.0 / 3.8 | mem GB 4.6 / 3.4 / 3.4 | loaders 8.3c  OK 
