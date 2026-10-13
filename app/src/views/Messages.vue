@@ -121,10 +121,14 @@
           <thead>
             <tr>
               <th>Queue</th>
-              <th class="hidden xl:table-cell">Partition ID</th>
-              <th class="hidden lg:table-cell">Partition</th>
+              <th>Partition</th>
               <th>Transaction ID</th>
-              <th style="text-align:right;">Created</th>
+              <!-- GET /api/v1/messages always returns createdAt descending;
+                   it does not accept a sort field or direction. -->
+              <th aria-sort="descending" class="msg-created-heading">
+                <span>Created <span aria-hidden="true">↓</span></span>
+                <span class="msg-sort-hint">Newest first</span>
+              </th>
               <th style="text-align:right;">Status</th>
             </tr>
           </thead>
@@ -132,8 +136,10 @@
             <template v-if="loading && !messages.length">
               <tr v-for="i in 10" :key="i">
                 <td><div class="skeleton" style="height:16px; width:96px;" /></td>
-                <td class="hidden xl:table-cell"><div class="skeleton" style="height:16px; width:128px;" /></td>
-                <td class="hidden lg:table-cell"><div class="skeleton" style="height:16px; width:48px;" /></td>
+                <td>
+                  <div class="skeleton" style="height:16px; width:96px;" />
+                  <div class="skeleton" style="height:12px; width:192px; margin-top:4px;" />
+                </td>
                 <td><div class="skeleton" style="height:16px; width:160px;" /></td>
                 <td><div class="skeleton" style="height:16px; width:112px;" /></td>
                 <td><div class="skeleton" style="height:16px; width:80px;" /></td>
@@ -148,17 +154,10 @@
               >
                 <td>
                   <div style="font-size:13px; font-weight:500; color:var(--text-hi);">{{ message.queue }}</div>
-                  <div class="lg:hidden" style="font-size:11px; color:var(--text-low); margin-top:2px;">
-                    {{ message.partition }}
-                  </div>
                 </td>
-                <td class="hidden xl:table-cell">
-                  <div class="font-mono" style="font-size:11px; color:var(--text-mid); word-break:break-all; user-select:all;">
-                    {{ message.partitionId }}
-                  </div>
-                </td>
-                <td class="hidden lg:table-cell">
-                  <span style="font-size:12px; color:var(--text-mid);">{{ message.partition }}</span>
+                <td class="msg-partition">
+                  <div class="msg-partition-name">{{ message.partition }}</div>
+                  <div class="msg-partition-id font-mono">{{ message.partitionId }}</div>
                 </td>
                 <td>
                   <!-- The txn id lives inside the segment blob. Once retention
@@ -180,15 +179,10 @@
                   </span>
                 </td>
                 <td :title="formatTimestampUtc(message.createdAt)" class="tabular-nums" style="text-align:right; font-size:12px; color:var(--text-mid); white-space:nowrap;">
-                  {{ formatTimestamp(message.createdAt) }}
+                  {{ formatTimestampCompact(message.createdAt) }}
                 </td>
                 <td style="text-align:right; white-space:nowrap;">
-                  <!-- One line: the status as a word (coloured only when it is a
-                       failure), and how many groups have it, beside it. -->
-                  <span
-                    class="msg-status"
-                    :class="{ 'is-bad': message.status === 'dead_letter' || message.status === 'failed', 'is-live': message.status === 'pending' || message.status === 'processing' }"
-                  >{{ statusLabel(message.status) }}</span>
+                  <MessageStatus :status="message.status" />
                   <span v-if="message.busStatus && message.busStatus.totalGroups > 0" class="msg-groups">
                     · {{ message.busStatus.consumedBy }}/{{ message.busStatus.totalGroups }} groups
                   </span>
@@ -198,7 +192,7 @@
             <!-- Never an idle empty state on a failure: that is a load error
                  wearing "no messages" as a disguise. -->
             <tr v-else-if="listError">
-              <td colspan="6">
+              <td colspan="5">
                 <div class="empty-state empty-state-failed">
                   <h3>{{ describeApiError(listError) }}</h3>
                   <p>Nothing loaded — this is a failure, not an empty queue.</p>
@@ -206,7 +200,7 @@
               </td>
             </tr>
             <tr v-else>
-              <td colspan="6">
+              <td colspan="5">
                 <div class="empty-state">
                   <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -257,13 +251,8 @@
       <template v-else-if="messageDetail">
           <!-- Status and routing match the DLQ drawer: the same facts occupy
                the same positions and identifiers are directly copyable. -->
-          <!-- The status as a word, coloured only when it is a failure; the
-               retry count is a count beside it. -->
           <div class="detail-status-row">
-            <span
-              class="msg-status detail-status"
-              :class="{ 'is-bad': messageDetail.status === 'dead_letter' || messageDetail.status === 'failed', 'is-live': messageDetail.status === 'pending' || messageDetail.status === 'processing' }"
-            >{{ statusLabel(messageDetail.status) }}</span>
+            <MessageStatus :status="messageDetail.status" class="detail-status" />
             <span v-if="messageDetail.retryCount" class="detail-note">· {{ messageDetail.retryCount }} {{ messageDetail.retryCount === 1 ? 'retry' : 'retries' }}</span>
           </div>
 
@@ -442,7 +431,7 @@ import { rangeMinutes } from '@/composables/useRouteRange'
 import { messages as messagesApi, queues as queuesApi, describeApiError } from '@/api'
 import { useApi, formatNumber, formatRelativeTime } from '@/composables/useApi'
 import { filtersForPushedMessage, isEncryptedEnvelope } from '@/composables/usePushVerdict'
-import { formatDateTimeLocal, formatTimestamp, formatTimestampUtc } from '@/composables/useFormat'
+import { formatDateTimeLocal, formatTimestamp, formatTimestampCompact, formatTimestampUtc } from '@/composables/useFormat'
 import { useRefresh } from '@/composables/useRefresh'
 import { stamp } from '@/composables/useStamp'
 import { useToast } from '@/composables/useToast'
@@ -454,6 +443,7 @@ import JsonViewer from '@/components/JsonViewer.vue'
 import PushMessageModal from '@/components/PushMessageModal.vue'
 import PageHead from '@/components/PageHead.vue'
 import PageTools from '@/components/PageTools.vue'
+import MessageStatus from '@/components/MessageStatus.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -874,13 +864,15 @@ watch(() => [route.query.partitionId, route.query.transactionId], ([partitionId,
 refreshQueues()
 fetchMessages()
 
-// Status words as a person reads them; the wire value stays in the drawer.
-const statusLabel = (st) => ({ pending: 'Pending', processing: 'Processing', completed: 'Completed', dead_letter: 'Dead letter', failed: 'Failed' }[st] || st)
 </script>
 
 <style scoped>
+.msg-partition { max-width: 300px; overflow-wrap: anywhere; }
+.msg-partition-name { font-size: 12px; color: var(--text-mid); }
+.msg-partition-id { margin-top: 3px; font-size: 11px; color: var(--text-low); user-select: all; }
+.t th.msg-created-heading { text-align: right; white-space: nowrap; color: var(--text-hi); }
+.msg-sort-hint { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--text-low); }
 .msg-status { font-size: 12px; color: var(--text-low); }
 .msg-status.is-live { color: var(--text-hi); }
-.msg-status.is-bad { color: var(--ember-400); }
 .msg-groups { font-size: 12px; color: var(--text-low); }
 </style>
