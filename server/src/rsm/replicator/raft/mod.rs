@@ -1731,6 +1731,7 @@ impl<S: Store + 'static> RaftReplicator<S> {
                             source: link::LinkSource::new(log.clone(), shared.clone()),
                             snap,
                             token: Arc::<str>::from(t),
+                            placement: c.link_placement.clone(),
                         }),
                 ))
             }

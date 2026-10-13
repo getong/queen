@@ -57,7 +57,7 @@ use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 
 use super::driver::LinkConfig;
-use super::wire::{SeedRequest, SNAPSHOT_PATH, TOKEN_HEADER};
+use super::wire::{Placement, SeedRequest, PLACEMENT_HEADER, SNAPSHOT_PATH, TOKEN_HEADER};
 use super::{link_id, reader_name, Position, FLAG_ROLE};
 use crate::rsm::batcher::LinkBoot;
 use crate::rsm::replicator::raft::log_store::write_atomic;
@@ -153,10 +153,15 @@ pub type SnapshotStream = std::pin::Pin<Box<dyn futures_util::Stream<Item = Resu
 /// `POST http://<addr>/link/v1/snapshot` with the link's token, as the
 /// standby that will read under the name `reader`: the node that answers
 /// keeps its log for that name from the snapshot's position on.
+///
+/// `placement`: the standby's raft group this seed is for. The snapshot of
+/// another group of the source, or of a source that places its tenants
+/// another way, is refused before a byte of it is staged.
 pub async fn http_snapshot(
     addr: &str,
     token: Option<&str>,
     reader: &str,
+    placement: &Placement,
 ) -> Result<SnapshotStream, String> {
     use axum::body::Body;
     use axum::http::{header, Method, StatusCode};
@@ -179,6 +184,9 @@ pub async fn http_snapshot(
     if let Some(t) = token {
         req = req.header(TOKEN_HEADER, t);
     }
+    if !placement.is_single() {
+        req = req.header(PLACEMENT_HEADER, placement.header());
+    }
     let req = req
         .body(Body::from(body))
         .map_err(|e| format!("{url}: {e}"))?;
@@ -190,7 +198,15 @@ pub async fn http_snapshot(
         Ok(Ok(r)) => r,
     };
     match resp.status() {
-        StatusCode::OK => {}
+        StatusCode::OK => {
+            let stated = resp
+                .headers()
+                .get(PLACEMENT_HEADER)
+                .and_then(|v| v.to_str().ok());
+            placement
+                .check_answer(stated)
+                .map_err(|e| format!("{url}: {e}"))?;
+        }
         StatusCode::UNAUTHORIZED => {
             return Err(format!(
                 "{url}: the source refused this standby's QUEEN_LINK_SOURCE_TOKEN"
@@ -299,7 +315,8 @@ pub async fn take(
             reader = %reader,
             "rsm link: seeding this node from its source's snapshot",
         );
-        let stream = match http_snapshot(addr, cfg.token.as_deref(), &reader).await {
+        let stream = match http_snapshot(addr, cfg.token.as_deref(), &reader, &cfg.placement).await
+        {
             Ok(s) => s,
             Err(e) => {
                 tracing::warn!(target: "rsm", error = %e, "rsm link: the seed was not read");

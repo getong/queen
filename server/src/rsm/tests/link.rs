@@ -1773,6 +1773,7 @@ async fn the_follower_follows_its_source_and_says_why_when_it_cannot() {
             sources: vec!["one:7400".into(), "two:7400".into()],
             token: None,
             name: Some("the-standby".into()),
+            placement: Default::default(),
         },
         Arc::downgrade(&b.store),
         b.repl.watch_role(),
