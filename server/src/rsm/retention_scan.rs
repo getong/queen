@@ -217,6 +217,46 @@ pub(crate) fn round_wait(last: Option<Instant>, now: Instant, every: Duration) -
     })
 }
 
+/// The steps a round is spread over when the store is small enough to be
+/// walked in less than the interval ([`spread`]).
+const ROUND_STEPS: u32 = 100;
+
+/// The slice and the pace of the next step of a round, from the size of the
+/// last finished round: a store that could be walked in a fraction of the
+/// interval is walked over the whole of it, in [`ROUND_STEPS`] equal steps.
+///
+/// Why: a round over a small store used to be one slice. Every partition's
+/// watermark then reached the planner together, once an interval, and went
+/// into one entry: with 1,000 partitions at a million messages a second that
+/// entry retired 50,000 rows, and apply did nothing else while it did (the
+/// rows of five seconds, deleted in one go, every five seconds). Spread over
+/// the interval, an entry carries the watermarks of ten partitions. A store
+/// too big for that (the walk at `per_s` already takes the interval or more),
+/// a first round, and an interval too short to be cut in steps keep the full
+/// slice at the `per_s` pace.
+pub(crate) fn spread(
+    last_round: u64,
+    every: Duration,
+    full_slice: usize,
+    per_s: u64,
+) -> (usize, Duration) {
+    let per_s = per_s.max(1) as f64;
+    let full_pace = Duration::from_secs_f64(full_slice as f64 / per_s);
+    let step = every / ROUND_STEPS;
+    if last_round == 0 || step <= full_pace {
+        return (full_slice, full_pace);
+    }
+    let slice = last_round.div_ceil(u64::from(ROUND_STEPS)).max(1);
+    if slice >= full_slice as u64 {
+        return (full_slice, full_pace);
+    }
+    let slice = slice as usize;
+    (
+        slice,
+        step.max(Duration::from_secs_f64(slice as f64 / per_s)),
+    )
+}
+
 /// How often a scanner with nothing to do looks again: at the stop flag, the
 /// leadership gate, room in the queue, and the next round's start.
 const IDLE_POLL: Duration = Duration::from_millis(100);
@@ -237,8 +277,10 @@ fn run<S: Store>(
     every: Duration,
     shared: Arc<ScanShared>,
 ) {
-    let slice = scan.slice.max(1);
-    let pace = Duration::from_secs_f64(slice as f64 / scan.per_s.max(1) as f64);
+    let full_slice = scan.slice.max(1);
+    // How many partitions the last finished round walked (0: none yet): the
+    // next one is spread over the interval by it ([`spread`]).
+    let mut last_size = 0u64;
     let mut cursor: Pid = 0;
     // The round gate: when this leadership's last round began (`None` before
     // its first), and which leadership that was.
@@ -259,7 +301,7 @@ fn run<S: Store>(
             std::thread::sleep(IDLE_POLL);
             continue;
         }
-        if shared.queued() + slice > shared.cap {
+        if shared.queued() + full_slice > shared.cap {
             std::thread::sleep(IDLE_POLL);
             continue;
         }
@@ -269,12 +311,16 @@ fn run<S: Store>(
         if now_leadership != leadership {
             leadership = now_leadership;
             last_round = None;
+            // A leadership's first round is walked at the full pace, not
+            // spread over an interval that has not begun.
+            last_size = 0;
             hot.clear();
         }
+        let (slice, pace) = spread(last_size, every, full_slice, scan.per_s);
         // The hot partitions that are due, before the round's next slice.
         let now = Instant::now();
         let mut due: Vec<Pid> = Vec::new();
-        while due.len() < slice && hot.front().is_some_and(|(_, at)| *at <= now) {
+        while due.len() < full_slice && hot.front().is_some_and(|(_, at)| *at <= now) {
             due.push(hot.pop_front().expect("front").0);
         }
         if !due.is_empty() {
@@ -340,6 +386,7 @@ fn run<S: Store>(
                 }
                 if found.wrapped {
                     shared.rounds.fetch_add(1, Ordering::Relaxed);
+                    last_size = round_visited;
                     // A small store finishes a round in a few ms: only a big
                     // or slow round is worth a line. `secs` is the walk, from
                     // the round's first slice to its last.

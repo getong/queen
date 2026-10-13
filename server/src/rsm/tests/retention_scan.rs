@@ -873,3 +873,34 @@ fn a_rows_proposal_is_judged_again_like_any_watermark() {
         })
         .unwrap();
 }
+
+/// A small store's round is spread over the interval, so that one entry does
+/// not carry every partition's watermark; a store too big for that, a first
+/// round and an interval too short to cut keep the full slice at the
+/// per-second pace.
+#[test]
+fn a_round_over_a_small_store_is_spread_over_the_interval() {
+    use crate::rsm::retention_scan::spread;
+    use std::time::Duration;
+    let every = Duration::from_secs(5);
+    let full = (2_048, Duration::from_secs_f64(2_048.0 / 50_000.0));
+    assert_eq!(spread(0, every, 2_048, 50_000), full, "a first round");
+    assert_eq!(
+        spread(1_000, every, 2_048, 50_000),
+        (10, Duration::from_millis(50))
+    );
+    assert_eq!(
+        spread(7, every, 2_048, 50_000),
+        (1, Duration::from_millis(50))
+    );
+    assert_eq!(
+        spread(100_000, every, 2_048, 50_000),
+        (1_000, Duration::from_millis(50))
+    );
+    assert_eq!(spread(10_000_000, every, 2_048, 50_000), full, "too big");
+    assert_eq!(
+        spread(1_000, Duration::from_millis(100), 2_048, 50_000),
+        full,
+        "an interval too short to cut in steps"
+    );
+}
