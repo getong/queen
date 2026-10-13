@@ -341,7 +341,15 @@ impl PidInfo {
 /// One group's parts in one shard.
 pub(crate) struct GroupShard {
     pub g: Arc<Group>,
-    pub parts: HashMap<Pid, Part>,
+    /// Boxed: the table then holds a pointer per partition, not the part. A
+    /// part is about 430 bytes; held in the table, every free slot cost as
+    /// much (ten million partitions: 7.5 GB of table for 4.3 GB of parts), a
+    /// table that grew moved every part it held under the shard's lock (16
+    /// shards doubling within the same second, 28,000 then 57,000 parts
+    /// each: the end to end p99 went from 40 ms to 107 and 163 ms for those
+    /// seconds, 2026-10-12), and one that lost its parts gave nothing back
+    /// until it was rebuilt.
+    pub parts: HashMap<Pid, Box<Part>>,
     /// Claimable parts, oldest ready first.
     pub ready: VecDeque<Pid>,
 }
@@ -379,6 +387,11 @@ pub(crate) fn schedule(
 #[derive(Default)]
 pub(crate) struct Shard {
     pub pids: HashMap<Pid, PidInfo>,
+    /// The lowest and highest partition id `pids` ever held since it was last
+    /// empty ([`Shard::note_pid`]): the range the idle-part unloader walks
+    /// ([`super::unload`]). A partition that left does not narrow it.
+    pub pid_lo: Pid,
+    pub pid_hi: Pid,
     pub groups: HashMap<Gid, GroupShard>,
     pub timers: BinaryHeap<Timer>,
     /// Every live lease of a worker in this shard.
@@ -388,6 +401,17 @@ pub(crate) struct Shard {
 }
 
 impl Shard {
+    /// `pid` is about to enter `pids`.
+    pub fn note_pid(&mut self, pid: Pid) {
+        if self.pids.is_empty() {
+            self.pid_lo = pid;
+            self.pid_hi = pid;
+        } else {
+            self.pid_lo = self.pid_lo.min(pid);
+            self.pid_hi = self.pid_hi.max(pid);
+        }
+    }
+
     pub fn index_lease(&mut self, worker: &Arc<str>, pid: Pid, gid: Gid) {
         if worker.is_empty() {
             return;

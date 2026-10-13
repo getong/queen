@@ -322,6 +322,7 @@ impl Engine {
             // This group's part is the one being loaded.
             reload.retain(|(rg, _)| rg.id != g.id);
         }
+        sh.note_pid(pid);
         let pi = sh.pids.entry(pid).or_insert_with(|| PidInfo {
             tail: now_head.last_offset,
             log_start: now_head.log_start,
@@ -352,7 +353,7 @@ impl Engine {
             .entry(g.id)
             .or_insert_with(|| GroupShard::new(g.clone()))
             .parts
-            .insert(pid, part);
+            .insert(pid, Box::new(part));
         self.unload.loaded.fetch_add(1, Ordering::Relaxed);
         super::pop::arm(sh, g.id, pid, now_us, grace);
         drop(guard);

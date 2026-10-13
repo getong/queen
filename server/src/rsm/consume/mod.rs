@@ -167,6 +167,11 @@ pub(crate) struct Knobs {
     pub ckpt_ms: u64,
     /// `QUEEN_CONSUME_FAST` (default off): answer before the checkpoint.
     pub fast: bool,
+    /// `QUEEN_CONSUME_CHECKPOINT_EAGER` (default on; `0` = off): when an answer
+    /// begins to wait on a row and no checkpoint is in flight, one is taken at
+    /// once instead of at the next `QUEEN_CONSUME_CHECKPOINT_MS` tick
+    /// ([`Engine::want_checkpoint`]). The tick stays as the upper bound.
+    pub eager: bool,
     /// `QUEEN_CONSUME_LEADER_LEASE_MS` (default 400).
     pub lease_ms: u64,
     /// `QUEEN_RAFT_MAX_CLOCK_SKEW_MS` (default 500), in µs: a lease another
@@ -211,6 +216,8 @@ impl Knobs {
             lanes: env_u64("QUEEN_LANES", 8).max(1),
             ckpt_ms: env_u64("QUEEN_CONSUME_CHECKPOINT_MS", 5).max(1),
             fast: env_flag("QUEEN_CONSUME_FAST"),
+            eager: std::env::var("QUEEN_CONSUME_CHECKPOINT_EAGER")
+                .map_or(true, |v| v.trim() != "0"),
             lease_ms: env_u64("QUEEN_CONSUME_LEADER_LEASE_MS", 400),
             skew_us: std::env::var("QUEEN_RAFT_MAX_CLOCK_SKEW_MS")
                 .ok()
@@ -311,6 +318,12 @@ pub struct Engine {
     pub(crate) appends_pending: AtomicBool,
     pub(crate) answers: Mutex<Answers>,
     pub(crate) tickets: Mutex<Tickets>,
+    /// An answer waits on a row no checkpoint has taken yet
+    /// ([`Engine::want_checkpoint`]); cleared by every take.
+    pub(crate) ckpt_want: AtomicBool,
+    /// Wakes the checkpoint ticker ahead of its tick
+    /// ([`Engine::checkpoint_wanted`]).
+    pub(crate) ckpt_wake: tokio::sync::Notify,
     /// Groups whose catalog effects (registration, implicit queue) are owed.
     pub(crate) cat_dirty: Mutex<Vec<Arc<state::Group>>>,
     pub(crate) txns: Mutex<txn::Reservations>,
@@ -371,6 +384,8 @@ impl Engine {
                 next: 1,
                 ..Tickets::default()
             }),
+            ckpt_want: AtomicBool::new(false),
+            ckpt_wake: tokio::sync::Notify::new(),
             cat_dirty: Mutex::new(Vec::new()),
             txns: Mutex::new(txn::Reservations::default()),
             paused: Mutex::new(Vec::new()),
@@ -759,6 +774,35 @@ impl Engine {
     /// when its entry commits ([`state::Tickets::ids`]).
     pub fn answers_at_commit(&self, id: &crate::rsm::entry::RequestId) -> bool {
         lock(&self.tickets).ids.contains(id)
+    }
+
+    /// An answer began to wait on a row that no checkpoint carries yet. With
+    /// no checkpoint in flight the ticker is woken to take one now; with one
+    /// in flight, the ticker is woken when the last of them resolves
+    /// ([`Engine::resolve_ticket`]). Either way the tick still comes, so this
+    /// only ever makes a checkpoint earlier.
+    ///
+    /// Why: an answer used to wait for the next tick whatever the load, 2.5 ms
+    /// on average at the default 5 ms, before its replicated round even began.
+    /// Under load a checkpoint is nearly always in flight and the ticks
+    /// overlap, so this changes little there; at low load it removes the wait.
+    pub(crate) fn want_checkpoint(&self) {
+        if !self.k.eager {
+            return;
+        }
+        if self.ckpt_want.swap(true, Ordering::SeqCst) {
+            // Asked already: the ticker is awake, or a resolve will wake it.
+            return;
+        }
+        if lock(&self.tickets).inflight.is_empty() {
+            self.ckpt_wake.notify_one();
+        }
+    }
+
+    /// Resolves when a checkpoint is wanted ahead of the tick
+    /// ([`Engine::want_checkpoint`]): the ticker's second clock.
+    pub async fn checkpoint_wanted(&self) {
+        self.ckpt_wake.notified().await;
     }
 
     /// The checkpoint the ticker submits (leader).

@@ -93,12 +93,15 @@ impl Engine {
                               // on it (the command changed the part, then let the shard go): in
                               // flight, or resolved without a commit seen, it is in doubt already.
         let mut sent = false;
+        // A change this answer waits on is in no checkpoint yet.
+        let mut untaken = false;
         for (pid, gid, ver) in &deps.rows {
             let mut sh = lock(&self.shards[shard_of(*pid)]);
             match sh.groups.get_mut(gid).and_then(|gs| gs.parts.get_mut(pid)) {
                 Some(p) if p.durable_ver < *ver => {
                     p.waiters.push((id, *ver));
                     sent |= p.sent_ver >= *ver || p.doubt_ver >= *ver;
+                    untaken |= p.sent_ver < *ver;
                 }
                 _ => met += 1,
             }
@@ -108,6 +111,7 @@ impl Engine {
             if st.cat_durable < *ver && !st.dropped {
                 st.cat_waiters.push((id, *ver));
                 sent |= st.cat_sent_ver >= *ver || st.cat_doubt >= *ver;
+                untaken |= st.cat_sent_ver < *ver;
             } else {
                 met += 1;
             }
@@ -116,6 +120,9 @@ impl Engine {
             self.mark_sent(&[id]);
         }
         self.settle(id, met);
+        if untaken {
+            self.want_checkpoint();
+        }
         None
     }
 
@@ -193,6 +200,9 @@ impl Engine {
         // A reset waits for this take to finish ([`Engine::serving`]): the
         // answers it marks sent are marked before the reset reads them.
         let _serving = super::state::read(&self.serving);
+        // Whatever asked for a checkpoint before this point is served by this
+        // take; a change after it asks again ([`Engine::want_checkpoint`]).
+        self.ckpt_want.store(false, Ordering::SeqCst);
         // The incarnation this checkpoint is of: one that ends while it is
         // taken (a step-down resets the engine) registers nothing, so the
         // batcher never plans its rows ([`super::is_checkpoint_id`]).
@@ -256,6 +266,12 @@ impl Engine {
                 if !effs.is_empty() {
                     per.entry((tenant, pid % lanes)).or_default().push(effs);
                 }
+            }
+            if !keep.is_empty() {
+                // Kept for the next checkpoint (a row of theirs is in flight,
+                // or a transaction holds them): wanted still, so the resolve
+                // of the one in flight wakes the ticker.
+                self.ckpt_want.store(true, Ordering::SeqCst);
             }
             sh.dirty.extend(keep);
         }
@@ -498,6 +514,16 @@ impl Engine {
             }
             let _ = now;
         }
-        let _ = Ordering::Relaxed;
+        // An answer waits on a change no checkpoint took, and this was the
+        // last one in flight: the ticker takes the next now, not at its tick
+        // ([`Engine::want_checkpoint`]). A refused checkpoint waits for the
+        // tick, so that one the batcher keeps refusing is not sent in a loop.
+        if committed
+            && self.k.eager
+            && self.ckpt_want.load(Ordering::SeqCst)
+            && lock(&self.tickets).inflight.is_empty()
+        {
+            self.ckpt_wake.notify_one();
+        }
     }
 }
