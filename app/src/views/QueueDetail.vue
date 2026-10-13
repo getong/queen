@@ -92,26 +92,26 @@
 
       <!-- Right now: totals as of the last good status fetch. -->
       <div class="counts-tiles" role="group" aria-label="Right now">
-        <div class="count-tile">
+        <button type="button" class="count-tile" @click="goMessages('pending')">
           <span class="k">Pending</span>
           <span class="v num" :class="pendingNumClass(totalMessages.pending)">{{ formatNumber(totalMessages.pending) }}</span>
-        </div>
-        <div class="count-tile">
+        </button>
+        <button type="button" class="count-tile" @click="goMessages('processing')">
           <span class="k">Processing</span>
           <span class="v">{{ formatNumber(totalMessages.processing) }}</span>
-        </div>
-        <div class="count-tile">
+        </button>
+        <button type="button" class="count-tile" @click="goMessages('completed')">
           <span class="k">Completed</span>
           <span class="v">{{ formatNumber(totalMessages.completed) }}</span>
-        </div>
-        <button class="count-tile" @click="goDLQ">
+        </button>
+        <button type="button" class="count-tile" @click="goMessages('dead_letter')">
           <span class="k">Dead letter</span>
           <span class="v">{{ formatNumber(totalMessages.deadLetter) }}</span>
         </button>
-        <div class="count-tile">
+        <button type="button" class="count-tile" @click="goMessages()">
           <span class="k">Total</span>
           <span class="v">{{ formatNumber(totalMessages.total) }}</span>
-        </div>
+        </button>
         <div class="count-tile">
           <span class="k">Partitions</span>
           <span class="v">{{ formatNumber(partitions.length) }}</span>
@@ -1131,6 +1131,9 @@ const partitionSeeds = computed(() => partitions.value.map(p => {
   return { name, partitions: 1, pending, lag, sev: pending > 0 ? queueSev.value : 'ok' }
 }))
 
+function goMessages(status = '') {
+  router.push(queueLocation(queueName.value, route, 'messages', status ? { status } : {}))
+}
 function goDLQ() {
   router.push(queueLocation(queueName.value, route, 'failed'))
 }

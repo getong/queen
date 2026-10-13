@@ -45,6 +45,21 @@ export function formatTimestampTime(value, locales = 'en-US', options = {}) {
   })
 }
 
+/** Message-list timestamp: DD/MM HH:mm:ss in the browser's local timezone. */
+export function formatTimestampCompact(value, options = {}) {
+  const date = asValidDate(value)
+  if (!date) return value ? String(value) : '—'
+
+  const { timeZone = runtimeTimeZone() } = options
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit', month: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    ...(timeZone === 'local time' ? {} : { timeZone }),
+  }).formatToParts(date)
+  const fields = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  return `${fields.day}/${fields.month} ${fields.hour}:${fields.minute}:${fields.second}`
+}
+
 /** Applied custom ranges are absolute facts, so both ends name their zone. */
 export function formatTimestampRange(from, to, locales = 'en-US', options = {}) {
   return `${formatTimestamp(from, locales, options)} → ${formatTimestamp(to, locales, options)}`
