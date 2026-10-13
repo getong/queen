@@ -85,7 +85,10 @@ var (
 
 func pushZstdEncoder() *zstd.Encoder {
 	pushZstdOnce.Do(func() {
-		pushZstdEnc, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedFastest))
+		// Single segment: every frame declares its content size. Left to itself
+		// EncodeAll writes none for under 256 bytes, and the broker refuses a
+		// group whose frame does not declare it.
+		pushZstdEnc, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedFastest), zstd.WithSingleSegment(true))
 	})
 	return pushZstdEnc
 }

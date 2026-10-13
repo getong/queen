@@ -43,6 +43,7 @@ func readFrameGroups(t *testing.T, b []byte) []framedGroup {
 		if err != nil {
 			t.Fatalf("group %d: zstd: %v", g, err)
 		}
+		declaresItsSize(t, b[p:p+zLen], len(raw))
 		p += zLen
 		group := framedGroup{queue: queue, partition: partition}
 		at := 0

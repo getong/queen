@@ -3,6 +3,8 @@ package queen
 import (
 	"bytes"
 	"encoding/binary"
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
@@ -110,6 +112,7 @@ func TestPushBinaryBodyCompressed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zstd: %v", err)
 	}
+	declaresItsSize(t, b[p:], len(raw))
 	// One frame: u32 body_len | u8 0 | id[16] | u16 len, txn | payload.
 	if int(le.Uint32(raw)) != len(raw)-4 || raw[4] != 0 {
 		t.Fatalf("frame header %v", raw[:5])
@@ -124,6 +127,57 @@ func TestPushBinaryBodyCompressed(t *testing.T) {
 	}
 	if payload := string(raw[23+tl:]); payload != `{"a":1}` {
 		t.Fatalf("payload %q", payload)
+	}
+}
+
+// declaresItsSize fails the test unless z is a zstd frame whose header declares
+// its content size, n bytes. The broker reads a group with its queue-log
+// decoder, which refuses a frame without it (400, "missing or implausible
+// content size").
+func declaresItsSize(t *testing.T, z []byte, n int) {
+	t.Helper()
+	var h zstd.Header
+	if err := h.Decode(z); err != nil {
+		t.Fatalf("zstd frame header: %v", err)
+	}
+	if !h.HasFCS || h.FrameContentSize != uint64(n) {
+		t.Fatalf("a zstd frame of %d bytes must declare that size, its header says %+v", n, h)
+	}
+}
+
+// EncodeAll leaves the content size out of a frame of under 256 bytes unless
+// the encoder is told to write single-segment frames, and one small message is
+// such a group. The sizes are the ones where the header changes its form: 256
+// bytes, 1 KB, and the encoder's 4 MB window.
+func TestFramedGroupsOfAnySizeDeclareIt(t *testing.T) {
+	rnd := rand.New(rand.NewSource(1))
+	// One message per group: its frame is 59 bytes and the payload.
+	for _, size := range []int{59 + 7, 255, 256, 1024, 1025, 5<<20 + 59} {
+		t.Run(strconv.Itoa(size), func(t *testing.T) {
+			doc := make([]byte, size-59)
+			for i := range doc {
+				doc[i] = "0123456789abcdef"[rnd.Intn(16)]
+			}
+			doc[0], doc[len(doc)-1] = '"', '"'
+			batches := []PushBatch{{Queue: "q", Partition: "p", Payloads: [][]byte{doc}}}
+
+			push, err := EncodePushFrames(batches, false)
+			if err != nil {
+				t.Fatalf("push: %v", err)
+			}
+			if g := readFrameGroups(t, push[5:]); len(g) != 1 || g[0].payloads[0] != string(doc) {
+				t.Fatalf("the push's group does not give the payload back")
+			}
+
+			head := []byte(`{"operations":[]}`)
+			txn, err := EncodeTransactionFrames(head, batches, false)
+			if err != nil {
+				t.Fatalf("transaction: %v", err)
+			}
+			if g := readFrameGroups(t, txn[9+len(head):]); len(g) != 1 || g[0].payloads[0] != string(doc) {
+				t.Fatalf("the transaction's group does not give the payload back")
+			}
+		})
 	}
 }
 
