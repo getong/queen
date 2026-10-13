@@ -1,12 +1,17 @@
 import { line } from "@/lib/figure-spec";
 
-// benchmarks/partitions.mdx, "What a partition costs Queen": leader anonymous RSS.
+// benchmarks/partitions.mdx, "CPU and memory": anonymous memory at 100,000
+// msg/s, seconds 30 to 60, Queen 2.3.0 pre-release builds, 2026-10-12 and 13.
+// The ten-million point ran with QUEEN_CONSUME_IDLE_UNLOAD_S=30.
 export default line({
-  alt: "The Queen leader's anonymous memory against the number of partitions in the queue, 3.6 GB with 200 partitions, 3.9 GB with 100,000, 5.6 GB with 1,000,000, 11.8 GB with 5,000,000 and 19.9 GB with 10,000,000.",
-  caption: "A straight line: memory is what a partition costs, about 2 KB each on the leader, and every node holds the same store, so memory sets the partition ceiling.",
-  source: "benchmark-queen/2026-09-30-stage03-3node",
+  alt: "Queen 2.3.0 at 100,000 msg/s: anonymous memory against the number of partitions in the queue. The leader holds 0.5 GB with 1,000 partitions, 0.9 GB with 100,000, 2.5 GB with 1,000,000 and 11.4 GB with 10,000,000. A follower holds 0.4, 0.5, 1.4 and 9.8 GB.",
+  caption: "A straight line: memory is what a partition costs, about 1 KB on every node and a little more on the leader, so memory sets the partition ceiling.",
+  source: "benchmark-queen/2026-10-12-three-node-new-forms/runs/grid-final.jsonl",
   x: { label: "partitions in the queue", ticks: [0, 2500000, 5000000, 7500000, 10000000], min: 0, max: 10500000 },
-  y: { label: "leader memory (anonymous RSS)", ticks: [0, 5, 10, 15, 20], min: 0, max: 22, format: "gb" },
+  y: { label: "memory (anonymous RSS)", ticks: [0, 3, 6, 9, 12], min: 0, max: 13, format: "gb" },
   height: 260,
-  series: [{ label: "Queen leader", points: [[200, 3.6], [100000, 3.9], [1000000, 5.6], [5000000, 11.8], [10000000, 19.9]] }],
+  series: [
+    { label: "Leader", points: [[1000, 0.5], [100000, 0.9], [1000000, 2.5], [10000000, 11.4]] },
+    { label: "Follower", points: [[1000, 0.4], [100000, 0.5], [1000000, 1.4], [10000000, 9.8]] },
+  ],
 });

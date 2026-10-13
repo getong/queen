@@ -10,6 +10,10 @@ sourceOfTruth:
   - protocols/queen-kafka/src/conn.rs
   - protocols/queen-kafka/src/queen.rs
   - protocols/queen-kafka/src/handlers/fetch.rs
+# sourceOfTruth re-read 2026-10-13 (2.3.0): handlers/fetch.rs and queen.rs give every call to the
+# broker the response's whole max_bytes as its ceiling (a third larger, for base64) and read the
+# partitions in order while any is left. Fetch still answers up to version 6, without sessions, as
+# "CPU" says. The page gains the five points measured on 2.3.0-beta.1 and "Still open" follows them.
 ---
 
 Queen speaks the Kafka wire protocol from inside the broker process (`QUEEN_KAFKA_EMBEDDED=true`),
@@ -18,7 +22,9 @@ costs with the same load generator, built on franz-go, that drove Kafka itself. 
 work on the facade, Kafka clients see the latency Queen's own clients see, and at a million
 messages a second a little better. At 1,000,000 msg/s on 200 partitions the facade's e2e p99 was
 91 ms on the final build, against 146 ms for Queen's own clients (2.0.0-beta.2) and 18 ms for Kafka
-4.3.1 itself; the facade ran the code of 2.0.0-beta.5 on 2026-10-02.
+4.3.1 itself; the facade ran the code of 2.0.0-beta.5 on 2026-10-02. On 2.3.0-beta.1 the same
+point reads 48 ms, and the facade no longer stops consuming at 2,000,000
+([2.3.0](#230-five-points)).
 
 ## The shape
 
@@ -31,7 +37,32 @@ that was merged as `b51e4419` (2.0.0-beta.5): `qk3` on 2026-10-01, and the final
 2026-10-02 for the row marked so. Runs: [`benchmark-queen/2026-09-30-kafka-pulsar/runs/queen-kafka/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-09-30-kafka-pulsar/runs/queen-kafka)
 (`README-c3.txt` there maps tags to builds).
 
+## 2.3.0: five points
+
+Five points of the tables below ran again on 2026-10-13, on 2.3.0-beta.1 and on the machines of
+the [2.3.0 throughput runs](/benchmarks/throughput/), to see that the release had broken nothing:
+the same load generator and client settings, a fresh cluster per point. End-to-end p50 / p99 in
+milliseconds, the worst load process. The machines are others of the same size, so the columns
+show a direction and not an exact gain. Runs: the `b1-*` folders of the archive above.
+
+| Point | In / out | 2.3.0-beta.1 | 2.0.0-beta.5, 2026-10-02 |
+|---|---|---|---|
+| 300,000 msg/s, 200 partitions | 300k / 300k | 9 / 11 | 10 / 19 |
+| 1,000,000, 200 partitions | 1,000k / 1,000k | 12 / 48 | 35 / 91 |
+| 1,000,000, 10,000 partitions | 1,000k / 1,000k | 13 / 26 | 45 / 142 |
+| 1,500,000, 200 partitions | 1,499k / 1,498k | 98 / 175 | 185 / 3,785 |
+| 2,000,000, 200 partitions | 2,007k / 1,992k | 334 / 20,578 | 1.91M in, 105k out |
+
+No point had an error or shed anything. At 2,000,000 msg/s the consumers now keep the rate. Seven
+of the nine load processes end at 220 / 350 ms; two hold consumers that fall steadily behind, to
+18 and 25 seconds in the last window, which is where the p99 of that row comes from.
+
+Kafka itself on these machines read 8 / 11 ms at 1,000,000 msg/s on 100 partitions, and Queen's
+own clients 10 / 19 ms.
+
 ## Rate
+
+The tables from here to "Still open" are the runs of 2026-10-01 and 02.
 
 End-to-end latency, p50 / p99 in milliseconds, one topic of 200 partitions. "Behind" means
 consumption under 97% of the offered rate, or a p99 over 5 seconds.
@@ -108,12 +139,16 @@ three-node clusters.
 
 ## Still open
 
-Overload is the first open problem. At 2M msg/s offered the facade accepted up to 1.9M a second and
-its consumers starved: 105,000 consumed in the archived run, and anywhere from 42,000 to 1,550,000
-in repeats with and without produce coalescing. Queen's own clients at the same rate shed at their
-in-flight cap and kept consuming 1.23M. We do not know the mechanism yet.
+Overload was the first open problem. On 2.0.0-beta.5, at 2M msg/s offered, the facade accepted up
+to 1.9M a second and its consumers starved: 105,000 consumed in the archived run, and anywhere
+from 42,000 to 1,550,000 in repeats. 2.3.0 reads a fetch only to what its response can carry (a
+consumer behind on a thousand partitions had a gigabyte read for the 32 MiB a response holds, on
+every fetch), and at the same rate consumption now keeps up. What is left is the two late load
+processes of the [2.3.0 run](#230-five-points): some consumers fall behind for the whole run while
+the rest stay near 300 ms, and we do not know why. The fetch change itself has no before and
+after measurement on one set of machines.
 
-Long runs are the second. A 10-minute run at 1M msg/s (`qk3`, 2026-10-01) moved 595 million
+Long runs are the second, and have not been repeated on 2.3.0. A 10-minute run at 1M msg/s (`qk3`, 2026-10-01) moved 595 million
 messages in and out with no errors, and its last 30 seconds held 51 / 111 ms. Three stretches of 20
 to 100 seconds, around minutes 3, 6 and 8, had produce p99 of 2 to 8 seconds and put the run's e2e
 p99 at 10 to 12 seconds. The first began when free memory on the nodes ran out and the followers

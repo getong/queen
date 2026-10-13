@@ -119,12 +119,12 @@ keep their messages in memory. See [clients](/start/clients/), [Kafka](/guides/k
 
 ## Numbers
 
-On three 16-vCPU nodes, with every write fsynced on two of them before its answer, 2.0.0-beta.2
-pushed and consumed 1,000,000 messages a second through one queue at every partition count we
-tried, from 200 to ten million, with an end-to-end p99 between 103 and 163 ms. An exactly-once step
-of 10 messages committed in 3 ms at the median, and one raft group topped out between 7,000 and
-9,000 such transactions a second (2026-10-01, with Kafka, Redpanda and Pulsar measured on the same
-machines). The latest full Jepsen campaign, on the code of 2.2.0, ran 244 tests under kill -9,
+On three 16-vCPU nodes, with every write fsynced on two of them before its answer, 2.3.0 pushed
+and consumed 1,000,000 messages a second through one queue at every partition count we tried, from
+10 to ten million, with an end-to-end p99 between 18 and 38 ms, and 2,000,000 a second at 59 to
+100 ms. An exactly-once step of 10 messages commits in 3 to 4 ms at the median, and one raft group
+tops out near 12,900 such transactions a second (pre-release builds, 2026-10-12 and 13, with Kafka
+measured on the same machines). The latest full Jepsen campaign, on the code of 2.2.0, ran 244 tests under kill -9,
 partitions, pauses, clock jumps and power loss: all were valid, one of them at its second run,
 after the test harness had crashed in the first
 ([Jepsen](/benchmarks/jepsen/)). Every number, with its conditions and

@@ -15,7 +15,7 @@ On three nodes it carries 1M msg/s in and out of one queue of 10M partitions.
 
 Queen speaks HTTP but is also compatible with Kafka clients.
 
-[Documentation](https://queenmq.com) · [Quickstart](https://queenmq.com/start/quickstart/) · [Benchmarks](https://queenmq.com/benchmarks/) · [MCP for agents](https://queenmq.com/start/ai-agents/) · [Try it free on Queen Cloud](https://queenmq.cloud) · Apache-2.0 · v2.2
+[Documentation](https://queenmq.com) · [Quickstart](https://queenmq.com/start/quickstart/) · [Benchmarks](https://queenmq.com/benchmarks/) · [MCP for agents](https://queenmq.com/start/ai-agents/) · [Try it free on Queen Cloud](https://queenmq.cloud) · Apache-2.0 · v2.3
 
 </div>
 
@@ -66,21 +66,24 @@ In production at [Smartness](https://www.smartness.com/en). Tested with Jepsen.
 
 ## Benchmarks
 
-Three 16-vCPU nodes, every write fsynced on two of them before the answer, with Kafka 4.3.1,
-Redpanda 26.2.3 and Pulsar 4.2.4 on the same machines. Each row links to the run and its conditions.
+Three 16-vCPU nodes, every write fsynced on two of them before the answer, with Kafka 4.3.1 on the
+same machines (Redpanda 26.2.3 and Pulsar 4.2.4 were last run in September, beside Queen
+2.0.0-beta.2). Each row links to the run and its conditions.
 
 | | Result |
 |---|---|
-| [Partitions](https://queenmq.com/benchmarks/partitions/) | 1,000,000 msg/s in and out of one queue at every count from 200 to **10,000,000 partitions**, e2e p99 103 to 163 ms. Kafka fell behind at 100,000 partitions, Redpanda and Pulsar at 50,000. |
-| [Transactions](https://queenmq.com/benchmarks/transactions/) | 10 messages per transaction at 9,000 msg/s: commit p99 **4 ms**, e2e p99 19 ms (Kafka 34 and 51 ms, Pulsar 32 and 50 ms). |
-| [Kafka clients](https://queenmq.com/benchmarks/kafka-clients/) | franz-go at 1,000,000 msg/s through Queen's Kafka port, e2e p99 91 ms. |
+| [Partitions](https://queenmq.com/benchmarks/partitions/) | 1,000,000 msg/s in and out of one queue at every count from 10 to **10,000,000 partitions**, e2e p99 **18 to 38 ms**; 2,000,000 msg/s at 59 to 100 ms. At 2,000,000 msg/s Kafka reads 25 ms at 1,000 partitions, 134 ms at 10,000, and falls behind at 100,000. |
+| [Throughput](https://queenmq.com/benchmarks/throughput/) | One queue of 100 partitions: e2e p50 / p99 of 10 / 19 ms at 1,000,000 msg/s and 31 / 63 ms at 2,000,000 (Kafka 8 / 11 and 8 / 43). Against 2.2.0 on the same machines: 27 / 85 ms to 12 / 18 ms at 1,000,000 msg/s. |
+| [Transactions](https://queenmq.com/benchmarks/transactions/) | 10 messages per transaction: commit p99 **4 ms** at 6,000 transactions a second, a ceiling near 12,900 a second. In September's comparison: commit p99 4 ms against Kafka's 34 and Pulsar's 32. |
+| [Kafka clients](https://queenmq.com/benchmarks/kafka-clients/) | franz-go at 1,000,000 msg/s through Queen's Kafka port, e2e p99 48 ms. |
 | [Soak](https://queenmq.com/benchmarks/soak/) | 500,000 msg/s for 3 h 23 min over 1,000,000 partitions, through a kill -9 of the leader and of a follower: e2e p99 86 ms in the median window. |
 | [Jepsen](https://queenmq.com/benchmarks/jepsen/) | **244 tests** on the code of 2.2.0: all valid, one of them at its second run, after the test harness had crashed in the first. No acknowledged message lost, no lease held twice, transactions atomic. |
 | [Laravel](https://queenmq.com/benchmarks/laravel/) | 2,753 jobs/s with 32 workers on one node, against 1,124 for Horizon on Redis. |
 
-Where Queen is behind: with few partitions and very high rates, Kafka carries more (4M msg/s at
-p99 75 ms, while one Queen queue tops out near 1.5M, set by its leader) and spends less CPU per
-message. [Method and rig](https://queenmq.com/benchmarks/methodology/).
+Where Queen is behind: with few partitions Kafka is faster and carries more (4M msg/s at p99
+243 ms, while one Queen queue stops between 2M and 2.5M, set by its leader) and spends less CPU per
+message. The 2.3.0 figures are pre-release builds with the binary wire forms a client turns on.
+[Method and rig](https://queenmq.com/benchmarks/methodology/).
 
 ## Quick start
 

@@ -9,6 +9,10 @@ sidebar:
 sourceOfTruth:
   - server/src/rsm/batcher_lanes.rs
 # sourceOfTruth re-read 2026-10-08 (standby cluster): batcher_lanes.rs fills one new field of a cycle's output and plans as before. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): batcher_lanes.rs keeps a queue's partition names in 256
+# tables once it has 4,096 of them and frees dropped lookups off the planner thread; pushes are
+# still planned on the lanes and a transaction that acks on the one control step, as "The ceiling"
+# says. The page gains the 2.3.0 measurement of 2026-10-12.
 ---
 
 A [transaction](/concepts/transactions/) is the step Queen is built around: take a message, do the work, then ack it and
@@ -18,8 +22,10 @@ output together, and at the end a verifier reads every output and checks that ev
 in it exactly once. It passed on every point that ran to the end, on all four systems; one Pulsar
 point needed a second run because our verifier stopped reading too early. At 9,000 messages a
 second in transactions of 10, a Queen commit took 3 ms at p50 and 4 ms at p99, Kafka's 12 and 34 ms
-and Pulsar's 22 and 32 ms (2.0.0-beta.2, 2026-10-01). [Compare](/start/compare/) shows what one
-commit covers in each system.
+and Pulsar's 22 and 32 ms (2.0.0-beta.2, 2026-10-01). 2.3.0 was measured against 2.2.0, not
+against the other systems again: its binary transaction body takes about a third off the commit
+time at 12,000 transactions a second ([below](#230-against-220)). [Compare](/start/compare/) shows
+what one commit covers in each system.
 
 ## The pipeline
 
@@ -87,6 +93,42 @@ With one message per transaction at 9,000 msg/s, Queen committed all 9,000 trans
 (commit p50 / p99 4 / 6 ms), while Kafka managed 1,644, Redpanda 1,313 and Pulsar 7,511, each
 falling behind.
 
+## 2.3.0 against 2.2.0
+
+The same pipeline ran on 2026-10-12 on the machines of the
+[2.3.0 throughput runs](/benchmarks/throughput/), which sync faster than September's: 200
+partitions in and out, 198 workers, 40-second steps, release 2.2.0 next to a pre-release build of
+2.3.0 with its transactions sent as JSON and as the binary body the release adds (the pushes of a
+transaction go as frames the client built and compressed; a client sends it when
+[binary push and push compression](/start/clients/#binary-push-push-compression-and-framed-pop)
+are both on). No step had an error or an abort, and a verifier found every message once on both
+bodies. Commit and e2e are p50 / p99 in milliseconds over all load processes. Runs: `txn-*` in
+[`benchmark-queen/2026-10-12-three-node-new-forms/runs/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-10-12-three-node-new-forms).
+
+| Transactions of 10 messages | 2.2.0 | 2.3.0, JSON body | 2.3.0, binary body |
+|---|---|---|---|
+| 6,000 a second: commit | 2.8 / 5.0 | 2.7 / 4.5 | 2.6 / 4.2 |
+| 12,000 a second: commit | 5.3 / 12.4 | 4.9 / 11.1 | 3.6 / 8.6 |
+| 12,000 a second: e2e | 78 / 195 | 72 / 176 | 62 / 143 |
+| Committed a second when 18,000 are offered | 11,320 | 11,770 | 12,890 |
+
+| Transactions of 100 messages | 2.2.0 | 2.3.0, JSON body | 2.3.0, binary body |
+|---|---|---|---|
+| 3,000 a second: commit | 6.1 / 19.2 | 5.6 / 9.7 | 4.1 / 7.0 |
+| 3,000 a second: e2e | 25 / 60 | 21 / 30 | 19 / 26 |
+| 3,000 a second: cores, three brokers | 13.2 | 11.8 | 11.2 |
+| Committed a second when 6,000 are offered | 2,020 | 2,290 | 2,450 |
+
+The binary body takes about a third off the commit time at the highest rate all three carry, and
+moves the ceiling by 14% with 10 messages and 21% with 100. The ceilings themselves belong to the
+design and are the same in the three: the next section. Past its limit the cluster does less than
+at it (3,000 transactions of 100 a second are carried, 2,450 are reached when 6,000 are offered),
+and plain pushes then wait behind the transactions for 0.6 to 0.7 s.
+
+These machines commit more than September's did: 2.2.0 reached 11,320 transactions of 10 a second
+here, where 2.0.0-beta.2 topped out between 7,000 and 9,000 on the other rig. The machines differ,
+so do not read that difference as the code's.
+
 ## The ceiling, and what moves it
 
 Queen plans pushes on its lanes in parallel (eight by default, sixteen in these runs), but a
@@ -131,7 +173,8 @@ passed. Both runs are in the archive.
 
 ## What this page does not show
 
-Kafka and Redpanda were not run with more workers, or with 100 messages per transaction above
-9,000 msg/s. No run used transactions through Queen's Kafka facade, and the Queen transactions
+Kafka, Redpanda and Pulsar against 2.3.0: the comparison tables are September's, with Queen at
+2.0.0-beta.2. Kafka and Redpanda were not run with more workers, or with 100 messages per
+transaction above 9,000 msg/s. No run used transactions through Queen's Kafka facade, and the Queen transactions
 carried acks and pushes only, with no KV writes or timers. Each point offered load for 70 seconds,
 a 10-second ramp included.
