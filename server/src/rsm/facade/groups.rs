@@ -21,6 +21,24 @@
 //!
 //! [`GroupRouter`] implements [`Rsm`] by dispatching every call on its
 //! tenant, so the HTTP layer is unchanged.
+//!
+//! # A standby with several groups
+//!
+//! The cluster link ([`crate::rsm::link`]) is group by group: a standby's
+//! group `g` replays the source's group `g`, read on the source's Raft port
+//! plus `g`, and each group has its own position in its own source log. That
+//! holds a tenant where this router looks for it only while both clusters
+//! place tenants the same way, so every link call carries the group's
+//! [`placement`] and the source refuses another's.
+//!
+//! Nothing ties the groups' positions together, and nothing has to: no
+//! command touches two groups, so every tenant's state is a prefix of one
+//! log. A promoted standby holds each group up to the point that group had
+//! reached, which is not one instant of the source.
+//!
+//! The link's two routes speak for the whole node — its status lists every
+//! group, a promotion promotes every group ([`GroupRouter::link_promote`]) —
+//! where every other route is one tenant's and so one group's.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -28,6 +46,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::*;
+use crate::rsm::link::wire::Placement;
 
 /// `QUEEN_RAFT_GROUPS`: how many Raft groups this node runs (default 1, at
 /// most 64). Every node of a cluster must use the same value.
@@ -72,10 +91,81 @@ pub fn group_of(tenant: &str, groups: usize, overrides: &HashMap<String, usize>)
     (xxhash_rust::xxh3::xxh3_64(tenant.as_bytes()) % groups as u64) as usize
 }
 
+/// Group `group`'s [`Placement`] in a cluster of `groups`: what a link call
+/// of that group states.
+///
+/// The pins are a digest of the `overrides` that put a tenant somewhere else
+/// than its name does. A pin that names the group the hash gives changes
+/// nothing and is left out, so two clusters that write their pins differently
+/// and place every tenant alike still link.
+pub fn placement(group: usize, groups: usize, overrides: &HashMap<String, usize>) -> Placement {
+    let none = HashMap::new();
+    let mut moved: Vec<(&str, usize)> = overrides
+        .iter()
+        .filter(|(tenant, g)| group_of(tenant, groups, &none) != **g)
+        .map(|(tenant, g)| (tenant.as_str(), *g))
+        .collect();
+    moved.sort_unstable();
+    let pins = if moved.is_empty() {
+        String::new()
+    } else {
+        // `tenant=group`, a line each: the group is digits, so the last `=`
+        // of a line ends the tenant's name whatever the name holds.
+        let mut text = String::new();
+        for (tenant, g) in moved {
+            text.push_str(&format!("{tenant}={g}\n"));
+        }
+        format!("{:016x}", xxhash_rust::xxh3::xxh3_64(text.as_bytes()))
+    };
+    Placement {
+        group,
+        groups,
+        pins,
+    }
+}
+
 /// Several groups behind one [`Rsm`].
 pub struct GroupRouter {
     groups: Vec<Arc<dyn Rsm>>,
     overrides: HashMap<String, usize>,
+}
+
+/// Group `g`'s part of an answer about the cluster link: what the group
+/// answered, with its number — and its status when that is not 200, so a
+/// group that could not answer reads as one beside those that did.
+fn link_part(g: usize, out: Result<ApiOut, RsmError>) -> (u16, serde_json::Value) {
+    let (status, body) = match out {
+        Ok(out) => (out.status, serde_json::from_str(&out.body).ok()),
+        Err(e) => (
+            503,
+            Some(serde_json::json!({"code": e.code(), "error": e.to_string()})),
+        ),
+    };
+    let mut part = match body {
+        Some(serde_json::Value::Object(fields)) => serde_json::Value::Object(fields),
+        _ => serde_json::json!({}),
+    };
+    part["group"] = serde_json::json!(g);
+    if status != 200 {
+        part["status"] = serde_json::json!(status);
+    }
+    (status, part)
+}
+
+/// What the groups' parts say together, in the shape one group's answer has:
+/// a `role`, and every group's own part under `groups`. The role is the one
+/// every group has; `mixed` when they differ or one did not say — a standby
+/// promoted in part, or made of groups that were not all standbys.
+fn link_of(parts: Vec<serde_json::Value>) -> serde_json::Value {
+    let mut roles = parts.iter().map(|p| p["role"].as_str());
+    let role = match roles.next().flatten() {
+        Some(role) if roles.all(|r| r == Some(role)) => role.to_string(),
+        _ => "mixed".to_string(),
+    };
+    let mut out = serde_json::Map::new();
+    out.insert("role".into(), role.into());
+    out.insert("groups".into(), serde_json::Value::Array(parts));
+    serde_json::Value::Object(out)
 }
 
 impl GroupRouter {
@@ -86,6 +176,49 @@ impl GroupRouter {
 
     fn pick(&self, tenant: &str) -> &Arc<dyn Rsm> {
         &self.groups[group_of(tenant, self.groups.len(), &self.overrides)]
+    }
+
+    /// One of the link's two routes, asked of every group at once. 200 when
+    /// every group answered 200, else the first other status; the body lists
+    /// every group's answer either way.
+    async fn link_route(&self, ctx: ReqCtx, req: ApiReq) -> Result<ApiOut, RsmError> {
+        let answers = futures_util::future::join_all(
+            self.groups.iter().map(|g| g.api(ctx.clone(), req.clone())),
+        )
+        .await;
+        let mut status = 200u16;
+        let mut parts = Vec::with_capacity(answers.len());
+        for (g, out) in answers.into_iter().enumerate() {
+            let (s, part) = link_part(g, out);
+            if s != 200 && status == 200 {
+                status = s;
+            }
+            parts.push(part);
+        }
+        Ok(ApiOut::json(status, link_of(parts).to_string()))
+    }
+
+    /// `POST /api/v1/system/link/promote` on a node of several groups: every
+    /// group is promoted, each by its own leader, at the point its own replay
+    /// had reached.
+    ///
+    /// The groups are asked together and each answers for itself, so one that
+    /// cannot be promoted now (no leader, a promotion already in flight)
+    /// keeps none of the others waiting: the answer names it, the standby is
+    /// `mixed` meanwhile — the promoted groups serve their tenants, the
+    /// others still refuse theirs as a standby does — and the call is
+    /// repeated. Promoting a promoted group again changes nothing.
+    async fn link_promote(&self, ctx: ReqCtx, req: ApiReq) -> Result<ApiOut, RsmError> {
+        let out = self.link_route(ctx, req).await?;
+        if out.status != 200 {
+            tracing::error!(
+                target: "rsm",
+                status = out.status,
+                answer = %out.body,
+                "rsm link: not every raft group of this standby was promoted: repeat the call",
+            );
+        }
+        Ok(out)
     }
 }
 
@@ -225,6 +358,13 @@ impl Rsm for GroupRouter {
         self.pick(&ctx.tenant).timers_count(ctx, req).await
     }
     async fn api(&self, ctx: ReqCtx, req: ApiReq) -> Result<ApiOut, RsmError> {
+        // The cluster link is the node's, not a tenant's: every group has its
+        // own part in it.
+        match (req.method.as_str(), req.path.as_str()) {
+            ("GET", crate::rsm::link::STATUS_ROUTE) => return self.link_route(ctx, req).await,
+            ("POST", crate::rsm::link::PROMOTE_ROUTE) => return self.link_promote(ctx, req).await,
+            _ => {}
+        }
         self.pick(&ctx.tenant).api(ctx, req).await
     }
 
@@ -318,7 +458,28 @@ impl Rsm for GroupRouter {
                     .map(|a| serde_json::json!({"group": g, "apply": a}))
             })
             .collect();
+        // The link, when any group has a part in one: every group's, in the
+        // shape the link's own route answers with. A group with none is an
+        // ordinary cluster that follows nobody and that nobody reads.
+        let link = all.iter().any(|h| h.link.is_some()).then(|| {
+            link_of(
+                all.iter()
+                    .enumerate()
+                    .map(|(g, h)| {
+                        let mut part = match &h.link {
+                            Some(serde_json::Value::Object(fields)) => {
+                                serde_json::Value::Object(fields.clone())
+                            }
+                            _ => serde_json::json!({"role": "primary"}),
+                        };
+                        part["group"] = serde_json::json!(g);
+                        part
+                    })
+                    .collect(),
+            )
+        });
         let mut h = all.remove(0);
+        h.link = link;
         for o in all {
             h.leader_known &= o.leader_known;
             h.storage_ready &= o.storage_ready;
@@ -398,6 +559,76 @@ mod tests {
     fn overrides_parse_and_refuse_out_of_range() {
         std::env::remove_var("QUEEN_TENANT_GROUPS");
         assert!(overrides_from_env(3).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_groups_placement_names_only_the_pins_that_move_a_tenant() {
+        let none = HashMap::new();
+        assert_eq!(placement(0, 1, &none), Placement::single());
+        let p = placement(2, 3, &none);
+        assert_eq!((p.group, p.groups, p.pins.as_str()), (2, 3, ""));
+
+        // A tenant pinned where its name puts it anyway is not a pin.
+        let home = group_of("acme", 3, &none);
+        let mut kept = HashMap::new();
+        kept.insert("acme".to_string(), home);
+        assert_eq!(placement(0, 3, &kept), placement(0, 3, &none));
+
+        // One pinned elsewhere is, the same from every group of the cluster
+        // and whatever else is written beside it.
+        let mut moved = HashMap::new();
+        moved.insert("acme".to_string(), (home + 1) % 3);
+        let pins = placement(0, 3, &moved).pins;
+        assert_eq!(pins.len(), 16, "{pins}");
+        assert_eq!(placement(1, 3, &moved).pins, pins);
+        let mut beside = moved.clone();
+        beside.insert("umbrella".to_string(), group_of("umbrella", 3, &none));
+        assert_eq!(placement(0, 3, &beside).pins, pins);
+
+        // Another group for it, or another tenant, is another placement.
+        let mut other = HashMap::new();
+        other.insert("acme".to_string(), (home + 2) % 3);
+        assert_ne!(placement(0, 3, &other).pins, pins);
+        let mut two = moved.clone();
+        two.insert(
+            "umbrella".to_string(),
+            (group_of("umbrella", 3, &none) + 1) % 3,
+        );
+        assert_ne!(placement(0, 3, &two).pins, pins);
+    }
+
+    #[test]
+    fn the_groups_parts_of_a_link_answer_read_as_one() {
+        use serde_json::json;
+        let ok = |body: serde_json::Value| Ok(ApiOut::json(200, body.to_string()));
+
+        // Every group a standby: the node is one, and each part keeps what
+        // its group said, numbered.
+        let (s0, p0) = link_part(0, ok(json!({"role": "standby", "leader": true})));
+        let (s1, p1) = link_part(1, ok(json!({"role": "standby", "leader": false})));
+        assert_eq!((s0, s1), (200, 200));
+        assert_eq!(p1, json!({"group": 1, "role": "standby", "leader": false}));
+        let all = link_of(vec![p0.clone(), p1]);
+        assert_eq!(all["role"], "standby");
+        assert_eq!(all["groups"].as_array().map(Vec::len), Some(2));
+        assert_eq!(all["groups"][0], p0);
+
+        // One promoted and one not: neither a standby nor promoted.
+        let (_, promoted) = link_part(0, ok(json!({"role": "promoted"})));
+        let (_, standby) = link_part(1, ok(json!({"role": "standby"})));
+        assert_eq!(link_of(vec![promoted.clone(), standby])["role"], "mixed");
+
+        // A group that could not answer says so in its part, and the whole
+        // is not what the others are.
+        let (status, part) = link_part(1, Err(RsmError::Retry { leader_hint: None }));
+        assert_eq!(status, 503);
+        assert_eq!((&part["group"], &part["status"]), (&json!(1), &json!(503)));
+        assert_eq!(part["code"], "retry");
+        assert_eq!(link_of(vec![promoted, part])["role"], "mixed");
+        let refused = ApiOut::json(409, json!({"code": "not_standby"}).to_string());
+        let (status, part) = link_part(0, Ok(refused));
+        assert_eq!((status, &part["status"]), (409, &json!(409)));
+        assert_eq!(part["code"], "not_standby");
     }
 
     #[test]

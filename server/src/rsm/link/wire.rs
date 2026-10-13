@@ -57,6 +57,13 @@
 //! ```json
 //! {"reader":"standby-5e1f09c2"}
 //! ```
+//!
+//! # Several raft groups
+//!
+//! Both calls are made of ONE raft group of the source, by the standby's
+//! group of the same number, and carry which group that is and how the
+//! standby places its tenants ([`Placement`], a header). A source group
+//! answers 409 to a standby that is not its counterpart.
 
 use std::io;
 
@@ -74,6 +81,179 @@ pub const SNAPSHOT_PATH: &str = "/link/v1/snapshot";
 /// which a standby holds as `QUEEN_LINK_SOURCE_TOKEN`. Not the source's
 /// cluster token: it lets a standby read, and nothing else.
 pub const TOKEN_HEADER: &str = "x-queen-link-token";
+
+/// The header a standby states its [`Placement`] in, on both calls, and a
+/// source its own, on every answer.
+pub const PLACEMENT_HEADER: &str = "x-queen-link-placement";
+
+/// The one way this build places a tenant in a group
+/// ([`crate::rsm::facade::groups::group_of`]): the pin, else the xxh3 of its
+/// name modulo the groups. A build that places them another way names another
+/// scheme, and the two do not link.
+const PLACEMENT_SCHEME: &str = "v1";
+
+/// Which of a cluster's raft groups a link call is about, and how that
+/// cluster places its tenants over its groups.
+///
+/// A cluster with several raft groups (`QUEEN_RAFT_GROUPS`) is as many logs,
+/// and a standby replays each with its own group of the same number: group
+/// `g` of the standby reads group `g` of the source, on the source's Raft
+/// port plus `g`. The standby's router then finds a tenant where the source's
+/// had it only while both clusters place tenants the same way: as many
+/// groups, and the same pins (`QUEEN_TENANT_GROUPS`). Nothing in the
+/// replicated state says how a cluster places them — it is each cluster's
+/// configuration — so every call states it ([`PLACEMENT_HEADER`]) and a
+/// source answers only a standby whose placement is its own
+/// ([`Placement::admits`]). A promoted standby that placed tenants otherwise
+/// would look for each of them in a group that never held it.
+///
+/// ```text
+/// x-queen-link-placement: v1 group=1 groups=3 pins=9f2c0a11d4e5b6c7
+/// ```
+///
+/// A call without the header is one group's: what every standby was before
+/// a standby could have several, and what a standby of one group still
+/// sends.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Placement {
+    /// This group's number, from 0.
+    pub group: usize,
+    /// How many groups the cluster runs.
+    pub groups: usize,
+    /// The tenants the cluster pins to another group than their name's, as a
+    /// digest ([`crate::rsm::facade::groups::placement`]). Empty: none.
+    pub pins: String,
+}
+
+impl Default for Placement {
+    fn default() -> Placement {
+        Placement::single()
+    }
+}
+
+impl std::fmt::Display for Placement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "raft group {} of {}", self.group, self.groups)?;
+        match self.pins.as_str() {
+            "" => write!(f, " (no tenant pinned)"),
+            pins => write!(f, " (tenant pins {pins})"),
+        }
+    }
+}
+
+impl Placement {
+    /// The only group of a cluster that runs one.
+    pub fn single() -> Placement {
+        Placement {
+            group: 0,
+            groups: 1,
+            pins: String::new(),
+        }
+    }
+
+    /// Whether this is [`Placement::single`]: the placement a call without
+    /// the header states.
+    pub fn is_single(&self) -> bool {
+        *self == Placement::single()
+    }
+
+    /// The header's value.
+    pub fn header(&self) -> String {
+        let mut out = format!(
+            "{PLACEMENT_SCHEME} group={} groups={}",
+            self.group, self.groups
+        );
+        if !self.pins.is_empty() {
+            out.push_str(" pins=");
+            out.push_str(&self.pins);
+        }
+        out
+    }
+
+    /// The placement a header states; [`Placement::single`] without one.
+    pub fn parse(header: Option<&str>) -> Result<Placement, String> {
+        let Some(value) = header else {
+            return Ok(Placement::single());
+        };
+        let mut words = value.split_ascii_whitespace();
+        match words.next() {
+            Some(PLACEMENT_SCHEME) => {}
+            other => {
+                return Err(format!(
+                    "{PLACEMENT_HEADER}: `{}` is not a placement scheme this build knows \
+                     ({PLACEMENT_SCHEME})",
+                    other.unwrap_or_default()
+                ))
+            }
+        }
+        let (mut group, mut groups, mut pins) = (None, None, String::new());
+        for word in words {
+            let number = |v: &str| {
+                v.parse::<usize>()
+                    .map_err(|_| format!("{PLACEMENT_HEADER}: `{word}` is not a number"))
+            };
+            match word.split_once('=') {
+                Some(("group", v)) => group = Some(number(v)?),
+                Some(("groups", v)) => groups = Some(number(v)?),
+                Some(("pins", v)) => pins = v.to_string(),
+                // What a later build adds under the same scheme does not
+                // change where a tenant lives.
+                _ => {}
+            }
+        }
+        match (group, groups) {
+            (Some(group), Some(groups)) if group < groups => Ok(Placement {
+                group,
+                groups,
+                pins,
+            }),
+            _ => Err(format!(
+                "{PLACEMENT_HEADER}: `{value}` names no group of a number of groups"
+            )),
+        }
+    }
+
+    /// Whether a standby that states `asked` may read the group whose
+    /// placement this is: only when the two are one. `Err`: why not, for the
+    /// standby's operator.
+    pub fn admits(&self, asked: &Placement) -> Result<(), String> {
+        if self == asked {
+            return Ok(());
+        }
+        // Short: a standby shows its operator the start of what a source
+        // answers, and the two settings are what they need to read.
+        Err(format!(
+            "this source node is {self} and the standby reads it as {asked}: both clusters need \
+             the same QUEEN_RAFT_GROUPS and the same QUEEN_TENANT_GROUPS"
+        ))
+    }
+
+    /// Whether the source that answered with `header` is the group this
+    /// standby group replays, placed as this standby places its own. A
+    /// standby of one group asks nothing of its source's answer: a source
+    /// that states no placement is every release before this check, and one
+    /// that has several groups has refused the call already.
+    pub fn check_answer(&self, header: Option<&str>) -> Result<(), String> {
+        if self.is_single() {
+            return Ok(());
+        }
+        let Some(header) = header else {
+            return Err(format!(
+                "the source did not state its tenant placement, and this standby reads as \
+                 {self}: the source runs a release that does not check a standby's raft groups. \
+                 A standby of several groups needs a source of this release or a later one"
+            ));
+        };
+        let theirs = Placement::parse(Some(header))?;
+        if theirs == *self {
+            return Ok(());
+        }
+        Err(format!(
+            "the source answered as {theirs}, and this standby reads as {self}: both clusters \
+             need the same QUEEN_RAFT_GROUPS and the same QUEEN_TENANT_GROUPS"
+        ))
+    }
+}
 
 /// The most a source reads into one answer unless the standby asks for less.
 /// One entry is always sent whole, however large.
@@ -424,5 +604,85 @@ mod tests {
         let mut longer = whole;
         longer.push(0);
         assert!(Answer::decode(&Bytes::from(longer)).is_err());
+    }
+
+    fn placed(group: usize, groups: usize, pins: &str) -> Placement {
+        Placement {
+            group,
+            groups,
+            pins: pins.to_string(),
+        }
+    }
+
+    #[test]
+    fn a_placement_round_trips_and_no_header_is_one_group() {
+        assert_eq!(Placement::parse(None).unwrap(), Placement::single());
+        assert!(Placement::single().is_single());
+        for p in [
+            Placement::single(),
+            placed(0, 3, ""),
+            placed(2, 3, ""),
+            placed(1, 4, "9f2c0a11d4e5b6c7"),
+        ] {
+            assert_eq!(Placement::parse(Some(&p.header())).unwrap(), p, "{p}");
+        }
+        assert_eq!(placed(1, 3, "ab").header(), "v1 group=1 groups=3 pins=ab");
+        // A word a later build adds is not this build's to refuse.
+        assert_eq!(
+            Placement::parse(Some("v1 group=1 groups=3 epoch=7")).unwrap(),
+            placed(1, 3, "")
+        );
+        for bad in [
+            "",
+            "v2 group=0 groups=1",
+            "v1",
+            "v1 group=1",
+            "v1 groups=3",
+            "v1 group=3 groups=3",
+            "v1 group=0 groups=0",
+            "v1 group=x groups=3",
+        ] {
+            assert!(Placement::parse(Some(bad)).is_err(), "`{bad}` was read");
+        }
+    }
+
+    #[test]
+    fn a_source_group_admits_only_its_counterpart() {
+        let source = placed(1, 3, "ab");
+        assert!(source.admits(&placed(1, 3, "ab")).is_ok());
+        for other in [
+            Placement::single(),
+            placed(0, 3, "ab"),
+            placed(1, 2, "ab"),
+            placed(1, 3, ""),
+            placed(1, 3, "cd"),
+        ] {
+            let why = source.admits(&other).expect_err("another placement");
+            assert!(why.contains("QUEEN_RAFT_GROUPS"), "{why}");
+        }
+        // One group on both sides, as every link was: nothing is asked.
+        assert!(Placement::single().admits(&Placement::single()).is_ok());
+        // A standby of one group pointed at a source of several.
+        assert!(placed(0, 3, "").admits(&Placement::single()).is_err());
+    }
+
+    #[test]
+    fn a_standby_of_several_groups_needs_its_source_to_say_where_it_is() {
+        let standby = placed(1, 3, "");
+        assert!(standby.check_answer(Some("v1 group=1 groups=3")).is_ok());
+        assert!(standby.check_answer(Some("v1 group=1 groups=4")).is_err());
+        assert!(standby.check_answer(Some("v1 group=0 groups=3")).is_err());
+        assert!(standby
+            .check_answer(Some("v1 group=1 groups=3 pins=ab"))
+            .is_err());
+        assert!(standby.check_answer(Some("v2 group=1 groups=3")).is_err());
+        // A source of a release before the check says nothing.
+        let why = standby.check_answer(None).expect_err("no placement stated");
+        assert!(why.contains("did not state"), "{why}");
+        // A standby of one group reads such a source as it always did.
+        assert!(Placement::single().check_answer(None).is_ok());
+        assert!(Placement::single()
+            .check_answer(Some("v1 group=0 groups=1"))
+            .is_ok());
     }
 }

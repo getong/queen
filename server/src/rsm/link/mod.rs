@@ -82,6 +82,15 @@ pub fn is_link_flag(name: &str) -> bool {
     name.starts_with(FLAG_PREFIX)
 }
 
+/// `GET`: what a node knows of the link. A node that runs several raft groups
+/// answers for each ([`crate::rsm::facade::groups`]), which is why the route
+/// has a name here; the facade's own arm
+/// ([`crate::rsm::facade::real::phase2`]) spells the path out, because the
+/// documentation's route table is read from those arms.
+pub const STATUS_ROUTE: &str = "/api/v1/system/link";
+/// `POST`: promote this standby — every raft group of it.
+pub const PROMOTE_ROUTE: &str = "/api/v1/system/link/promote";
+
 /// The value the promotion's REQUEST carries in the role flag: never a role
 /// row (which is JSON), never written to the store.
 const PROMOTE_REQUEST: &[u8] = b"promote";

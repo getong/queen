@@ -5,6 +5,41 @@ Release history for the Queen MQ server and client SDKs. Full release notes live
 
 ## Unreleased
 
+**Server: a standby cluster can run several raft groups.** A standby replayed one log, so a link
+needed `QUEEN_RAFT_GROUPS=1` on both clusters and a standby started with more refused to boot.
+Each raft group of a standby now replays the source's group of the same number: it reads the nodes
+`QUEEN_LINK_SOURCE` names on their raft port plus the group's number, takes its seed from that
+group's snapshot into its own directory, and keeps its own position, id and lag. Nothing is
+configured per group. Where a tenant lives is each cluster's configuration and not replicated
+state, so every call of a standby's group now states its group, the number of groups and its tenant
+pins in a header (`x-queen-link-placement`), and a source group answers `409` to a standby whose
+`QUEEN_RAFT_GROUPS` or `QUEEN_TENANT_GROUPS` differ from its own: the standby shows `waiting` with
+the reason and replays nothing, and a refused seed stops the boot. That also closes a hole of
+2.1.0 to 2.2.0, where a source of several groups answered a standby of one group, which replayed
+group 0 alone and said nothing: such a standby is now refused, and a standby of several groups
+refuses a source up to 2.2.0, which does not state its placement. A link between clusters of one
+group works as before, in both directions between this build and 2.2.0. On a node of several
+groups `GET /api/v1/system/link` and `/health`'s `raft.link` list every group under `groups`, with
+a `role` on top that is `mixed` when the groups differ, and `POST /api/v1/system/link/promote`
+promotes every group; a group that could not be promoted is named in the answer with its status,
+and the call is repeated. A promotion cuts each group at the entry its own replay had reached: no
+command spans two groups, so every tenant gets a state the source had for it, and tenants in
+different groups can be cut at slightly different moments. The Jepsen failover tests ran one
+group. See [standby cluster](https://queenmq.com/operate/standby/#several-raft-groups).
+
+**Server: a node added to a cluster of several raft groups can become a voter in every group.**
+With `QUEEN_RAFT_GROUPS` above 1 each group prefers one member as its leader, and a group's leader
+handed leadership to that member as soon as it answered and was nearly caught up, without asking
+whether it was a voter. A node being added is a learner first. In the group that preferred it, the
+leader handed leadership to a learner, which cannot be elected, and from then on no longer heard
+its learners: `POST /api/v1/system/raft/membership/promote` answered `409 learner_behind` ("it has
+not answered recently") for that group, for good, while the other groups promoted the node. And
+when the node had become a voter in time, the leader could hand it leadership between the two
+steps of the promotion, which then stayed unfinished (`409 in_flight`) until an operator sent the
+voters again. A group's leader now hands leadership only to a member that is a voter and only
+while no membership change is in flight, so the hand-over happens after the promotion. Found by a
+new test that adds two nodes to a seeded standby of two groups.
+
 ## 2.2.0 - 2026-10-10
 
 **Server: a queue's memory no longer grows with the messages it keeps.** Every push left a row in

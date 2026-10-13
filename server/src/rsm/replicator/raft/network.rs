@@ -619,20 +619,24 @@ mod server {
     }
 
     /// What a standby's calls need: this node's log for its reads, this
-    /// node's snapshot for its seed, and the token the standby presents
-    /// (`QUEEN_LINK_TOKEN`).
+    /// node's snapshot for its seed, the token the standby presents
+    /// (`QUEEN_LINK_TOKEN`), and which raft group of the cluster this log is
+    /// ([`crate::rsm::link::wire::Placement`]).
     pub(crate) struct LinkRpc {
         pub(crate) source: super::super::link::LinkSource,
         pub(crate) snap: Arc<super::super::snapshot::SendCtx>,
         pub(crate) token: Arc<str>,
+        pub(crate) placement: crate::rsm::link::wire::Placement,
     }
 
     impl LinkRpc {
-        /// The link's own token check: 404 on a node that serves no link,
-        /// 401 for any other token than the link's.
+        /// The link's own checks: 404 on a node that serves no link, 401 for
+        /// any other token than the link's, and 409 for a standby that is
+        /// not this group's counterpart — another group, or a cluster that
+        /// places its tenants another way.
         #[allow(clippy::result_large_err)]
         fn admit<'a>(link: &'a Option<LinkRpc>, headers: &HeaderMap) -> Result<&'a LinkRpc, Response> {
-            use crate::rsm::link::wire::TOKEN_HEADER;
+            use crate::rsm::link::wire::{Placement, PLACEMENT_HEADER, TOKEN_HEADER};
             let Some(link) = link else {
                 return Err((
                     StatusCode::NOT_FOUND,
@@ -644,7 +648,29 @@ mod server {
             if !presented.is_some_and(|g| token_eq(g, link.token.as_bytes())) {
                 return Err((StatusCode::UNAUTHORIZED, "bad link token").into_response());
             }
+            let stated = match headers.get(PLACEMENT_HEADER) {
+                None => None,
+                Some(v) => match v.to_str() {
+                    Ok(v) => Some(v),
+                    Err(_) => return Err(bad_request(format!("{PLACEMENT_HEADER} is not text"))),
+                },
+            };
+            let asked = Placement::parse(stated).map_err(bad_request)?;
+            if let Err(why) = link.placement.admits(&asked) {
+                return Err(link.placed((StatusCode::CONFLICT, why).into_response()));
+            }
             Ok(link)
+        }
+
+        /// `resp` with this group's placement stated: a standby of several
+        /// groups checks every answer against its own
+        /// ([`crate::rsm::link::wire::Placement::check_answer`]).
+        fn placed(&self, mut resp: Response) -> Response {
+            if let Ok(v) = axum::http::HeaderValue::from_str(&self.placement.header()) {
+                resp.headers_mut()
+                    .insert(crate::rsm::link::wire::PLACEMENT_HEADER, v);
+            }
+            resp
         }
     }
 
@@ -999,12 +1025,14 @@ mod server {
         // Non-core, as every RPC behind the guard is: a panic in one read
         // fails that read.
         match crate::obs::panic_policy::non_core(link.source.serve(req)).await {
-            Ok(answer) => (
-                StatusCode::OK,
-                [(header::CONTENT_TYPE, "application/octet-stream")],
-                answer,
-            )
-                .into_response(),
+            Ok(answer) => link.placed(
+                (
+                    StatusCode::OK,
+                    [(header::CONTENT_TYPE, "application/octet-stream")],
+                    answer,
+                )
+                    .into_response(),
+            ),
             Err(e) => (StatusCode::SERVICE_UNAVAILABLE, e.to_string()).into_response(),
         }
     }
@@ -1042,7 +1070,7 @@ mod server {
                     header::CONTENT_TYPE,
                     axum::http::HeaderValue::from_static("application/octet-stream"),
                 );
-                resp
+                link.placed(resp)
             }
             Err(e) => (StatusCode::SERVICE_UNAVAILABLE, e.to_string()).into_response(),
         }

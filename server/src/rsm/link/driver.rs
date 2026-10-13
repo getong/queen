@@ -37,8 +37,8 @@ use bytes::Bytes;
 use tokio::sync::watch;
 
 use super::wire::{
-    entry_weight, full_entry, Answer, Request, SourceEntry, MAX_BYTES_DEFAULT, READ_PATH,
-    TOKEN_HEADER,
+    entry_weight, full_entry, Answer, Placement, Request, SourceEntry, MAX_BYTES_DEFAULT,
+    PLACEMENT_HEADER, READ_PATH, TOKEN_HEADER,
 };
 use super::{Position, Role as LinkRole};
 use crate::rsm::batcher::{
@@ -90,6 +90,12 @@ pub struct LinkConfig {
     /// standby's id ([`super::reader_name`]). The same on every node of the
     /// standby, and no other standby of the same source may carry it.
     pub name: Option<String>,
+    /// Which raft group of this cluster follows — `sources` are then that
+    /// group's addresses on the source ([`LinkConfig::for_group`]) — and how
+    /// this cluster places its tenants: stated on every call, so the source
+    /// answers only the standby group that is its counterpart
+    /// ([`Placement`]).
+    pub placement: Placement,
 }
 
 impl LinkConfig {
@@ -113,7 +119,30 @@ impl LinkConfig {
             sources,
             token,
             name,
+            placement: Placement::single(),
         }))
+    }
+
+    /// This configuration for the raft group `placement` names, of a node
+    /// that runs several (`QUEEN_RAFT_GROUPS`): the group follows the
+    /// source's group of the same number, which listens on each source
+    /// node's Raft port plus that number. The configured addresses are group
+    /// 0's, as the source's own `QUEEN_RAFT_PEERS` are.
+    pub fn for_group(&self, placement: &Placement) -> Result<LinkConfig, String> {
+        let sources = self
+            .sources
+            .iter()
+            .map(|addr| {
+                crate::rsm::replicator::raft::cluster::group_raft_addr(addr, placement.group)
+                    .map_err(|e| format!("QUEEN_LINK_SOURCE: {e}"))
+            })
+            .collect::<Result<Vec<String>, String>>()?;
+        Ok(LinkConfig {
+            sources,
+            token: self.token.clone(),
+            name: self.name.clone(),
+            placement: placement.clone(),
+        })
     }
 
     /// The source as the role row names it: the configured addresses.
@@ -235,8 +264,10 @@ fn chain(e: &(dyn std::error::Error + 'static)) -> String {
 }
 
 /// Read a source node over HTTP: `POST http://<addr>/link/v1/read` with the
-/// link token.
-pub fn http_fetch(token: Option<String>) -> Fetch {
+/// link token, as the standby group `placement` names. A group of several
+/// reads only the source group that answers as its counterpart
+/// ([`Placement::check_answer`]).
+pub fn http_fetch(token: Option<String>, placement: Placement) -> Fetch {
     use axum::body::Body;
     use axum::http::{header, Method, StatusCode};
     use http_body_util::BodyExt;
@@ -248,10 +279,12 @@ pub fn http_fetch(token: Option<String>) -> Fetch {
         .pool_idle_timeout(Duration::from_secs(90))
         .build::<_, Body>(connector);
     let token: Option<Arc<str>> = token.map(Arc::from);
+    let placement = Arc::new(placement);
 
     Arc::new(move |addr: String, req: Request| {
         let client = client.clone();
         let token = token.clone();
+        let placement = placement.clone();
         Box::pin(async move {
             let url = format!("http://{addr}{READ_PATH}");
             // The source holds the read up to `wait_ms`; the answer may then
@@ -265,6 +298,11 @@ pub fn http_fetch(token: Option<String>) -> Fetch {
             if let Some(t) = &token {
                 http = http.header(TOKEN_HEADER, &**t);
             }
+            // One group's call is what every release before the header
+            // sent: it stays as it was.
+            if !placement.is_single() {
+                http = http.header(PLACEMENT_HEADER, placement.header());
+            }
             let http = http
                 .body(Body::from(body))
                 .map_err(|e| format!("{url}: {e}"))?;
@@ -274,6 +312,11 @@ pub fn http_fetch(token: Option<String>) -> Fetch {
                 Ok(Ok(r)) => r,
             };
             let status = resp.status();
+            let stated = resp
+                .headers()
+                .get(PLACEMENT_HEADER)
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_string);
             let bytes: Bytes = match tokio::time::timeout(ttl, resp.into_body().collect()).await {
                 Err(_) => return Err(format!("{url}: the answer stalled")),
                 Ok(Err(e)) => return Err(format!("{url}: {e}")),
@@ -281,6 +324,9 @@ pub fn http_fetch(token: Option<String>) -> Fetch {
             };
             match status {
                 StatusCode::OK => {
+                    placement
+                        .check_answer(stated.as_deref())
+                        .map_err(|e| format!("{url}: {e}"))?;
                     Answer::decode(&bytes).map_err(|e| format!("{url}: {e}"))
                 }
                 StatusCode::UNAUTHORIZED => Err(format!(
@@ -289,6 +335,12 @@ pub fn http_fetch(token: Option<String>) -> Fetch {
                 StatusCode::NOT_FOUND => Err(format!(
                     "{url}: the source serves no link (QUEEN_LINK_TOKEN is not set on it, or it \
                      runs a release without one)"
+                )),
+                // The source's refusal of this standby's placement, in words
+                // for its operator: all of them.
+                StatusCode::CONFLICT => Err(format!(
+                    "{url}: {status}: {}",
+                    String::from_utf8_lossy(&bytes[..bytes.len().min(1024)])
                 )),
                 other => Err(format!(
                     "{url}: {other}: {}",
@@ -844,6 +896,40 @@ mod tests {
         assert!(parse_sources("a:port").is_err());
         assert!(parse_sources(":7400").is_err());
         assert!(parse_sources("https://a:7400").is_err());
+    }
+
+    #[test]
+    fn a_group_follows_its_sources_group_on_that_groups_port() {
+        let configured = LinkConfig {
+            sources: vec!["a:7400".into(), "b.c.svc:7500".into()],
+            token: Some("t".into()),
+            name: Some("eu-west".into()),
+            placement: Placement::single(),
+        };
+        // One group: what was configured.
+        assert_eq!(
+            configured.for_group(&Placement::single()).unwrap(),
+            configured
+        );
+        let third = Placement {
+            group: 2,
+            groups: 3,
+            pins: String::new(),
+        };
+        let cfg = configured.for_group(&third).unwrap();
+        assert_eq!(cfg.sources, vec!["a:7402", "b.c.svc:7502"]);
+        assert_eq!(cfg.placement, third);
+        assert_eq!(
+            (&cfg.token, &cfg.name),
+            (&configured.token, &configured.name)
+        );
+        // A port the group's number takes past the last one.
+        let high = LinkConfig {
+            sources: vec!["a:65535".into()],
+            ..configured
+        };
+        let refused = high.for_group(&third).unwrap_err();
+        assert!(refused.contains("QUEEN_LINK_SOURCE"), "{refused}");
     }
 
     #[test]

@@ -64,6 +64,7 @@ use crate::rsm::batcher::{
 };
 use crate::rsm::effect::{Pid, QueueConfig};
 use crate::rsm::entry::{Outcome, PopClaim, PushVerdict, RequestId};
+use crate::rsm::link::wire::Placement;
 use crate::rsm::planner::timers::{
     list_limit, list_row_json, parse_timer_ops, peek_json, timers_results, TimerOp, TimersCommand,
 };
@@ -782,23 +783,17 @@ impl RaftFacade {
             // keep host disk fullness and concurrent local GC out of them.
             batcher.maintenance_every_ms = 0;
         }
-        RaftFacade::open_inner(ctx, batcher, !cfg!(test), 0, false, None, None)
+        RaftFacade::open_inner(ctx, batcher, !cfg!(test), Placement::single(), None, None)
     }
 
-    /// Raft group `group` of several in this process (`QUEEN_RAFT_GROUPS`,
-    /// [`super::groups`]): its own data directory (`<dir>/groups/g<group>`;
-    /// group 0 keeps `<dir>`) and its own Raft addresses
-    /// ([`crate::rsm::replicator::raft::ClusterConfig::for_group`]).
-    pub fn open_group(ctx: &RsmBuildCtx, group: usize) -> Result<RaftFacade, String> {
-        RaftFacade::open_inner(
-            ctx,
-            BatcherConfig::from_env(),
-            true,
-            group,
-            true,
-            None,
-            None,
-        )
+    /// The raft group `placement` names, of several in this process
+    /// (`QUEEN_RAFT_GROUPS`, [`super::groups`]): its own data directory
+    /// (`<dir>/groups/g<group>`; group 0 keeps `<dir>`), its own Raft
+    /// addresses ([`crate::rsm::replicator::raft::ClusterConfig::for_group`])
+    /// and, on a standby, its own source: the source's group of the same
+    /// number ([`crate::rsm::link::driver::LinkConfig::for_group`]).
+    pub fn open_group(ctx: &RsmBuildCtx, placement: Placement) -> Result<RaftFacade, String> {
+        RaftFacade::open_inner(ctx, BatcherConfig::from_env(), true, placement, None, None)
     }
 
     /// A node with its part in a cluster link given instead of read from the
@@ -814,7 +809,32 @@ impl RaftFacade {
         )>,
         link: crate::rsm::link::driver::LinkSetup,
     ) -> Result<RaftFacade, String> {
-        RaftFacade::open_inner(ctx, batcher_cfg, false, 0, false, node, Some(link))
+        RaftFacade::open_inner(
+            ctx,
+            batcher_cfg,
+            false,
+            Placement::single(),
+            node,
+            Some(link),
+        )
+    }
+
+    /// [`RaftFacade::open_link_node_for_test`] for one raft group of a node
+    /// that runs several: `node` is the group's own cluster configuration
+    /// (its Raft addresses already the group's), `link` names the source's
+    /// group 0 as `QUEEN_LINK_SOURCE` does.
+    #[cfg(test)]
+    pub(crate) fn open_link_group_for_test(
+        ctx: &RsmBuildCtx,
+        batcher_cfg: BatcherConfig,
+        node: (
+            crate::rsm::replicator::raft::ClusterConfig,
+            crate::rsm::replicator::raft::RaftOpts,
+        ),
+        link: crate::rsm::link::driver::LinkSetup,
+        placement: Placement,
+    ) -> Result<RaftFacade, String> {
+        RaftFacade::open_inner(ctx, batcher_cfg, false, placement, Some(node), Some(link))
     }
 
     /// A node of an openraft cluster, with the cluster configuration and the
@@ -831,8 +851,7 @@ impl RaftFacade {
             ctx,
             batcher_cfg,
             false,
-            0,
-            false,
+            Placement::single(),
             Some((cluster, opts)),
             None,
         )
@@ -842,13 +861,14 @@ impl RaftFacade {
     /// the environment's — the tests' seam (a fast timer tick, the injected
     /// fire failure), never the boot path's.
     pub fn open_with(ctx: &RsmBuildCtx, batcher_cfg: BatcherConfig) -> Result<RaftFacade, String> {
-        RaftFacade::open_inner(ctx, batcher_cfg, false, 0, false, None, None)
+        RaftFacade::open_inner(ctx, batcher_cfg, false, Placement::single(), None, None)
     }
 
-    /// `multi_group`: one of several Raft groups in this process
-    /// (`QUEEN_RAFT_GROUPS` > 1): the group's Raft addresses and its PREFERRED
-    /// leader come from [`crate::rsm::replicator::raft::ClusterConfig::for_group`],
-    /// which spreads the groups' leaders over the nodes. A single group has no
+    /// `placement`: which raft group of this process the facade is. One of
+    /// several (`QUEEN_RAFT_GROUPS` > 1) takes its Raft addresses and its
+    /// PREFERRED leader from
+    /// [`crate::rsm::replicator::raft::ClusterConfig::for_group`], which
+    /// spreads the groups' leaders over the nodes. A single group has no
     /// preferred leader: one would only add a leadership transfer after every
     /// heal (every node led by the same member again), for nothing to spread.
     /// `node`: the openraft cluster node to run instead of what the
@@ -859,8 +879,7 @@ impl RaftFacade {
         ctx: &RsmBuildCtx,
         mut batcher_cfg: BatcherConfig,
         storage_pressure_enabled: bool,
-        group: usize,
-        multi_group: bool,
+        placement: Placement,
         node: Option<(
             crate::rsm::replicator::raft::ClusterConfig,
             crate::rsm::replicator::raft::RaftOpts,
@@ -870,17 +889,18 @@ impl RaftFacade {
         if ctx.data_dir.trim().is_empty() {
             return Err("QUEEN_RAFT_DIR is required in raft mode (§11.1)".into());
         }
+        let (group, multi_group) = (placement.group, placement.groups > 1);
         // The cluster link (`crate::rsm::link`): the source this cluster
         // follows while it is a standby, and whether an empty one starts as a
-        // standby. A standby replays ONE log.
-        let link = match link {
+        // standby. A standby replays one log per raft group: this group's
+        // source is the source's group of the same number, and what is
+        // configured names the source's group 0.
+        let mut link = match link {
             Some(l) => l,
             None => crate::rsm::link::driver::LinkSetup::from_env()?,
         };
-        if multi_group && link.source.is_some() {
-            return Err(
-                "QUEEN_LINK_SOURCE needs QUEEN_RAFT_GROUPS=1: a standby replays one log".into(),
-            );
+        if let Some(source) = &link.source {
+            link.source = Some(source.for_group(&placement)?);
         }
         let dir = match group {
             0 => PathBuf::from(&ctx.data_dir),
@@ -918,6 +938,12 @@ impl RaftFacade {
                 None,
             ),
         };
+        // What a standby's group must state to read this group's log: its
+        // own number, and this cluster's way of placing tenants.
+        let cluster = cluster.map(|mut c| {
+            c.link_placement = placement.clone();
+            c
+        });
         let node_id = cluster.as_ref().map_or(NODE_ID, |c| c.node_id);
         let ocfg = OpenConfig::new(node_id, dir.clone());
         // A standby is a cluster, of one node or more: how its nodes get what
@@ -1134,10 +1160,9 @@ impl RaftFacade {
         // one: it acts only where the node leads a standby). Weak on the
         // store: the facade's shutdown takes it back by value.
         let link_follower = link.source.clone().map(|cfg| {
-            let fetch = link
-                .fetch
-                .clone()
-                .unwrap_or_else(|| crate::rsm::link::driver::http_fetch(cfg.token.clone()));
+            let fetch = link.fetch.clone().unwrap_or_else(|| {
+                crate::rsm::link::driver::http_fetch(cfg.token.clone(), cfg.placement.clone())
+            });
             crate::rsm::link::driver::spawn(
                 cfg,
                 Arc::downgrade(&store),
@@ -6658,7 +6683,7 @@ pub fn real_builder(ctx: &RsmBuildCtx) -> Arc<dyn Rsm> {
     };
     let mut facades: Vec<Arc<dyn super::Rsm>> = Vec::with_capacity(groups);
     for g in 0..groups {
-        match RaftFacade::open_group(ctx, g) {
+        match RaftFacade::open_group(ctx, super::groups::placement(g, groups, &overrides)) {
             Ok(f) => facades.push(Arc::new(f)),
             Err(e) => crate::obs::fatal(format!("raft group {g} failed to open: {e}")),
         }

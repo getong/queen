@@ -34,7 +34,28 @@
 //! - [`a_source_refuses_a_standby_without_its_token`]: the link's route
 //!   answers a wrong token 401 and nothing else, and a source without a
 //!   token serves no link.
+//!
+//! Clusters of several raft groups (`QUEEN_RAFT_GROUPS`), each node one
+//! facade per group behind the router ([`Grouped`]):
+//!
+//! - [`a_standby_follows_every_raft_group_of_its_source_and_is_promoted_whole`]:
+//!   each group of the standby replays the source's group of the same
+//!   number, read on that group's port, and holds that group's tenants. The
+//!   link's routes speak for the whole node. One group promoted alone leaves
+//!   a standby in part, whose other group goes on following; a promotion
+//!   asked of a node promotes every group.
+//! - [`a_standby_of_several_raft_groups_is_seeded_group_by_group`]: each
+//!   group takes its seed from the source's group of the same number, into
+//!   its own directory, once.
+//! - [`the_other_nodes_join_a_seeded_standby_of_several_raft_groups`]: the
+//!   two nodes the seed does not name are added to every group with one
+//!   membership call each, and the three then follow and are promoted.
+//! - [`a_source_group_answers_only_the_standby_group_placed_as_it_is`]: a
+//!   standby of one group, another group's follower, and a cluster with
+//!   another number of groups or other tenant pins are refused, for a read
+//!   and for a seed, and a whole standby placed otherwise replays nothing.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
@@ -46,12 +67,13 @@ use crate::rsm::apply::state_digest;
 use crate::rsm::batcher::BatcherConfig;
 use crate::rsm::effect::Effect;
 use crate::rsm::entry::Entry;
+use crate::rsm::facade::groups::{group_of, placement, GroupRouter};
 use crate::rsm::facade::real::RaftFacade;
 use crate::rsm::facade::{
     ApiReq, Deadline, PopReq, PushReq, ReqCtx, Rsm, RsmBuildCtx, RsmError,
 };
 use crate::rsm::link::driver::{http_fetch, LinkConfig, LinkSetup};
-use crate::rsm::link::wire::{full_entry, Answer, Request};
+use crate::rsm::link::wire::{full_entry, Answer, Placement, Request};
 use crate::rsm::replicator::raft::{ClusterConfig, RaftOpts};
 use crate::rsm::replicator::Replicator;
 use crate::rsm::store::Store;
@@ -511,6 +533,7 @@ async fn a_standby_cluster_follows_its_source_and_is_promoted() {
             sources: sources.clone(),
             token: Some(TOKEN.to_string()),
             name: None,
+            placement: Default::default(),
         }),
         standby: true,
         seed: None,
@@ -743,6 +766,7 @@ async fn a_standby_plans_nothing_its_clients_sent_while_it_had_no_leader() {
             sources: sources.clone(),
             token: Some(TOKEN.to_string()),
             name: None,
+            placement: Default::default(),
         }),
         standby: true,
         seed: None,
@@ -931,7 +955,7 @@ async fn a_standby_plans_nothing_its_clients_sent_while_it_had_no_leader() {
 /// One read of the source node on `port` from the start of its log, with
 /// `token`.
 async fn read(token: Option<&str>, port: u16) -> Result<Answer, String> {
-    let fetch = http_fetch(token.map(str::to_string));
+    let fetch = http_fetch(token.map(str::to_string), Default::default());
     fetch(
         format!("127.0.0.1:{port}"),
         Request {
@@ -1041,6 +1065,7 @@ async fn a_standby_is_seeded_from_a_source_with_a_history() {
             sources: sources.clone(),
             token: Some(TOKEN.to_string()),
             name: Some("seeded-standby".to_string()),
+            placement: Default::default(),
         }),
         standby: false,
         seed: Some(1),
@@ -1214,9 +1239,10 @@ async fn a_source_keeps_its_log_for_the_seed_it_sent() {
 
     // A snapshot asked for by nobody is kept for nobody.
     let sources = raft_addrs(&src_ports);
-    let mut unnamed = crate::rsm::link::seed::http_snapshot(&sources[0], Some(TOKEN), "")
-        .await
-        .expect("a snapshot without a reader");
+    let mut unnamed =
+        crate::rsm::link::seed::http_snapshot(&sources[0], Some(TOKEN), "", &Default::default())
+            .await
+            .expect("a snapshot without a reader");
     while let Some(piece) = unnamed.next().await {
         piece.expect("a piece of the snapshot");
     }
@@ -1234,6 +1260,7 @@ async fn a_source_keeps_its_log_for_the_seed_it_sent() {
         sources,
         token: Some(TOKEN.to_string()),
         name: None,
+        placement: Default::default(),
     };
     let cluster = cluster_config(&sb_ports, 1, None);
     let me = cluster
@@ -1372,6 +1399,7 @@ fn a_standby_needs_the_cluster_replicator() {
             sources: vec!["127.0.0.1:1".to_string()],
             token: None,
             name: None,
+            placement: Default::default(),
         }),
         standby: true,
         seed: None,
@@ -1419,6 +1447,1138 @@ async fn a_source_refuses_a_standby_without_its_token() {
     close(node).await;
 
     for d in dirs.into_iter().chain(dirs2) {
+        let _ = std::fs::remove_dir_all(d);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Several raft groups
+// ---------------------------------------------------------------------------
+
+/// A cluster whose nodes each run several raft groups, as the binary opens
+/// them (`QUEEN_RAFT_GROUPS`): one facade per group — on the node's Raft port
+/// plus the group's number, in the node's directory for group 0 and in
+/// `groups/g<N>` under it for the others — behind the router that places
+/// every tenant in one of them.
+struct Grouped {
+    /// `by_group[g][i]`: group `g`'s facade on node `i`. Each group is a
+    /// cluster of its own, so what takes a cluster's nodes takes one of
+    /// these.
+    by_group: Vec<Nodes>,
+    /// `routers[i]`: node `i`, as its clients reach it.
+    routers: Vec<GroupRouter>,
+}
+
+/// `n` Raft ports for nodes of `groups` raft groups: group `g` of a node
+/// listens on the node's port plus `g`, so each port has the `groups - 1`
+/// after it free as well.
+///
+/// Not ports the system hands out. A node opens its groups one after the
+/// other, so the port of its last group is bound long after it was chosen —
+/// and a bind of port 0, which is how every other test of this binary gets
+/// its ports, is given the port after the last one handed out: exactly the
+/// one a run found free beside its first. The runs are taken below that
+/// range instead, where only a bind that names a port lands, and spread by
+/// process so two test binaries running at once do not walk the same ones.
+fn free_port_runs(n: usize, groups: usize) -> Vec<u16> {
+    /// Below every system's range for port 0 (32768 and up on Linux, 49152
+    /// and up on macOS).
+    const FIRST: u64 = 20_000;
+    const SPAN: u64 = 9_000;
+    /// More than any test's groups: two runs never share a port.
+    const STEP: u64 = 16;
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    assert!(groups as u64 <= STEP, "a run of {groups} ports");
+    let mut ports = Vec::new();
+    while ports.len() < n {
+        let slot = NEXT.fetch_add(1, Ordering::Relaxed);
+        let offset = (std::process::id() as u64 * 7919 + slot * STEP) % SPAN;
+        let port = (FIRST + offset / STEP * STEP) as u16;
+        // Free now, all of them: something else on this machine may listen
+        // there.
+        let free = (0..groups as u16)
+            .all(|g| std::net::TcpListener::bind(("127.0.0.1", port + g)).is_ok());
+        if free {
+            ports.push(port);
+        }
+    }
+    ports
+}
+
+/// Where group `g` of the node at `dir` keeps its data.
+fn group_dir(dir: &Path, g: usize) -> PathBuf {
+    match g {
+        0 => dir.to_path_buf(),
+        g => dir.join("groups").join(format!("g{g}")),
+    }
+}
+
+/// One node of `groups` raft groups. `cluster` and `link` are what the node
+/// is given, which names every group 0 — its own and its source's — as
+/// `QUEEN_RAFT_PEERS` and `QUEEN_LINK_SOURCE` do; `pins` is the cluster's
+/// `QUEEN_TENANT_GROUPS`.
+fn open_grouped_node(
+    dir: &Path,
+    cluster: &ClusterConfig,
+    opts: &RaftOpts,
+    link: &LinkSetup,
+    groups: usize,
+    pins: &HashMap<String, usize>,
+) -> Vec<RaftFacade> {
+    let ctx = RsmBuildCtx {
+        data_dir: dir.display().to_string(),
+        notifier: crate::notify::Notifier::new(false),
+        disk_high_pct: 99.0,
+        disk_low_pct: 98.0,
+    };
+    (0..groups)
+        .map(|g| {
+            let batcher = BatcherConfig {
+                maintenance_every_ms: 0,
+                ..BatcherConfig::from_env()
+            };
+            let node = (
+                cluster.for_group(g).expect("the group's Raft addresses"),
+                opts.clone(),
+            );
+            RaftFacade::open_link_group_for_test(
+                &ctx,
+                batcher,
+                node,
+                link.clone(),
+                placement(g, groups, pins),
+            )
+            .unwrap_or_else(|e| panic!("open node {}, group {g}: {e}", cluster.node_id))
+        })
+        .collect()
+}
+
+/// Open every node of a cluster of `groups` raft groups at once (each opens
+/// its groups in order, and each group waits for its leader).
+async fn open_grouped(
+    dirs: &[PathBuf],
+    ports: &[u16],
+    link_token: Option<&str>,
+    opts: RaftOpts,
+    link: LinkSetup,
+    groups: usize,
+    pins: &HashMap<String, usize>,
+) -> Grouped {
+    let mut opening = Vec::new();
+    for (i, dir) in dirs.iter().enumerate() {
+        let (dir, cluster, opts, link, pins) = (
+            dir.clone(),
+            cluster_config(ports, i as u64 + 1, link_token),
+            opts.clone(),
+            link.clone(),
+            pins.clone(),
+        );
+        opening.push(tokio::task::spawn_blocking(move || {
+            open_grouped_node(&dir, &cluster, &opts, &link, groups, &pins)
+        }));
+    }
+    let mut cluster = Grouped {
+        by_group: (0..groups).map(|_| Vec::new()).collect(),
+        routers: Vec::new(),
+    };
+    for (i, h) in opening.into_iter().enumerate() {
+        cluster.place(i, h.await.expect("open task"), pins);
+    }
+    cluster
+}
+
+impl Grouped {
+    /// Node `i`, just opened: its router, and each of its facades among its
+    /// group's.
+    fn place(&mut self, i: usize, facades: Vec<RaftFacade>, pins: &HashMap<String, usize>) {
+        let facades: Nodes = facades.into_iter().map(Arc::new).collect();
+        self.routers.insert(
+            i,
+            GroupRouter::new(
+                facades.iter().map(|f| f.clone() as Arc<dyn Rsm>).collect(),
+                pins.clone(),
+            ),
+        );
+        for (g, f) in facades.into_iter().enumerate() {
+            self.by_group[g].insert(i, f);
+        }
+    }
+
+    /// Stop node `i` — every group of it, as a process stops — and start it
+    /// again with `reopen`, on what its directory holds.
+    async fn restart(
+        &mut self,
+        i: usize,
+        reopen: impl FnOnce() -> Vec<RaftFacade> + Send + 'static,
+        pins: &HashMap<String, usize>,
+    ) {
+        // The router shares the facades.
+        drop(self.routers.remove(i));
+        let stopped: Nodes = self
+            .by_group
+            .iter_mut()
+            .map(|nodes| nodes.remove(i))
+            .collect();
+        close(stopped).await;
+        let facades = tokio::task::spawn_blocking(reopen)
+            .await
+            .expect("reopen task");
+        self.place(i, facades, pins);
+    }
+}
+
+async fn close_grouped(cluster: Grouped) {
+    // The routers share the facades.
+    drop(cluster.routers);
+    for nodes in cluster.by_group {
+        close(nodes).await;
+    }
+}
+
+/// A tenant that a cluster of `groups` raft groups places in `group` by its
+/// name alone.
+fn tenant_of_group(group: usize, groups: usize) -> String {
+    let none = HashMap::new();
+    (1u64..)
+        .map(|i| format!("00000000-0000-4000-8000-{i:012x}"))
+        .find(|tenant| group_of(tenant, groups, &none) == group)
+        .expect("a tenant of every group")
+}
+
+fn ctx_of(tenant: &str) -> ReqCtx {
+    ReqCtx::new(tenant, Deadline::after(Duration::from_secs(10)))
+}
+
+/// Push message `n` to `tenant`'s `orders`, on one of four partitions.
+async fn push_as(node: &dyn Rsm, tenant: &str, n: u64) -> Result<(), RsmError> {
+    let raw = format!(
+        r#"{{"items":[{{"queue":"orders","partition":"p{}","payload":{{"n":{n}}},"transactionId":"t{n}"}}]}}"#,
+        n % 4
+    );
+    let out = node
+        .push(
+            ctx_of(tenant),
+            PushReq {
+                raw: raw.into_bytes(),
+            },
+        )
+        .await?;
+    let items: Value = serde_json::from_str(&out.body).expect("push body");
+    assert_eq!(items[0]["status"], "queued", "{}", out.body);
+    Ok(())
+}
+
+/// Every message of `tenant`'s `orders` that `node` serves, each
+/// acknowledged at its delivery, until `want` of them came or 30 s passed —
+/// and whatever one more pop of each partition then brings.
+async fn drain_as(node: &dyn Rsm, tenant: &str, want: usize) -> Vec<u64> {
+    let pop = || async {
+        let out = node
+            .pop_wildcard(
+                ctx_of(tenant),
+                PopReq {
+                    queue: "orders".into(),
+                    group: None,
+                    batch: 100,
+                    auto_ack: true,
+                    wait: false,
+                    timeout_ms: 2000,
+                    options: Default::default(),
+                },
+            )
+            .await
+            .expect("pop");
+        if out.empty {
+            return Vec::new();
+        }
+        let body: Value = serde_json::from_str(&out.body).expect("pop body");
+        body["messages"]
+            .as_array()
+            .expect("messages")
+            .iter()
+            .map(|m| m["data"]["n"].as_u64().expect("n"))
+            .collect::<Vec<u64>>()
+    };
+    let mut served = Vec::new();
+    let end = Instant::now() + Duration::from_secs(30);
+    while served.len() < want && Instant::now() < end {
+        served.extend(pop().await);
+    }
+    for _ in 0..4 {
+        served.extend(pop().await);
+    }
+    served.sort_unstable();
+    served
+}
+
+async fn api_as(node: &dyn Rsm, tenant: &str, method: &str, path: &str) -> (u16, Value) {
+    let out = node
+        .api(
+            ctx_of(tenant),
+            ApiReq {
+                method: method.into(),
+                path: path.into(),
+                query: None,
+                body: Vec::new(),
+            },
+        )
+        .await
+        .unwrap_or_else(|e| panic!("{method} {path}: {e}"));
+    let body = serde_json::from_str(&out.body).unwrap_or(Value::Null);
+    (out.status, body)
+}
+
+/// The link's status as `node` answers it, once it is what `ready` waits
+/// for.
+async fn link_status_when(node: &dyn Rsm, what: &str, ready: impl Fn(&Value) -> bool) -> Value {
+    let end = Instant::now() + Duration::from_secs(60);
+    loop {
+        let (status, link) = api_as(
+            node,
+            crate::config::DEFAULT_TENANT,
+            "GET",
+            "/api/v1/system/link",
+        )
+        .await;
+        if status == 200 && ready(&link) {
+            return link;
+        }
+        assert!(Instant::now() < end, "{what}: not within 60 s: {link}");
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
+/// A membership change asked of the first node of `cluster`, which makes it
+/// in every group: the answer's status and body.
+async fn change_grouped(
+    cluster: &Grouped,
+    change: crate::rsm::replicator::MembershipChange,
+) -> (u16, Value) {
+    let out = cluster.routers[0]
+        .raft_change_membership(ctx(), change)
+        .await
+        .expect("membership change");
+    (
+        out.status,
+        serde_json::from_str(&out.body).unwrap_or(Value::Null),
+    )
+}
+
+/// The names of the standbys `node` keeps its log for.
+fn reader_names(node: &RaftFacade) -> Vec<String> {
+    readers(node).into_iter().map(|(name, _)| name).collect()
+}
+
+/// A cluster of several raft groups is as many logs, and its standby replays
+/// each with its own group of the same number: three source nodes and three
+/// standby nodes, two groups each, a tenant in each group.
+///
+/// Nothing is given per group: the standby is told the source's nodes once,
+/// as `QUEEN_LINK_SOURCE` tells it, and each of its groups finds its own
+/// source group on the port after. The link's routes then answer for the
+/// node — every group's part — and a promotion promotes every group. One
+/// group promoted alone (what a promotion leaves when a group had no leader
+/// to do it) is a standby in part: that group's tenant is served, the
+/// other's still refused, and the other group goes on following its source
+/// until the promotion is asked again.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+async fn a_standby_follows_every_raft_group_of_its_source_and_is_promoted_whole() {
+    let _one = serial().await;
+    log_init();
+    const GROUPS: usize = 2;
+    let none = HashMap::new();
+
+    let src_dirs: Vec<PathBuf> = (0..3).map(|_| scratch("groups-source")).collect();
+    let src_ports = free_port_runs(3, GROUPS);
+    let source = open_grouped(
+        &src_dirs,
+        &src_ports,
+        Some(TOKEN),
+        test_opts(),
+        LinkSetup::default(),
+        GROUPS,
+        &none,
+    )
+    .await;
+
+    let sb_dirs: Vec<PathBuf> = (0..3).map(|_| scratch("groups-standby")).collect();
+    let sb_ports = free_port_runs(3, GROUPS);
+    let setup = LinkSetup {
+        source: Some(LinkConfig {
+            sources: raft_addrs(&src_ports),
+            token: Some(TOKEN.to_string()),
+            name: None,
+            placement: Default::default(),
+        }),
+        standby: true,
+        seed: None,
+        fetch: None,
+    };
+    let standby = open_grouped(&sb_dirs, &sb_ports, None, test_opts(), setup, GROUPS, &none).await;
+
+    // A tenant of each group, and its clients on every node of the source.
+    let tenants: Vec<String> = (0..GROUPS).map(|g| tenant_of_group(g, GROUPS)).collect();
+    for n in 0..20 {
+        for tenant in &tenants {
+            push_as(&source.routers[n as usize % 3], tenant, n)
+                .await
+                .expect("push");
+        }
+    }
+    for g in 0..GROUPS {
+        converge(
+            &source.by_group[g],
+            &standby.by_group[g],
+            &format!("group {g}, after the first messages"),
+        )
+        .await;
+    }
+    // Two logs, not one read twice: what a group of the standby holds is its
+    // own source group's, which is not the other's.
+    let (l0, l1) = (
+        leader_of(&source.by_group[0]).await,
+        leader_of(&source.by_group[1]).await,
+    );
+    assert!(
+        held(&source.by_group[0][l0]) != held(&source.by_group[1][l1]),
+        "the source's groups hold different tenants"
+    );
+
+    // The link's status is every group's, on every node of the standby: each
+    // a standby of the source's group of the same number, on that group's
+    // port, at a position in that group's log.
+    for router in &standby.routers {
+        let (status, link) = api_as(router, &tenants[0], "GET", "/api/v1/system/link").await;
+        assert_eq!(status, 200, "{link}");
+        assert_eq!(link["role"], "standby", "{link}");
+        let parts = link["groups"].as_array().expect("every group's part");
+        assert_eq!(parts.len(), GROUPS, "{link}");
+        for (g, part) in parts.iter().enumerate() {
+            assert_eq!(part["group"], g, "{link}");
+            assert_eq!(part["role"], "standby", "{link}");
+            assert!(part["position"]["index"].as_u64() > Some(0), "{link}");
+            let its_source: Vec<String> = src_ports
+                .iter()
+                .map(|p| format!("127.0.0.1:{}", p + g as u16))
+                .collect();
+            assert_eq!(
+                part["configuredSource"],
+                serde_json::json!(its_source),
+                "{link}"
+            );
+        }
+        let link = router
+            .health()
+            .link
+            .expect("a standby's health names the link");
+        assert_eq!(link["role"], "standby", "{link}");
+        assert_eq!(
+            link["groups"].as_array().map(Vec::len),
+            Some(GROUPS),
+            "{link}"
+        );
+    }
+    // Its series are every group's too, told apart by a label.
+    let series = standby.routers[0].prometheus();
+    for g in 0..GROUPS {
+        for line in [
+            format!("queen_link_role{{group=\"{g}\",role=\"standby\"}} 1"),
+            format!("queen_link_position_index{{group=\"{g}\"}} "),
+        ] {
+            assert!(
+                series.contains(&line),
+                "no `{line}` among the node's series"
+            );
+        }
+    }
+    // Each group is a standby of its own: it drew its own id, and every node
+    // of the source keeps that group's log under that group's name.
+    let mut names = Vec::new();
+    for g in 0..GROUPS {
+        let b = leader_of(&standby.by_group[g]).await;
+        let status = link_status(&standby.by_group[g][b]).await;
+        names.push(
+            status["name"]
+                .as_str()
+                .expect("the group's name on its source")
+                .to_string(),
+        );
+    }
+    assert_ne!(names[0], names[1], "one id per group");
+    wait_for(
+        "every node of the source holds each group's log for its reader",
+        || {
+            (0..GROUPS).all(|g| {
+                source.by_group[g]
+                    .iter()
+                    .all(|node| reader_names(node) == [names[g].clone()])
+            })
+        },
+    )
+    .await;
+    let link = source.routers[0]
+        .health()
+        .link
+        .expect("a source that is read says so in its health");
+    assert_eq!(link["role"], "primary", "{link}");
+    for g in 0..GROUPS {
+        assert_eq!(
+            link["groups"][g]["readers"][0]["name"],
+            names[g].as_str(),
+            "{link}"
+        );
+    }
+
+    // A standby takes no write, for either tenant, on any node.
+    for router in &standby.routers {
+        for tenant in &tenants {
+            match push_as(router, tenant, 9_000).await {
+                Err(RsmError::Standby) => {}
+                other => panic!("a standby took a client's write: {other:?}"),
+            }
+        }
+    }
+
+    // One group promoted, the other not: a standby in part. The promoted
+    // group's tenant is served on every node, the other's is still refused,
+    // and the other group still follows its source.
+    let (status, one) = api(
+        &standby.by_group[0][0],
+        "POST",
+        "/api/v1/system/link/promote",
+    )
+    .await;
+    assert_eq!(
+        (status, one["role"].as_str()),
+        (200, Some("promoted")),
+        "{one}"
+    );
+    for router in &standby.routers {
+        let link = link_status_when(router, "one group of two is promoted", |link| {
+            link["role"] == "mixed"
+        })
+        .await;
+        assert_eq!(link["groups"][0]["role"], "promoted", "{link}");
+        assert_eq!(link["groups"][1]["role"], "standby", "{link}");
+    }
+    for (i, router) in standby.routers.iter().enumerate() {
+        push_as(router, &tenants[0], 100 + i as u64)
+            .await
+            .expect("the promoted group takes its tenant's writes");
+        match push_as(router, &tenants[1], 9_001).await {
+            Err(RsmError::Standby) => {}
+            other => panic!("a group that is still a standby took a write: {other:?}"),
+        }
+    }
+    for n in 20..30 {
+        push_as(&source.routers[n as usize % 3], &tenants[1], n)
+            .await
+            .expect("push");
+    }
+    converge(
+        &source.by_group[1],
+        &standby.by_group[1],
+        "group 1, while group 0 is promoted",
+    )
+    .await;
+
+    // The promotion, asked of a node: every group, the promoted one included.
+    let (status, promoted) = api_as(
+        &standby.routers[2],
+        &tenants[0],
+        "POST",
+        "/api/v1/system/link/promote",
+    )
+    .await;
+    assert_eq!(status, 200, "{promoted}");
+    assert_eq!(promoted["role"], "promoted", "{promoted}");
+    for g in 0..GROUPS {
+        assert_eq!(promoted["groups"][g]["group"], g, "{promoted}");
+        assert_eq!(promoted["groups"][g]["role"], "promoted", "{promoted}");
+        // Where each group's replay had got: its own point of its own log.
+        assert!(
+            promoted["groups"][g]["position"]["index"].as_u64() > Some(0),
+            "{promoted}"
+        );
+    }
+    let (status, again) = api_as(
+        &standby.routers[0],
+        &tenants[1],
+        "POST",
+        "/api/v1/system/link/promote",
+    )
+    .await;
+    assert_eq!(
+        (status, again["role"].as_str()),
+        (200, Some("promoted")),
+        "{again}"
+    );
+
+    // An ordinary cluster: both tenants write on every node, and each is
+    // served what the source held for it and what it wrote here since.
+    for (i, router) in standby.routers.iter().enumerate() {
+        for tenant in &tenants {
+            push_as(router, tenant, 200 + i as u64)
+                .await
+                .expect("push after the promotion");
+        }
+    }
+    let want: [Vec<u64>; GROUPS] = [
+        (0..20).chain(100..103).chain(200..203).collect(),
+        (0..30).chain(200..203).collect(),
+    ];
+    for g in 0..GROUPS {
+        let b = leader_of(&standby.by_group[g]).await;
+        let served = drain_as(&standby.routers[b], &tenants[g], want[g].len()).await;
+        assert_eq!(served, want[g], "tenant of group {g}: each message once");
+    }
+    // The source never heard of any of it.
+    let link = link_status_when(&source.routers[0], "the source's own status", |_| true).await;
+    assert_eq!(link["role"], "primary", "{link}");
+
+    close_grouped(standby).await;
+    close_grouped(source).await;
+    for d in src_dirs.into_iter().chain(sb_dirs) {
+        let _ = std::fs::remove_dir_all(d);
+    }
+}
+
+/// A source with a history seeds a standby of several raft groups group by
+/// group: the node the seed names takes, for each of its groups, the
+/// snapshot of the source's group of the same number, into that group's own
+/// directory — and once: restarted, it seeds none of them again.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+async fn a_standby_of_several_raft_groups_is_seeded_group_by_group() {
+    let _one = serial().await;
+    log_init();
+    const GROUPS: usize = 2;
+    let none = HashMap::new();
+    let tenants: Vec<String> = (0..GROUPS).map(|g| tenant_of_group(g, GROUPS)).collect();
+
+    // The source: one node whose groups purge their logs as soon as they may.
+    let src_dirs = vec![scratch("groups-seed-source")];
+    let src_ports = free_port_runs(1, GROUPS);
+    let eager = RaftOpts {
+        purge_hold: Duration::from_secs(2),
+        log_keep: 0,
+        purge_batch: 1,
+        ..test_opts()
+    };
+    let source = open_grouped(
+        &src_dirs,
+        &src_ports,
+        Some(TOKEN),
+        eager,
+        LinkSetup::default(),
+        GROUPS,
+        &none,
+    )
+    .await;
+    for n in 0..40 {
+        for tenant in &tenants {
+            push_as(&source.routers[0], tenant, n).await.expect("push");
+        }
+    }
+    let purged = |g: usize| match &*source.by_group[g][0].repl_for_test() {
+        crate::rsm::replicator::node::NodeReplicator::Raft(r) => r.purged_index(),
+        _ => 0,
+    };
+    wait_for(
+        "every group of the source purges the start of its log",
+        || (0..GROUPS).all(|g| purged(g) > 0),
+    )
+    .await;
+
+    // The standby: one node, told once which node seeds and where the source
+    // is.
+    let sb_dirs = vec![scratch("groups-seed-standby")];
+    let sb_ports = free_port_runs(1, GROUPS);
+    let setup = LinkSetup {
+        source: Some(LinkConfig {
+            sources: raft_addrs(&src_ports),
+            token: Some(TOKEN.to_string()),
+            name: Some("seeded-groups".to_string()),
+            placement: Default::default(),
+        }),
+        standby: false,
+        seed: Some(1),
+        fetch: None,
+    };
+    let standby = open_grouped(
+        &sb_dirs,
+        &sb_ports,
+        None,
+        test_opts(),
+        setup.clone(),
+        GROUPS,
+        &none,
+    )
+    .await;
+    // A seed per group, each from its own source group, each beside that
+    // group's data.
+    let record = |g: usize| {
+        crate::rsm::link::seed::read(&group_dir(&sb_dirs[0], g))
+            .expect("seed record")
+            .unwrap_or_else(|| panic!("group {g} took no seed"))
+    };
+    let taken: Vec<_> = (0..GROUPS).map(record).collect();
+    for (g, rec) in taken.iter().enumerate() {
+        assert_eq!(
+            rec.source,
+            format!("127.0.0.1:{}", src_ports[0] + g as u16),
+            "group {g} is seeded by the source's group {g}"
+        );
+        assert!(rec.applied > 0, "{rec:?}");
+        leader_of(&standby.by_group[g]).await;
+    }
+
+    // Each group is a standby at its seed's position and follows from there.
+    for n in 40..60 {
+        for tenant in &tenants {
+            push_as(&source.routers[0], tenant, n).await.expect("push");
+        }
+    }
+    for g in 0..GROUPS {
+        converge(
+            &source.by_group[g],
+            &standby.by_group[g],
+            &format!("group {g}, on its seed"),
+        )
+        .await;
+        // The one name the standby was given is each group's, on its own
+        // source group.
+        assert_eq!(reader_names(&source.by_group[g][0]), ["seeded-groups"]);
+    }
+    let link = link_status_when(&standby.routers[0], "a seeded standby", |link| {
+        link["role"] == "standby"
+    })
+    .await;
+    assert_eq!(
+        link["groups"].as_array().map(Vec::len),
+        Some(GROUPS),
+        "{link}"
+    );
+    for tenant in &tenants {
+        match push_as(&standby.routers[0], tenant, 9_000).await {
+            Err(RsmError::Standby) => {}
+            other => panic!("a seeded standby took a write: {other:?}"),
+        }
+    }
+
+    // The node restarts as it was configured: no group seeds again, and the
+    // standby goes on.
+    close_grouped(standby).await;
+    let standby = open_grouped(&sb_dirs, &sb_ports, None, test_opts(), setup, GROUPS, &none).await;
+    for g in 0..GROUPS {
+        let rec = record(g);
+        assert_eq!(
+            (rec.at_ms, rec.applied),
+            (taken[g].at_ms, taken[g].applied),
+            "group {g} seeded once"
+        );
+        leader_of(&standby.by_group[g]).await;
+    }
+    for n in 60..70 {
+        for tenant in &tenants {
+            push_as(&source.routers[0], tenant, n).await.expect("push");
+        }
+    }
+    for g in 0..GROUPS {
+        converge(
+            &source.by_group[g],
+            &standby.by_group[g],
+            &format!("group {g}, after the seeded node's restart"),
+        )
+        .await;
+    }
+
+    // Promoted, it serves each tenant everything the source held for it.
+    let (status, promoted) = api_as(
+        &standby.routers[0],
+        &tenants[0],
+        "POST",
+        "/api/v1/system/link/promote",
+    )
+    .await;
+    assert_eq!(
+        (status, promoted["role"].as_str()),
+        (200, Some("promoted")),
+        "{promoted}"
+    );
+    for tenant in &tenants {
+        let served = drain_as(&standby.routers[0], tenant, 70).await;
+        assert_eq!(served, (0..70).collect::<Vec<u64>>(), "each message once");
+    }
+
+    close_grouped(standby).await;
+    close_grouped(source).await;
+    for d in src_dirs.into_iter().chain(sb_dirs) {
+        let _ = std::fs::remove_dir_all(d);
+    }
+}
+
+/// A group of the source answers one standby group: the group of the same
+/// number, of a cluster with as many groups and the same tenant pins. Where a
+/// tenant lives is each cluster's configuration, and a promoted standby that
+/// placed its tenants another way would look for each in a group that never
+/// held it — so anyone else is refused, with what to set right, before it is
+/// sent an entry or a snapshot.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_source_group_answers_only_the_standby_group_placed_as_it_is() {
+    let _one = serial().await;
+    log_init();
+    const GROUPS: usize = 2;
+    let none = HashMap::new();
+    let tenants: Vec<String> = (0..GROUPS).map(|g| tenant_of_group(g, GROUPS)).collect();
+
+    let src_dirs = vec![scratch("placed-source")];
+    let src_ports = free_port_runs(1, GROUPS);
+    let source = open_grouped(
+        &src_dirs,
+        &src_ports,
+        Some(TOKEN),
+        test_opts(),
+        LinkSetup::default(),
+        GROUPS,
+        &none,
+    )
+    .await;
+    for tenant in &tenants {
+        push_as(&source.routers[0], tenant, 1).await.expect("push");
+    }
+
+    let placed = |group: usize, groups: usize, pins: &str| Placement {
+        group,
+        groups,
+        pins: pins.to_string(),
+    };
+    // One read of the source's group `g` from the start of its log, as the
+    // standby group `asked`.
+    let read_as = |g: usize, asked: Placement| {
+        let fetch = http_fetch(Some(TOKEN.to_string()), asked);
+        fetch(
+            format!("127.0.0.1:{}", src_ports[0] + g as u16),
+            Request {
+                after: 0,
+                after_term: 0,
+                max_bytes: 0,
+                wait_ms: 0,
+                reader: "a-test".to_string(),
+                hold_only: false,
+            },
+        )
+    };
+
+    // Its counterpart reads each group.
+    for g in 0..GROUPS {
+        match read_as(g, placed(g, GROUPS, ""))
+            .await
+            .expect("its counterpart reads")
+        {
+            Answer::Entries { entries, .. } => assert!(!entries.is_empty(), "group {g}"),
+            other => panic!("group {g}: {other:?}"),
+        }
+    }
+    // Not a standby of one group (every standby there was before a standby
+    // could have several), not another group's follower, not a cluster of
+    // another number of groups, not one that pins a tenant elsewhere.
+    for (g, asked) in [
+        (0, Placement::single()),
+        (0, placed(1, GROUPS, "")),
+        (1, placed(0, GROUPS, "")),
+        (0, placed(0, 3, "")),
+        (1, placed(1, GROUPS, "0123456789abcdef")),
+    ] {
+        let refused = read_as(g, asked.clone())
+            .await
+            .expect_err("a standby placed another way was answered");
+        assert!(
+            refused.contains("409")
+                && refused.contains("QUEEN_RAFT_GROUPS")
+                && refused.contains("QUEEN_TENANT_GROUPS"),
+            "group {g} to {asked}: {refused}"
+        );
+    }
+    // The seed, the same way.
+    let seed = |asked: Placement| {
+        let addr = format!("127.0.0.1:{}", src_ports[0]);
+        async move {
+            crate::rsm::link::seed::http_snapshot(&addr, Some(TOKEN), "a-test", &asked)
+                .await
+                .map(|_| ())
+        }
+    };
+    let refused = seed(Placement::single())
+        .await
+        .expect_err("a seed for a standby of one group");
+    assert!(
+        refused.contains("409") && refused.contains("QUEEN_RAFT_GROUPS"),
+        "{refused}"
+    );
+    seed(placed(0, GROUPS, ""))
+        .await
+        .expect("its counterpart's seed");
+    // A refused standby holds nothing of the log.
+    for g in 0..GROUPS {
+        assert_eq!(
+            reader_names(&source.by_group[g][0]),
+            ["a-test"],
+            "group {g}"
+        );
+    }
+
+    // A whole standby, with as many groups, that pins a tenant where its
+    // source does not: neither of its groups replays anything, and each says
+    // why for as long as it lasts.
+    let sb_dirs = vec![scratch("placed-standby")];
+    let sb_ports = free_port_runs(1, GROUPS);
+    let pins = HashMap::from([(tenants[0].clone(), 1usize)]);
+    let setup = LinkSetup {
+        source: Some(LinkConfig {
+            sources: raft_addrs(&src_ports),
+            token: Some(TOKEN.to_string()),
+            name: None,
+            placement: Default::default(),
+        }),
+        standby: true,
+        seed: None,
+        fetch: None,
+    };
+    let standby = open_grouped(&sb_dirs, &sb_ports, None, test_opts(), setup, GROUPS, &pins).await;
+    for g in 0..GROUPS {
+        let status = link_status_when(
+            &*standby.by_group[g][0],
+            "a standby placed another way waits",
+            |link| link["follower"]["state"] == "waiting",
+        )
+        .await;
+        assert_eq!(status["role"], "standby", "{status}");
+        let why = status["follower"]["error"].as_str().unwrap_or_default();
+        assert!(
+            why.contains("409") && why.contains("QUEEN_TENANT_GROUPS"),
+            "group {g}: {status}"
+        );
+        assert_eq!(status["position"]["index"], 0, "{status}");
+        assert_eq!(status["follower"]["entries"], 0, "{status}");
+        assert_eq!(
+            reader_names(&source.by_group[g][0]),
+            ["a-test"],
+            "group {g}"
+        );
+    }
+
+    close_grouped(standby).await;
+    close_grouped(source).await;
+    for d in src_dirs.into_iter().chain(sb_dirs) {
+        let _ = std::fs::remove_dir_all(d);
+    }
+}
+
+/// A seeded standby of three nodes and several raft groups: the node the
+/// seed names boots every group on its seed, and the other two wait to be
+/// added. One membership call adds a node to every group — each group has its
+/// own Raft address on that node, the one given plus the group's number — and
+/// the node then receives a snapshot of each group from the seeded node. The
+/// three follow the source group by group and are promoted like any standby.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+async fn the_other_nodes_join_a_seeded_standby_of_several_raft_groups() {
+    let _one = serial().await;
+    log_init();
+    use crate::rsm::replicator::MembershipChange;
+    const GROUPS: usize = 2;
+    let none = HashMap::new();
+    let tenants: Vec<String> = (0..GROUPS).map(|g| tenant_of_group(g, GROUPS)).collect();
+
+    // The source: one node whose groups purge their logs as soon as they may.
+    let src_dirs = vec![scratch("groups-join-source")];
+    let src_ports = free_port_runs(1, GROUPS);
+    let eager = RaftOpts {
+        purge_hold: Duration::from_secs(2),
+        log_keep: 0,
+        purge_batch: 1,
+        ..test_opts()
+    };
+    let source = open_grouped(
+        &src_dirs,
+        &src_ports,
+        Some(TOKEN),
+        eager,
+        LinkSetup::default(),
+        GROUPS,
+        &none,
+    )
+    .await;
+    for n in 0..40 {
+        for tenant in &tenants {
+            push_as(&source.routers[0], tenant, n).await.expect("push");
+        }
+    }
+    let purged = |g: usize| match &*source.by_group[g][0].repl_for_test() {
+        crate::rsm::replicator::node::NodeReplicator::Raft(r) => r.purged_index(),
+        _ => 0,
+    };
+    wait_for(
+        "every group of the source purges the start of its log",
+        || (0..GROUPS).all(|g| purged(g) > 0),
+    )
+    .await;
+
+    // The standby: node 1 takes the seeds, nodes 2 and 3 wait to be added.
+    let sb_dirs: Vec<PathBuf> = (0..3).map(|_| scratch("groups-join-standby")).collect();
+    let sb_ports = free_port_runs(3, GROUPS);
+    let setup = LinkSetup {
+        source: Some(LinkConfig {
+            sources: raft_addrs(&src_ports),
+            token: Some(TOKEN.to_string()),
+            name: None,
+            placement: Default::default(),
+        }),
+        standby: false,
+        seed: Some(1),
+        fetch: None,
+    };
+    let mut standby = open_grouped(
+        &sb_dirs,
+        &sb_ports,
+        None,
+        test_opts(),
+        setup.clone(),
+        GROUPS,
+        &none,
+    )
+    .await;
+    for g in 0..GROUPS {
+        wait_for(
+            "the seeded node leads each group of its own cluster",
+            || standby.by_group[g][0].health().role == "leader",
+        )
+        .await;
+        assert!(
+            crate::rsm::link::seed::read(&group_dir(&sb_dirs[0], g))
+                .expect("seed record")
+                .is_some(),
+            "group {g} of the seeded node keeps its seed's record"
+        );
+        assert!(
+            crate::rsm::link::seed::read(&group_dir(&sb_dirs[1], g))
+                .expect("seed record")
+                .is_none(),
+            "only the node the seed names takes one"
+        );
+    }
+    for n in 40..60 {
+        for tenant in &tenants {
+            push_as(&source.routers[0], tenant, n).await.expect("push");
+        }
+    }
+    for g in 0..GROUPS {
+        converge(
+            &source.by_group[g],
+            &vec![standby.by_group[g][0].clone()],
+            &format!("group {g} of the seeded node"),
+        )
+        .await;
+    }
+
+    // Nodes 2 and 3 join, each with one call for all its groups: the address
+    // given is the node's Raft address, which is group 0's.
+    for id in [2u64, 3] {
+        let (status, body) = change_grouped(
+            &standby,
+            MembershipChange::AddLearner {
+                node: id,
+                raft: format!("127.0.0.1:{}", sb_ports[id as usize - 1]),
+                http: "127.0.0.1:1".into(),
+            },
+        )
+        .await;
+        assert_eq!(status, 200, "add learner {id}: {body}");
+        assert_eq!(
+            body["groups"].as_array().map(Vec::len),
+            Some(GROUPS),
+            "{body}"
+        );
+    }
+    // Each receives a snapshot of every group, stops to load them, and comes
+    // back on them.
+    for i in [1usize, 2] {
+        wait_for(
+            "a joining node receives the seeded node's snapshot of each group",
+            || (0..GROUPS).all(|g| restart_requested(&standby.by_group[g][i]).is_some()),
+        )
+        .await;
+        let (dir, cluster, link, pins) = (
+            sb_dirs[i].clone(),
+            cluster_config(&sb_ports, i as u64 + 1, None),
+            setup.clone(),
+            none.clone(),
+        );
+        standby
+            .restart(
+                i,
+                move || open_grouped_node(&dir, &cluster, &test_opts(), &link, GROUPS, &pins),
+                &none,
+            )
+            .await;
+    }
+    let end = Instant::now() + Duration::from_secs(60);
+    loop {
+        let (status, body) = change_grouped(
+            &standby,
+            MembershipChange::Promote {
+                nodes: vec![2, 3],
+                force: false,
+            },
+        )
+        .await;
+        if status == 200 {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "the learners were never promoted: {body}"
+        );
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+
+    // Three voters in every group, all following.
+    for n in 60..80 {
+        for tenant in &tenants {
+            push_as(&source.routers[0], tenant, n).await.expect("push");
+        }
+    }
+    for g in 0..GROUPS {
+        converge(
+            &source.by_group[g],
+            &standby.by_group[g],
+            &format!("group {g}, on the standby's three nodes"),
+        )
+        .await;
+    }
+
+    // Promoted through a node that was added, it serves each tenant
+    // everything the source held for it.
+    let (status, promoted) = api_as(
+        &standby.routers[1],
+        &tenants[0],
+        "POST",
+        "/api/v1/system/link/promote",
+    )
+    .await;
+    assert_eq!(
+        (status, promoted["role"].as_str()),
+        (200, Some("promoted")),
+        "{promoted}"
+    );
+    for (g, tenant) in tenants.iter().enumerate() {
+        let b = leader_of(&standby.by_group[g]).await;
+        let served = drain_as(&standby.routers[b], tenant, 80).await;
+        assert_eq!(served, (0..80).collect::<Vec<u64>>(), "each message once");
+    }
+
+    close_grouped(standby).await;
+    close_grouped(source).await;
+    for d in src_dirs.into_iter().chain(sb_dirs) {
         let _ = std::fs::remove_dir_all(d);
     }
 }

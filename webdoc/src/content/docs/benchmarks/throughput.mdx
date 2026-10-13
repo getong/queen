@@ -14,6 +14,7 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/groups.rs
 # changes what /health answers (raft.quorumAckMs; ready needs the leader's majority within
 # QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/groups.rs now also answers the cluster link's two routes for every group, puts every group's link block in /health and computes the placement a link call states. What this page says of raft groups (one leader orders a group's writes, several groups spread the leaders) and its figures are not touched.
 ---
 
 Two hundred partitions in one queue is the shape that suits a broker with a log per partition

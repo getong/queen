@@ -15,6 +15,7 @@ sourceOfTruth:
   - server/src/rsm/batcher_link.rs
   - server/src/rsm/replicator/raft/link.rs
   - server/src/rsm/facade/real/phase2/link.rs
+  - server/src/rsm/facade/groups.rs
 verifiedBy:
   - server/src/rsm/tests/link.rs
   - server/src/rsm/tests/link_cluster.rs
@@ -24,6 +25,7 @@ verifiedBy:
 # sourceOfTruth re-read 2026-10-08 (a standby's leader changes): batcher_link.rs stops the engine saying standby once a node no longer leads, so a node that led the standby no longer answers 503 `standby` after the cluster was promoted under another leader; facade/real/phase2/link.rs gains a test-only door to the leader's intake. The page says a standby refuses writes and a promoted cluster serves them, which every node now does; nothing it states changes.
 # sourceOfTruth re-read 2026-10-08 (a promotion's queue): batcher_link.rs answers, at a promotion, what the link had queued behind it: a source entry `not_standby`, a second promotion done. Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-08 (a seed's hold): raft/link.rs leaves a seeded standby's first hold on the node that sends its snapshot (the call names the standby, wire.rs); seed.rs draws the standby's id before that call, and batcher_link.rs and mirror.rs write it into the standby entry. The seeded section says what a seed needs from its source, and Watch it, the section on the source's log and two settings rows follow; nothing else this page states changes.
+# sourceOfTruth re-read 2026-10-13 (several raft groups): a standby may run several raft groups. facade/real.rs opens each group with its own source (driver.rs moves the configured addresses to the group's port), wire.rs adds the placement every call states and raft/network.rs answers another's with 409, seed.rs seeds each group from its own source group, and groups.rs answers the link's two routes for every group and promotes them all. New section "Several raft groups"; the opening, a promotion's step 2, two settings rows and the limits follow it. Nothing the page says of a cluster of one group changes.
 ---
 
 Three replicas protect you from losing a machine, and a [backup](/operate/recovery-backups/)
@@ -35,7 +37,8 @@ cursors, leases and keys the first cluster had.
 
 The two clusters are called the **source** and the **standby**. Each is a whole cluster with its
 own raft group, its own leader and its own node list. The source does not know the standby exists
-beyond answering its reads, and never waits for it.
+beyond answering its reads, and never waits for it. A source that runs
+[several raft groups](#several-raft-groups) is followed group by group.
 
 ## What a standby holds
 
@@ -265,7 +268,9 @@ After a crash of the source:
 
    It answers once the standby's leader takes writes and the node you asked has applied the
    promotion, with `"role": "promoted"` and the `position` the standby had reached: the source's
-   entries after that index are not in this cluster.
+   entries after that index are not in this cluster. With several raft groups it promotes every
+   group, and you check its answer as said under
+   [promoting several groups](#promoting-several-groups).
 3. Point your clients at the standby. Those that kept retrying the `503` are served at once.
 
 For a planned switch, with nothing lost:
@@ -321,17 +326,108 @@ node stops keeping its log for a standby when:
 A standby whose entries were purged on every node of the source halts with "needs a new seed".
 Empty its data directories and start it again as a seeded standby.
 
+## Several raft groups
+
+A cluster that runs several [raft groups](/operate/cluster/#raft-groups) has one log per group,
+and a standby replays each of them with its own group of the same number: group 1 of the standby
+reads group 1 of the source and nothing else. You set nothing per group. What both clusters need:
+
+- The same `QUEEN_RAFT_GROUPS` and the same `QUEEN_TENANT_GROUPS`.
+- A broker newer than 2.2.0, on both.
+- A path from the standby's nodes to one more port of the source's nodes for each extra group.
+  `QUEEN_LINK_SOURCE` still names the source's nodes with their raft port, which is group 0's.
+  Group N of the source listens on that port plus N, and group N of the standby reads it there:
+  with three groups and the usual port, 7400, 7401 and 7402.
+
+Which group a tenant lives in is each cluster's own configuration, and nothing in the log says it.
+A standby that placed its tenants another way would hold each of them in a group its own nodes
+never look in, and after a promotion those tenants would find their queues empty. So every call a
+group of the standby makes says which group it is, how many there are and which tenants are
+pinned, and a group of the source answers `409` to a call that does not match its own. On the
+standby that group's follower shows `"state": "waiting"` with the source's answer in `error`, and
+replays nothing until the two clusters agree. A seed that is refused stops the node at boot with
+the same answer. A source of several groups refuses a standby of one group the same way, and that
+includes every standby up to 2.2.0. A standby of several groups also refuses a source up to
+2.2.0, because such a source cannot tell it how it places its tenants.
+
+Each group is a standby in its own right. It has its own position in its own source log, its own
+id and name on the source, its own lag and, when the standby is seeded, its own seed: the node
+named by `QUEEN_LINK_SEED` downloads one snapshot for each group at its first start, one after the
+other, each from the source's group of the same number. You add the other nodes as before, since
+a membership change already applies to every group. A node you add receives a snapshot of each
+group and restarts to load them, once or once for each group depending on when they arrive.
+
+`GET /api/v1/system/link` on a node of several groups answers for all of them:
+
+```json
+{
+  "role": "standby",
+  "groups": [
+    {
+      "group": 0,
+      "role": "standby",
+      "leader": true,
+      "id": "2a340216",
+      "name": "standby-2a340216",
+      "source": "queen-0.queen-headless:7400",
+      "position": { "index": 4211, "term": 3, "nowUs": 1791467212792429 },
+      "follower": { "state": "following", "source": "queen-0.queen-headless:7400", "lagEntries": 0 }
+    },
+    {
+      "group": 1,
+      "role": "standby",
+      "leader": false,
+      "id": "9c01b7e4",
+      "name": "standby-9c01b7e4",
+      "source": "queen-0.queen-headless:7401",
+      "position": { "index": 3987, "term": 2, "nowUs": 1791467212790115 },
+      "follower": { "state": "idle", "source": "queen-0.queen-headless:7401", "lagEntries": 0 }
+    }
+  ]
+}
+```
+
+Every entry of `groups` is what a cluster of one group answers (shortened here), with the group's
+number. The `role` at the top is the role every group has, and `mixed` when they differ. `/health`
+carries the same block under `raft.link`. Each group has its own leader, so a node can lead one
+group and follow another: in the answer above this node replays group 0 and another node replays
+group 1.
+
+Every `queen_link_*` series carries a `group` label on such a node. Alert on each group and not on
+the whole: one group that halted is hidden by a maximum that the other groups keep at zero, so
+take the maximum by `group`.
+
+### Promoting several groups
+
+`POST /api/v1/system/link/promote` promotes every group, each on its own leader, and answers with
+the same list. Read the answer:
+
+- `200` with `"role": "promoted"` at the top: every group is promoted.
+- Any other status: at least one group was not promoted, because it had no leader at that moment
+  for instance. Its entry in `groups` carries its `status` and the error. The cluster is then
+  `mixed`: the promoted groups serve their tenants, and the others still answer their tenants
+  `503 standby` and keep following the source. Send the call again. A group that is already
+  promoted is left as it is.
+
+Each group is promoted at the entry its own replay had reached, so a promoted cluster is not the
+source at one instant. No write is torn by that, because nothing spans two groups: a tenant lives
+in one group and a transaction touches one tenant. Every tenant gets a state the source had for
+it, and the last moment each group lost is its own. Two tenants in different groups can be cut at
+slightly different moments. That matters only if your application relates them, for example when
+one tenant's worker copies what another tenant writes. For a planned switch, wait until
+`lagEntries` is 0 in every group before you stop the source.
+
 ## Settings
 
 On every node of the standby:
 
 | Variable | Default | What it does |
 |---|---|---|
-| `QUEEN_LINK_SOURCE` | unset | The raft address (`host:port`) of every node of the source, comma separated. Unset, the cluster follows nobody |
+| `QUEEN_LINK_SOURCE` | unset | The raft address (`host:port`) of every node of the source, comma separated. Unset, the cluster follows nobody. With [several raft groups](#several-raft-groups) it is still group 0's address, and group N reads the same host on that port plus N |
 | `QUEEN_LINK_SOURCE_TOKEN` | unset | The source's `QUEEN_LINK_TOKEN` |
 | `QUEEN_LINK_STANDBY` | `false` | An empty cluster becomes a standby at its first election. Ignored by a cluster that holds entries of its own |
 | `QUEEN_LINK_SEED` | unset | The id of the one node that takes its first state from the source's snapshot. The same value on every node |
-| `QUEEN_LINK_NAME` | `standby-<id>` | What the source calls this standby. Each standby draws an id when it becomes one, or when it takes its seed, so two standbys of one source never share a name unless you give them one |
+| `QUEEN_LINK_NAME` | `standby-<id>` | What the source calls this standby. Each standby draws an id when it becomes one, or when it takes its seed, so two standbys of one source never share a name unless you give them one. With several raft groups every group draws its own id, and a name you give is used by every group, each on its own group of the source |
 | `QUEEN_LINK_PIPELINE` | `64` | How many replayed entries may be on their way to commit at once. It is deeper than `QUEEN_RAFT_PIPELINE` so a standby that fell behind catches up faster than the source writes |
 
 On every node of the source:
@@ -347,8 +443,11 @@ On every node of the source:
 - **Cluster mode on both sides.** The link is served on the raft port, which only a node started
   with `QUEEN_RAFT_REPLICATOR=openraft` opens. A source of one node therefore runs as a cluster of
   one voter, and so does a standby of one node.
-- **One raft group.** A standby replays one log, so both clusters run with `QUEEN_RAFT_GROUPS=1`,
-  the default.
+- **The same raft groups on both sides.** A standby replays each raft group of its source with
+  its own group of the same number, so both clusters run the same `QUEEN_RAFT_GROUPS` and
+  `QUEEN_TENANT_GROUPS`, and a promotion cuts each group at its own point
+  ([several raft groups](#several-raft-groups)). The Jepsen failover tests ran one group: a link
+  of several is checked by the broker's own tests only.
 - **Asynchronous.** There is no mode in which the source waits for the standby.
 - **No encryption of its own.** The link shares the raft port, which is plain HTTP.
 - **Upgrade the standby first.** A source that starts writing a newer entry format than a node of
