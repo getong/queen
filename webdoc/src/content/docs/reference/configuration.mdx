@@ -59,6 +59,7 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): config.rs,
 # facade/real.rs change what /health answers (raft.quorumAckMs; ready needs the leader's majority
 # within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/real.rs no longer refuses `QUEEN_LINK_SOURCE` beside `QUEEN_RAFT_GROUPS` above 1 and opens each group with its own source, link/driver.rs reads the same `QUEEN_LINK_*` variables and moves the configured addresses to the group's port, and raft/mod.rs tells each group's link routes which group they serve and hands a group's leadership to its preferred member only once that member is a voter. No variable was added or removed and no default changed: the tables and the paragraph on the nine `QUEEN_LINK_*` variables stand.
 ---
 
 A node reads its whole configuration from environment variables when it starts. There is no

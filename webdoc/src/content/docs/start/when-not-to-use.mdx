@@ -18,6 +18,7 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/groups.rs
 # changes what /health answers (raft.quorumAckMs; ready needs the leader's majority within
 # QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/groups.rs now also answers the cluster link's two routes for every group and computes the placement a link call states. It still keeps a tenant in one raft group: nothing this page states changes.
 ---
 
 For building applications, Queen is the better choice: services that handle events per customer,
