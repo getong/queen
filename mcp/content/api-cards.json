@@ -2808,17 +2808,17 @@
         {
           "call": "new Queen(['url' => $url, 'binaryPush' => true])",
           "does": "A push travels as one length-prefixed binary body instead of a JSON document. Needs no extension.",
-          "source": "clients/client-php/src/Http/HttpClient.php:76"
+          "source": "clients/client-php/src/Http/HttpClient.php:108"
         },
         {
           "call": "new Queen(['url' => $url, 'binaryPush' => true, 'pushCompression' => true])",
           "does": "With binaryPush: each partition's batch is framed as the broker stores it and compressed with zstd in the client; a transaction that pushes sends its pushes the same way. Needs the zstd extension (pecl install zstd): without it the constructor throws.",
-          "source": "clients/client-php/src/Http/HttpClient.php:77"
+          "source": "clients/client-php/src/Http/HttpClient.php:109"
         },
         {
           "call": "new Queen(['url' => $url, 'framedPop' => true])",
           "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same messages a JSON pop returns. Needs the zstd extension.",
-          "source": "clients/client-php/src/Http/HttpClient.php:78"
+          "source": "clients/client-php/src/Http/HttpClient.php:110"
         },
         {
           "call": "config/queen.php: 'binary_push' => true, 'push_compression' => true, 'framed_pop' => true",
