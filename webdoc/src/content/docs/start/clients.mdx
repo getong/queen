@@ -138,6 +138,11 @@ verifiedBy:
 # package.json only adds the wire tests to test:unit. consumer_manager.go and client-rust's queue.rs
 # pop and push through the HTTP client's framed and binary paths. No version moved, and the install
 # and supervision sections are unchanged.
+# sourceOfTruth re-read 2026-10-13 (the Go client's zstd dependency): go.mod required
+# github.com/klauspost/compress v1.20.0, whose own go.mod asks for Go 1.25, so the module did not
+# resolve with the Go 1.24 it declares and this page promises. It requires v1.19.2, the last line
+# that builds with Go 1.24. "Go 1.24 or later" in the Go tab is true again; nothing else this page
+# states changes.
 ---
 
 Queen speaks JSON over HTTP, on port `6632`, so every client is a thin layer over the same
