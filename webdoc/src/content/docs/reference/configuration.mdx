@@ -60,6 +60,9 @@ sourceOfTruth:
 # facade/real.rs change what /health answers (raft.quorumAckMs; ready needs the leader's majority
 # within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/real.rs no longer refuses `QUEEN_LINK_SOURCE` beside `QUEEN_RAFT_GROUPS` above 1 and opens each group with its own source, link/driver.rs reads the same `QUEEN_LINK_*` variables and moves the configured addresses to the group's port, and raft/mod.rs tells each group's link routes which group they serve and hands a group's leadership to its preferred member only once that member is a voter. No variable was added or removed and no default changed: the tables and the paragraph on the nine `QUEEN_LINK_*` variables stand.
+# sourceOfTruth re-read 2026-10-13 (the latency fixes and the fetch ceiling): QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS
+# (batcher.rs), QUEEN_CONSUME_CHECKPOINT_EAGER (consume/mod.rs) and QUEEN_QLOG_READ_AHEAD_MB (qlog/mod.rs) join the
+# tables. The retention history written every METRICS_FLUSH_MS (local_metrics.rs) changes no row.
 ---
 
 A node reads its whole configuration from environment variables when it starts. There is no
@@ -109,6 +112,7 @@ on by default turns off only with `0`, `false`, `off` or `no`.
 | `QUEEN_RAFT_ENTRY_MAX_BYTES` | `100663296` (96 MiB) | The largest planned command: a push to one partition, one KV or timers call, one positions list. A larger one is refused. |
 | `QUEEN_RAFT_COMMAND_QUEUE_DEPTH` | `16384` | The planner's command channel. |
 | `QUEEN_RAFT_REQUEST_ID_WINDOW_S` | `60` | How long a committed command's outcome answers a retry under the same request id. |
+| `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` | `10` | How often the leader looks whether the oldest recorded outcome has left `QUEEN_RAFT_REQUEST_ID_WINDOW_S`, and retires what has in its next cycle. `0` leaves that to a 10 s tick, which retires ten seconds of outcomes at once. |
 | `QUEEN_RAFT_ANSWER_AT_COMMIT` | on | Answer pushes and acks when their entry commits, without waiting for it to apply on the leader. |
 | `QUEEN_RAFT_DEDUP_INDEX` | `txns` | How each append's `transactionId` hashes are indexed: `txns` (one row per append), `segment` (read back from the queue log) or `rows`. |
 | `QUEEN_RAFT_ROWS_WINDOW` | on | A push's index row leaves memory when it leaves the queue's dedup window (never before 900 s), whether or not the message is still retained; older messages are read through the queue log's own index. Needs cluster version 6. Off: a row stays for as long as its message. |
@@ -127,6 +131,7 @@ on by default turns off only with `0`, `false`, `off` or `no`.
 | Variable | Default | Effect |
 |---|---|---|
 | `QUEEN_CONSUME_CHECKPOINT_MS` | `5` | How often the leader logs the cursor rows that changed. A pop or an ack is answered once the checkpoint holding its change has committed. |
+| `QUEEN_CONSUME_CHECKPOINT_EAGER` | on | A pop or an ack that waits for a change no checkpoint holds yet has the next checkpoint taken at once when none is in flight, instead of at the next `QUEEN_CONSUME_CHECKPOINT_MS` tick. `0` waits for the tick. What an answer waits for is the same either way. |
 | `QUEEN_CONSUME_FAST` | off | `1`, `true`, `on` or `yes` answers pops and acks before their checkpoint commits. A leader change can then lose a lease or an ack you were told about. |
 | `QUEEN_CONSUME_LEADER_LEASE_MS` | `400` | The engine serves only while its node leads and has heard from a quorum within this. |
 | `QUEEN_CONSUME_TXN_TTL_MS` | `30000` | The longest a transaction holds the cursors it acks or positions. |
@@ -166,6 +171,7 @@ what each one does. A cluster with none of them set is neither a standby nor rea
 | `QUEEN_QLOG_SHARDS` | `0` (0 to 4096) | Shared queue logs. `0` gives every queue a log of its own; `K` maps every queue onto one of K shared logs, the layout for thousands of queues: a write fsyncs at most K files, and files fill at the rate of all the queues in them. Read only when the data directory is created. |
 | `QUEEN_QLOG_COMPACT_MIN_DEAD_PCT` | unset | Rewrite a sealed file once this percentage of it is dead. Unset: a per-queue log file on its first dead message, a shared one at 50%. |
 | `QUEEN_QLOG_SEAL_AGE_S` | `600` | An active file holding data this old is sealed so retention can reclaim it, once retention has a dead message in it or it holds an eighth of a full file; `0` never seals by age. |
+| `QUEEN_QLOG_READ_AHEAD_MB` | `1` | When a fetch finds a record out of the page cache, the kernel is asked for that record and for this many MiB of the partition's records after it. `0` turns it off. |
 | `QUEEN_STORE_SCRUB_EVERY_S` | `21600` | How often the whole store is re-verified in the background; `0` turns the scrub off. |
 | `QUEEN_STORE_SCRUB_ROWS_PER_S` | `2000` | The scrub's pace. |
 | `QUEEN_RAFT_RETENTION_SCAN_PER_S` | `50000` | Partitions the leader's retention scanner walks per second. |

@@ -5,6 +5,81 @@ Release history for the Queen MQ server and client SDKs. Full release notes live
 
 ## Unreleased
 
+**Three brokers, a million messages a second: end to end p99 from 100-160 ms to about 20.** Measured on
+2026-10-12 and 13 with the fixes below and this release's wire forms (binary push, compressed groups,
+framed pops, counted acks), 100 messages a request, a fresh cluster for every point, figures at
+seconds 30-60 of the load. With deduplication off and nothing deleted, end to end p50 / p99 is the
+same from 100 to 100,000 partitions: 4 / 6 ms at 100k msg/s, 5 / 9 at 500k, 10 / 17 at 1M, 17-20 /
+35-40 at 1.5M, 27-31 / 56-62 at 2M. Ten million partitions read 10 / 20 ms at 1M msg/s and 39 / 69 at
+2M; before these fixes they did not carry 1.5M. 2.5M msg/s is pushed and not carried. With
+deduplication and retention on (60 s windows) 1.5M msg/s reads 19-28 / 36-51 ms from 100 to 1M
+partitions; it is not carried on 10 partitions (the planner, with deduplication at 150,000 msg/s a
+partition) nor on 10M (memory: more than the 32 GB of these brokers). 2M msg/s with retention holds on
+1,000 partitions and rises slowly there. The runs, their method and what is not solved are in
+`benchmark-queen/2026-10-12-three-node-new-forms/NIGHT.md`.
+
+**A command's recorded outcome leaves when its window ends, not ten seconds' worth at a time.** Every
+command's outcome is kept `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s) to answer a retry. The step that
+retires them ran on a 10 s tick, so ten seconds of outcomes left together, in steps of 4,096 rows one
+after the other, and apply did nothing else for 50 to 150 ms: from second 70 of every load the p99
+doubled or tripled. The leader now looks every `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` (10; `0` leaves it
+to the tick) whether the oldest outcome has left the window, and retires what has in its next cycle.
+The step and its limit are unchanged. 1,000 partitions, last 30 s of a 90 s load, end to end p50 /
+p99: 11.8 / 29.9 → 10.6 / 16.3 ms at 1M msg/s, 17.4 / 78.8 → 17.4 / 32.8 at 1.5M, 29.4 / 127 → 30.0 /
+60.4 at 2M.
+
+**Ten million partitions: the leader's idle scan works in turns.** The scan that unloads idle consumer
+state walked 625,000 partitions under one lock once a second, on the thread that serves pops: with
+10M partitions 7% of the messages were up to 80 ms late at any load. It now looks at 1,024 partitions
+a turn, a turn every 5 ms, and a consumer's state for a partition is held by a pointer, so a table
+that grows no longer moves 430 bytes for each (100 to 160 ms while 10M partitions were first read).
+10M partitions, end to end p50 / p99: 6.8 / 73.7 → 4.0 / 6.9 ms at 100k msg/s, 13.4 / 130 → 11.1 /
+17.2 at 1M.
+
+**A pop's checkpoint is taken at once.** A pop or an ack is answered once the checkpoint that holds
+its change has committed, and checkpoints were taken every `QUEEN_CONSUME_CHECKPOINT_MS` (5): an
+answer waited half a tick on average before its checkpoint even started. An answer that waits now
+has the checkpoint taken at once when none is in flight (`QUEEN_CONSUME_CHECKPOINT_EAGER`, on; `0`
+waits for the tick). What an answer waits for is unchanged. At 100k msg/s: 6.5 / 10.2 → 3.9 / 6.8
+ms, for more log entries at low load (3.1 → 4.4 broker cores there).
+
+**Retention no longer stops apply.** Three causes, each measured:
+- A round over a small store was one slice: every partition's watermark reached the planner together
+  once an interval and went into one entry (1,000 partitions at 1M msg/s: 50,000 rows retired in one
+  go, apply stalled 44-59 ms every 5 s). The round is now spread over its interval in 100 steps:
+  12.9 / 76.8 → 11.8 / 19.5 ms with deduplication and retention on.
+- The dashboard's node-local retention history was written by the apply thread: for every watermark
+  a JSON record, the file opened, three writes, closed, and the file rewritten with two fsyncs every
+  8,192 records, up to 37 ms at a time and several times in a row. Apply now keeps a step in memory,
+  where the dashboard reads it at once, and the metrics collector writes the file every
+  `METRICS_FLUSH_MS` (60 s) and at shutdown. After a crash the dashboard's history misses up to that
+  last minute; no queue state is involved. A million partitions at 1.5M msg/s: 23 / 120 → 21 / 39 ms;
+  100,000 partitions at 2M msg/s, not carried before (2 s and rising), reads 63 / 106.
+- Not solved: with retention on and 10,000 to 100,000 partitions the store's checkpoint cannot keep
+  its 250 ms pace (a page written per changed row), which lifts the p99 there to about 50 ms at
+  1.5M msg/s against 36-40 at 1,000 and at 1M partitions.
+
+**Two stalls at high partition counts and loads.** The queue log's cross-file directory is merged
+about every 40 s on every node, and its files were synced in one go: with 100,000 partitions at 1.5M
+msg/s the raft log's sync waited behind it (the leader's longest commit 15 → 64 ms, one 10 s window
+at 138 ms). They now reach the disk 8 MB at a time while they are written. And the planner kept a
+queue's partition names in one hash table, which hashes every name again when it doubles: 36 ms at
+458,752 names and 89 ms at 917,504, on the thread every push waits for (a million partitions at 2M
+msg/s: one window at 151 ms against 55-65). The names sit in 256 tables once a queue has 4,096 of
+them, and lookups that are dropped are freed off that thread.
+
+**Kafka facade: a fetch is read to what its response can carry.** Kafka's `max_bytes` is for the whole
+response, and each call the facade makes to the broker now carries it as the call's own ceiling (the
+route's top-level `maxBytes`), counted as Queen stores the records: a key and a value are kept in
+base64, so the client's number is asked for a third larger. The entries are read in order while any
+of it is left, and the rest answer their bounds and no records. Before, every partition of a wide
+assignment was read to its own budget, so a consumer behind on a thousand partitions had a gigabyte
+read for the 32 MiB a response carries, on every fetch; and asked for the client's number as it
+stood, a fetch came back a quarter short. A fetch from an old offset now reads the queue log with the
+log's lock released, as a pop does (the appends to that log waited behind a read from the disk), and
+once a record waits for the disk the kernel is asked to read ahead (`QUEEN_QLOG_READ_AHEAD_MB`, 1;
+`0` is off). Not measured yet.
+
 **Server: a standby cluster can run several raft groups.** A standby replayed one log, so a link
 needed `QUEEN_RAFT_GROUPS=1` on both clusters and a standby started with more refused to boot.
 Each raft group of a standby now replays the source's group of the same number: it reads the nodes
