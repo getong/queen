@@ -382,14 +382,61 @@ pub struct Built {
     pub extents: usize,
 }
 
+/// How much of a run is handed to the device at a time while it is written
+/// ([`sync_range`]).
+const SYNC_STEP: u64 = 8 << 20;
+
+/// Push `len` bytes of `f` from `off` to the device and wait for them. It
+/// makes nothing durable: the file's sync at the end does, and finds these
+/// pages written.
+///
+/// Why: a run used to reach the device in one piece, at its final sync. A
+/// merged run is tens to hundreds of megabytes, and while the device took
+/// them the raft log's own sync waited behind: every broker stalled its
+/// commits together for about 60 ms when a merge ended (three machines,
+/// 1.5M msg/s, 100,000 partitions, 2026-10-13: the pass 116-123 ms on each
+/// node, the leader's longest commit 15 -> 64 ms, end to end p99 35 -> 138 ms
+/// for those ten seconds). The checkpoint is written the same way and for the
+/// same reason (`HeedStore::flush_in_steps`).
+#[cfg(target_os = "linux")]
+fn sync_range(f: &File, off: u64, len: u64) -> io::Result<()> {
+    use std::os::fd::AsRawFd;
+    // SAFETY: a plain system call on a descriptor the caller holds open; it
+    // takes no pointer.
+    let r = unsafe {
+        libc::sync_file_range(
+            f.as_raw_fd(),
+            off as libc::off64_t,
+            len as libc::off64_t,
+            libc::SYNC_FILE_RANGE_WAIT_BEFORE
+                | libc::SYNC_FILE_RANGE_WRITE
+                | libc::SYNC_FILE_RANGE_WAIT_AFTER,
+        )
+    };
+    if r != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn sync_range(_f: &File, _off: u64, _len: u64) -> io::Result<()> {
+    Ok(())
+}
+
 /// Writes a run extent by extent (they must arrive sorted): a temporary file
-/// with a placeholder header, the header written last, then the rename.
+/// with a placeholder header, the header written last, then the rename. The
+/// file reaches the device [`SYNC_STEP`] at a time as it is written.
 struct RunWriter {
     dir: PathBuf,
     lo: u64,
     hi: u64,
     tmp: PathBuf,
     out: io::BufWriter<File>,
+    /// Bytes written to the file so far, and how many of them were handed to
+    /// the device.
+    written: u64,
+    synced: u64,
     sum: xxhash_rust::xxh3::Xxh3,
     count: u64,
     last: Option<(u64, u64)>,
@@ -408,6 +455,8 @@ impl RunWriter {
             hi,
             tmp,
             out,
+            written: HEADER_LEN as u64,
+            synced: 0,
             sum: xxhash_rust::xxh3::Xxh3::new(),
             count: 0,
             last: None,
@@ -428,6 +477,12 @@ impl RunWriter {
         self.sum.update(&self.buf);
         self.out.write_all(&self.buf)?;
         self.count += 1;
+        self.written += self.buf.len() as u64;
+        if self.written - self.synced >= SYNC_STEP {
+            self.out.flush()?;
+            sync_range(self.out.get_ref(), self.synced, self.written - self.synced)?;
+            self.synced = self.written;
+        }
         Ok(())
     }
 
@@ -594,6 +649,36 @@ mod tests {
                 },
             ]
         );
+    }
+
+    /// A run larger than one sync step is written in steps and reads back
+    /// whole: the steps hand pages to the device early, nothing else.
+    #[test]
+    fn a_run_written_in_steps_reads_back_whole() {
+        let d = dir("steps");
+        let n = (SYNC_STEP as usize / EXTENT_LEN) * 2 + 1_234;
+        let mut w = RunWriter::new(&d, 1, 9).unwrap();
+        for i in 0..n as u64 {
+            w.push(&Extent {
+                pid: i / 3,
+                first: i,
+                end: i + 1,
+                first_created_us: i as i64,
+                file_id: 1 + i % 9,
+            })
+            .unwrap();
+        }
+        let built = w.finish().unwrap();
+        assert_eq!(built.extents, n);
+        let run = Run::open(&built.path).unwrap();
+        assert_eq!(run.len(), n);
+        assert_eq!(run.extent(0).first, 0);
+        assert_eq!(run.extent(n - 1).first, n as u64 - 1);
+        assert_eq!(
+            std::fs::metadata(&built.path).unwrap().len(),
+            (HEADER_LEN + n * EXTENT_LEN) as u64
+        );
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]
