@@ -26,6 +26,7 @@ sourceOfTruth:
 verifiedBy:
   - clients/client-cli/cmd/supervision_test.go
 # sourceOfTruth re-read 2026-10-06 (commitOnDelivery): tail.go's --auto-ack help now says the client acks each message after printing it, which is what this page already said. pop and ephemeral pop gain --commit-on-delivery, described below.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): clients/client-go/consumer_manager.go asks for a pop's stored records (frames=true) only when the client's FramedPop option is on; queenctl turns none of the three wire options on, so tail and pop read the JSON answers this page describes. Nothing this page states changes.
 ---
 
 `queenctl` is a single static binary over the HTTP API, built on the Go SDK. It is what we reach
