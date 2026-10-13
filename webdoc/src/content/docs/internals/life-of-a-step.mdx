@@ -50,6 +50,15 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/real.rs,
 # handlers/raft.rs change what /health answers (raft.quorumAckMs; ready needs the leader's majority
 # within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs and the handlers read a binary push body
+# and a binary transaction body on the routes of the JSON ones, answer an ack with counts when its
+# body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
+# forms is planned, committed and answered as before. The push step names the binary and framed
+# bodies, and the pop step the checkpoint taken at once (consume/mod.rs, facade/intake.rs).
+# facade/remote.rs hands a follower's stored forms to the leader with the forwarded command;
+# batcher.rs retires a recorded outcome when QUEEN_RAFT_REQUEST_ID_WINDOW_S ends, still 60 s;
+# dedup.rs sizes a busy partition's filter at 32 bits a hash, and a maybe is still checked exactly;
+# qlog/mod.rs reads ahead for a fetch. Nothing else this page states changes.
 ---
 
 A worker's step in Queen is three calls at most: it pops a batch, does its work, and commits a
@@ -74,7 +83,9 @@ curl -X POST localhost:6632/api/v1/push -H 'content-type: application/json' -d '
    name too long for a store key `413`.
 2. The receiving node mints a request id and a deadline, gives each item a message id, hashes
    its `transactionId` (or the message id, when there is none) with xxh3-128, packs one frame per
-   message and encrypts the payload if the queue is encrypted. On a follower, only this prepared
+   message and encrypts the payload if the queue is encrypted. A client may send the same items as
+   a [binary body](/reference/http/#binary-bodies), or as frames it built and compressed itself,
+   which the node checks and stores as they are. On a follower, only this prepared
    command crosses to the leader, over one of `QUEEN_RAFT_FWD_STREAMS` (4) long-lived streams, and
    it takes its own fair share of the leader's admission budget there.
 3. In the planner, a retry under a request id the leader has already answered gets the recorded
@@ -113,9 +124,10 @@ curl 'localhost:6632/api/v1/pop/queue/orders?consumerGroup=billing&batch=10&wait
    left), so it never leases messages nobody will receive.
 3. When there is nothing to claim and `wait=true`, the pop is held on the leader until a partition
    of the group becomes claimable or the deadline comes, and then it answers `204`.
-4. A lease is a change to the group's cursor row, so it has to be durable before it counts. Every
-   `QUEEN_CONSUME_CHECKPOINT_MS` (5 ms) the engine logs the changed rows as a checkpoint, and the pop
-   is answered only once the checkpoint holding its lease has committed. `QUEEN_CONSUME_FAST=1`
+4. A lease is a change to the group's cursor row, so it has to be durable before it counts. The
+   engine logs the changed rows as a checkpoint, at once when no checkpoint is in flight
+   (`QUEEN_CONSUME_CHECKPOINT_EAGER`) and every `QUEEN_CONSUME_CHECKPOINT_MS` (5 ms) at the latest,
+   and the pop is answered only once the checkpoint holding its lease has committed. `QUEEN_CONSUME_FAST=1`
    answers before that, and a leader change can then lose the lease.
 5. The node that answers reads the messages from its own queue logs once it has
    applied up to the leader's index. A follower that cannot catch up before the deadline hands the

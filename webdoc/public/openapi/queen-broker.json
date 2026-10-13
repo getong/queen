@@ -150,6 +150,14 @@
         "summary": "GET /api/v1/pop",
         "parameters": [
           {
+            "name": "frames",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "batch",
             "in": "query",
             "required": false,
@@ -414,6 +422,14 @@
             }
           },
           {
+            "name": "frames",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "x-queen-tenant",
             "in": "header",
             "required": false,
@@ -561,6 +577,14 @@
           },
           {
             "name": "autopilot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "frames",
             "in": "query",
             "required": false,
             "schema": {

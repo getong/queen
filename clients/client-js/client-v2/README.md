@@ -1661,7 +1661,7 @@ pushes after them, and the client puts them back.
 
 ### Which Broker
 
-`binaryPush` and `pushCompression` need a broker newer than 2.2.0. A broker up
+`binaryPush` and `pushCompression` need broker 2.3.0 or later. A broker up
 to 2.2.0 answers 400 to the binary bodies and the client does not fall back to
 JSON, so turn the two on after every broker of the cluster is upgraded.
 `framedPop` is safe against any broker: an older one ignores the parameter and

@@ -40,6 +40,13 @@ sourceOfTruth:
 # Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): GET /health has
 # three conditions and quorumAckMs in its raft block.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs reads a binary push body (QPB1) and a
+# binary transaction body (QTB1) on the routes of the JSON ones, answers an ack with counts when
+# its body asks, and renders a pop as the stored records for frames=true (handlers/data.rs takes
+# the parameter, handlers/raft.rs writes the answer's first line and its content type);
+# phase2/reads.rs gives POST /api/v1/fetch a ceiling for the whole call (top-level maxBytes);
+# facade/remote.rs sends a follower's stored forms to the leader after the forwarded request, which
+# no client sees; facade/mod.rs carries those through. "Binary bodies" and the fetch table say so.
 ---
 
 Every Queen node serves the whole API over plain HTTP with JSON bodies, on port 6632. There is no
@@ -83,9 +90,11 @@ and when a forwarded call cannot reach the leader it is 503 `retry`, both with `
 
 ## Requests and responses
 
-- Request bodies are JSON; send `Content-Type: application/json`.
-- Responses are `application/json`, except `GET /metrics/prometheus` (Prometheus text format) and
-  an empty pop, which is `204 No Content` with no body.
+- Request bodies are JSON; send `Content-Type: application/json`. A push and a transaction also
+  take a [binary body](#binary-bodies), from 2.3.0.
+- Responses are `application/json`, except `GET /metrics/prometheus` (Prometheus text format), an
+  empty pop, which is `204 No Content` with no body, and a pop asked for with `frames=true`
+  (`application/x-queen-pop`, [below](#a-pop-answered-with-the-stored-records)).
 - A message `payload` is any JSON value.
 - Query parameters are camelCase, like the body fields: `consumerGroup`, `subscriptionMode`,
   `leaseSeconds`, `commitOnDelivery`.
@@ -221,6 +230,7 @@ curl -s localhost:6632/api/v1/fetch -H 'content-type: application/json' -d '{
 |---|---|
 | `entries` | At most 1024. Each names a `queue`, a `partition` (a string, a number, or absent for `Default`) and a non-negative `offset`; a negative one answers 400. |
 | `entries[].maxBytes` | Default 1 MiB, clamped to 1 byte to 8 MiB. |
+| `maxBytes` (top level) | Optional, from 2.3.0: a ceiling for the whole call, counted in payload bytes. The entries are read in order while any of it is left, each for no more than what is left, and an entry reached with none left answers its bounds and no records. The first record of an entry is read whatever it weighs, so a call passes its ceiling by one record at most. Without it every entry is read to its own `maxBytes`. |
 | `maxWaitMs` | Default 0, at most 30,000. With a wait, the call holds until `minBytes` (default 1) are readable across the entries or the wait ends. |
 | An entry's `error` | `UNKNOWN_TOPIC_OR_PARTITION` for a queue that does not exist; `OFFSET_OUT_OF_RANGE` for an offset below `logStartOffset` or above `highWatermark`. A partition nobody has written yet answers no records and no error. |
 
@@ -260,6 +270,94 @@ only those written since a time.
 Each entry answers `partitions` and `next`, a cursor to pass back as `after` while the page was
 full; `limit` defaults to 1000 and is capped there. A queue that does not exist answers
 `UNKNOWN_TOPIC_OR_PARTITION`, a cursor that does not parse `BAD_CURSOR`. At most 1024 entries.
+
+## Binary bodies
+
+From 2.3.0 the push, ack, pop and transaction routes take compact forms next to the JSON ones.
+They are what the SDKs send when their
+[binary push, push compression and framed pop](/start/clients/#binary-push-push-compression-and-framed-pop)
+options are on; a JSON request is answered as before, and a broker up to 2.2.0 answers a binary
+body with 400. Admission, commands and verdicts are those of the JSON forms. Every integer is
+little-endian, and a `len, text` pair is a length followed by that many bytes of UTF-8.
+
+### A binary push
+
+`POST /api/v1/push` reads a body that starts with `QPB1` as:
+
+```text
+"QPB1" | u8 flags | [u32 raw_len, with flag 1] | body
+body:   u32 groups | per group: u16 len, queue | u16 len, partition | u32 n
+        | n x ([u16 len, transactionId, with flag 4] | u32 len, payload)
+```
+
+| Flag | Meaning |
+|---|---|
+| 1 | The body is one zstd frame that inflates to `raw_len` bytes (at most 256 MiB). |
+| 2 | Answer with the counts only: `{"count":3,"queued":3,"duplicate":0,"error":0}` in place of one object per message. |
+| 4 | Every item carries its `transactionId`; an empty one is minted by the broker. |
+| 8 | The groups are frames the client built and compressed, below. |
+
+A payload must be one JSON document, as in the JSON body, and is checked. A binary push carries no
+`traceId`. With flag 8 the body is:
+
+```text
+u32 groups | per group: u16 len, queue | u16 len, partition | u32 n | u32 z_len | z
+```
+
+where `z` is one zstd frame, declaring its content size, of the group's `n` messages in the layout
+the queue log stores:
+
+```text
+u32 body_len | u8 0 | u8[16] message id (a version-7 UUID) | u16 len, transactionId | payload
+```
+
+The broker inflates each group and checks every frame. When it has nothing to add to them (no
+producer identity, no payload encryption, no `transactionId` twice in the request), it stores the
+client's compressed bytes as they arrived and ships them to its followers, and compresses nothing
+itself. Flags 1 and 8 together are refused: a framed body is already compressed, and the weight of
+each group has to be readable from its header. A body the broker cannot follow answers 400 with
+the code `bad_body`.
+
+### An ack answered with counts
+
+`"answer": "counts"` in the body of `POST /api/v1/ack` or `/api/v1/ack/batch` answers
+`{"count":100,"success":100,"failed":0,"error":null}`, where `error` is the first refusal's
+reason, in place of one result per message. A broker up to 2.2.0 ignores the key and answers the
+list.
+
+### A pop answered with the stored records
+
+`frames=true` on the three pop routes answers `application/x-queen-pop`: the records as the queue
+log holds them, compressed frames included, so the broker inflates and renders nothing.
+
+```text
+"QPF1" | u8 1 | u32 len, a JSON object with the answer's own keys
+u16 len, queue | u16 len, leaseId | u16 len, consumerGroup | u32 claims
+per claim:  u64 partitionId | u16 len, partition | u64 start | u64 end | u32 deliveryAttempt | u32 records
+per record: u64 base_offset | i64 created_at_us | u32 count | u8 codec (0 raw, 1 zstd) | u32 len | bytes
+```
+
+A record's bytes are `count` messages in the stored layout above; message `i` has offset
+`base_offset + i` and belongs to the delivery when that offset lies in its claim's `start` to
+`end`, both included. The JSON object is `{"frames":true}` plus what the JSON answer carries
+beside its messages. Recognise the form by its first four bytes, not by the request: the broker
+answers in JSON when it runs with payload encryption, when a claim is conflated, or when a claimed
+record cannot be read as stored. An empty pop is `204`, as ever.
+
+### A binary transaction
+
+`POST /api/v1/transaction` reads a body that starts with `QTB1` as:
+
+```text
+"QTB1" | u8 flags | u32 len, head | u32 groups | the groups of a framed push
+```
+
+The head is the JSON transaction body without its push operations (it may be empty), and the
+pushes are the groups, built as for flag 8 above. In the answer's `results` the head's operations
+come first, then the groups' messages in the order written, then the riders (KV writes and timers),
+so a client that interleaved pushes and acks puts the results back in its own order. Flag 2
+leaves the pushes' and acks' results out and adds `"pushed"`, `"duplicate"` and `"acked"`; any
+other flag bit answers 400.
 
 ## Control plane: `/api/cp`
 

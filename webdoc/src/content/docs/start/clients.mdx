@@ -111,6 +111,9 @@ verifiedBy:
 # page states changes.
 # sourceOfTruth re-read 2026-10-09 (2.2.0): server/Cargo.toml moves the broker to 2.2.0; the clients
 # stay at 2.1.0, and the versions sentence says so.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): server/Cargo.toml moves the broker to 2.3.0, and
+# package.json, pyproject.toml and client-rust/Cargo.toml move the clients to 2.3.0. The versions
+# sentence and the last paragraph of "Binary push, push compression and framed pop" say so.
 # sourceOfTruth re-read 2026-10-09 (review fixes, PHP client 2.4.1): config/queen.php reads its
 # switch variables through filter_var; url, urls and the token this page shows are unchanged.
 # Nothing this page states changes.
@@ -273,8 +276,9 @@ you run Horizon today.
 </TabItem>
 </Tabs>
 
-The JavaScript, Python, Go, Rust and C++ clients are 2.1.0; the PHP client has its own version
-line. All of them talk to any 2.x broker (the broker is at 2.2.0), and locks need a 2.1 broker. The Go
+The JavaScript, Python, Go, Rust and C++ clients are 2.3.0; the PHP client has its own version
+line and is 2.5.0. All of them talk to any 2.x broker (the broker is at 2.3.0); locks need a 2.1
+broker, and the [binary forms](#binary-push-push-compression-and-framed-pop) a 2.3 one. The Go
 client's module path ends in `/v2`, as Go requires for a major version above 1.
 
 ## curl is a client
@@ -362,8 +366,8 @@ conflating group, and every pop on a broker that runs with an encryption key. Ac
 locks and ephemeral queues do not change. A transaction's results come back in the order the
 operations were added, as with JSON.
 
-The options ship in the client releases after 2.1.0 (PHP: after 2.4.3). Binary push and push
-compression need a broker newer than 2.2.0: a broker up to 2.2.0 answers a binary body with 400
+The options ship in the 2.3.0 clients (PHP client 2.5.0). Binary push and push compression need
+broker 2.3.0 or later on every node: a broker up to 2.2.0 answers a binary body with 400
 and the client does not fall back, so turn the two on after every broker of the cluster is
 upgraded. Framed pop is safe against any broker, because an older one ignores the request and
 answers JSON.

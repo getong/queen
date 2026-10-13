@@ -5,7 +5,7 @@ its data in its own replicated log.
 
 ```toml
 [dependencies]
-queen-mq = "2.1.0"
+queen-mq = "2.3.0"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 serde_json = "1"
 ```
@@ -261,7 +261,7 @@ from a backlog you asked to skip is ever handed to your handler.
 `pending` is log depth, `effectivePending` is handler invocations remaining, and
 `pending: 4_000_000, effectivePending: 12` is healthy.
 
-## Binary push, push compression and framed pop (a broker newer than 2.2.0)
+## Binary push, push compression and framed pop (broker 2.3.0 or later)
 
 Three opt-in forms of the push, pop and transaction requests. They change how the messages
 travel between the client and the broker and nothing else: the calls, their results,

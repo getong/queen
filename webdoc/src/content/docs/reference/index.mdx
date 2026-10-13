@@ -43,6 +43,11 @@ digest: >-
 # facade/mod.rs, facade/real.rs, handlers/raft.rs change what /health answers (raft.quorumAckMs;
 # ready needs the leader's majority within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states
 # changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs and the handlers read a binary push body
+# and a binary transaction body on the routes of the JSON ones, answer an ack with counts when its
+# body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
+# forms is planned, committed and answered as before. facade/mod.rs carries the fetch ceiling and
+# the framed pop flag through a request. The digest's routes, verdicts and codes are unchanged.
 ---
 
 This section is the contract written down: what every route takes and answers, what each status

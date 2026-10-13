@@ -256,7 +256,7 @@ compression and the unpacking then run in the PHP processes.
   stays JSON.
 - `push_compression` and `framed_pop` need the zstd PHP extension (`pecl install zstd`) in the
   workers and in every process that dispatches or resolves the `Queen` client.
-- `binary_push` and `push_compression` need a broker newer than 2.2.0. A broker up to 2.2.0
+- `binary_push` and `push_compression` need broker 2.3.0 or later. A broker up to 2.2.0
   answers a binary body with 400, so turn the two on after every broker of the cluster is
   upgraded. `framed_pop` is safe against any broker: an older one ignores the request and answers
   JSON.

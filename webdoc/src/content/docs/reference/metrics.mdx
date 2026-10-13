@@ -36,6 +36,14 @@ sourceOfTruth:
 # it is in the generated table.
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): the raft block of
 # GET /metrics gains quorumAckMs.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs, facade/mod.rs and handlers/raft.rs read
+# a binary push and transaction body, answer an ack with counts and a pop with the stored records,
+# only for a client that asks; a JSON request is served as before. facade/groups.rs answers the
+# cluster link's routes for every group of a standby and puts every group's link block in /health;
+# what it does to the Prometheus output is as before (on a node of several groups each group's
+# samples carry a group label). The metric families and their labels are the generated table's; the
+# dashboard's retention history is now written to its file by the metrics collector every
+# METRICS_FLUSH_MS, the interval this page already names for the metrics bucket.
 ---
 
 Every node serves Prometheus metrics in the text format on `GET /metrics/prometheus`. Each node

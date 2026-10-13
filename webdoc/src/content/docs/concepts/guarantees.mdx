@@ -33,6 +33,10 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-08 (a leader past its lease): replicator/mod.rs names one more propose error (`Unwritable`: a leader's log took no entry and the node still leads) and the call that drops a pipeline. No guarantee changes. Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): a node cut off from
 # the majority answers /health with 503 after five seconds; the limit says so.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): consume/mod.rs and consume/checkpoint.rs take a
+# checkpoint at once when an answer waits and none is in flight, and the idle scan works in turns.
+# An answer is still released only once the checkpoint holding its change has committed, so every
+# guarantee on this page stands; the Jepsen paragraphs name the campaigns as run.
 ---
 
 We test Queen with Jepsen, on five nodes, under kill -9, network partitions, process pauses, clock

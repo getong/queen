@@ -92,6 +92,14 @@ sourceOfTruth:
 # user owns now names the owner and the reader and shows su and securityContext.runAsUser; the
 # checks are unchanged. Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-10 (job metrics, PHP client 2.4.2): QueenServiceProvider records timed-out attempts and $this->fail() as failed attempts, so max_ms now covers a run cut by its timeout; the deploy advice still compares max_ms with shutdown_grace as stated. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0, PHP client 2.5.0): config/queen.php gains three keys,
+# binary_push, push_compression and framed_pop, all false by default and read from no environment
+# variable; QueenConnector validates them as booleans and gives them to the driver's client,
+# QueenServiceProvider to the container's client, and ApplicationSettings lists the three with the
+# connection's other settings on the dashboard's settings page, which this page does not enumerate.
+# On the broker, facade/real.rs reads the binary bodies and renders framed pops only for a client
+# that asks, planner/timers.rs only converts a frame's type, and phase2.rs and phase2/reads.rs give
+# a fetch call a ceiling for the whole call. Nothing this page states changes.
 ---
 
 The Laravel panel shows what this application's Queen supervisors are doing. It reads the state the

@@ -448,7 +448,7 @@ A transaction's `results` come back in the order you added the operations, as
 with JSON. The broker answers a binary transaction with the acks first and the
 pushes after them, and the client puts them back.
 
-**Requires a broker newer than 2.2.0** for `binary_push` and `push_compression`.
+**Requires broker 2.3.0 or later** for `binary_push` and `push_compression`.
 A broker up to 2.2.0 answers 400 to the binary bodies and the client does not
 fall back to JSON, so turn the two on after every broker of the cluster is
 upgraded. `framed_pop` is safe against any broker: an older one ignores the

@@ -333,7 +333,7 @@ and a standby replays each of them with its own group of the same number: group 
 reads group 1 of the source and nothing else. You set nothing per group. What both clusters need:
 
 - The same `QUEEN_RAFT_GROUPS` and the same `QUEEN_TENANT_GROUPS`.
-- A broker newer than 2.2.0, on both.
+- Broker 2.3.0 or later, on both.
 - A path from the standby's nodes to one more port of the source's nodes for each extra group.
   `QUEEN_LINK_SOURCE` still names the source's nodes with their raft port, which is group 0's.
   Group N of the source listens on that port plus N, and group N of the standby reads it there:

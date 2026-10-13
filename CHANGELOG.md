@@ -5,6 +5,8 @@ Release history for the Queen MQ server and client SDKs. Full release notes live
 
 ## Unreleased
 
+## 2.3.0
+
 **Three brokers, a million messages a second: end to end p99 from 100-160 ms to about 20.** Measured on
 2026-10-12 and 13 with the fixes below and this release's wire forms (binary push, compressed groups,
 framed pops, counted acks), 100 messages a request, a fresh cluster for every point, figures at
@@ -17,6 +19,91 @@ partitions; it is not carried on 10 partitions (the planner, with deduplication 
 partition) nor on 10M (memory: more than the 32 GB of these brokers). 2M msg/s with retention holds on
 1,000 partitions and rises slowly there. The runs, their method and what is not solved are in
 `benchmark-queen/2026-10-12-three-node-new-forms/NIGHT.md`.
+Kafka 4.3.1 ran on the same machines on 2026-10-13, worst load process on both sides: on 100
+partitions it reads 8 / 11 ms at 1M msg/s against Queen's 10 / 19 and 8 / 43 at 2M against 31 / 63,
+and carries 4M (13 / 243), which Queen does not; at 2M msg/s on 10,000 partitions it reads 64 / 134
+on 30 broker cores against Queen's 31 / 63 on 20, and it does not carry 100,000 partitions, where
+Queen reads 30 / 59. The benchmark pages of the site carry these figures.
+
+**The upgrade rolls both ways.** 2.3.0 changes nothing in the replicated state: the cluster version
+stays 6, and a cluster rolls from 2.2.0 to 2.3.0 and back one node at a time (a standby of several
+raft groups has a rule of its own, below). The JavaScript, Python and Rust clients are 2.3.0, the Go and C++ clients
+are tagged 2.3.0, and the PHP client is 2.5.0; `queen-protocol` stays 1.4.0. A 2.1.0 client and a
+2.3.0 broker, or the reverse with the new options off, talk as before.
+
+**Server: a binary push body, and a client's compressed batch stored as it is.** `POST /api/v1/push`
+reads a body that starts with `QPB1` as length-prefixed groups (queue, partition, payloads, a
+`transactionId` each when the client sends them) instead of a JSON document: same admission, same
+commands, same verdict for every message. A payload is still one JSON document, and is checked.
+The body may be one zstd frame, and its answer may be the counts alone (`count`, `queued`,
+`duplicate`, `error`). In its framed form (flag 8) each partition's batch is the frames the queue
+log stores, with message ids the client minted, compressed by the client as one zstd frame: the
+broker inflates and checks every frame and, when it has nothing to add (no producer identity, no
+payload encryption, no `transactionId` twice in the request), files the client's bytes as the
+stored record and ships them to its followers, so no node compresses them again. A node that does
+not lead hands those bytes to the leader with the forwarded request (`QUEEN_PUSH_FORWARD_STORED`,
+on; an older leader ignores them). A JSON push is read as before, with one clock read a request
+and borrowed strings. The layouts are in the HTTP reference.
+
+**Server: an ack answered with counts, a pop answered with the stored records.** An ack's body was
+parsed twice, the first time whole to read one key; it is parsed once, and its result is looked up
+by index (it was a scan of the batch for every item). `"answer": "counts"` in the body answers
+`count`, `success`, `failed` and the first `error` instead of one object per message. `frames=true`
+on the pop routes answers `application/x-queen-pop`: the records as the queue log holds them, zstd
+frames included, with the claims' offsets, so the broker inflates and renders nothing and the
+client unpacks. It falls back to the JSON answer when the broker runs with payload encryption,
+when a claim is conflated, or when a record is not readable as stored. Without the parameter a
+pop is the JSON one.
+
+**Server: a binary transaction body.** `POST /api/v1/transaction` reads a body that starts with
+`QTB1`: the JSON body without its pushes, then the pushes as framed groups, stored as the client
+compressed them when a group is a partition's whole append. Acks, required leases, KV, timers and
+the lease fence are those of the JSON body; results come back with the head's operations first,
+then the pushes, then the riders, and each SDK hands them back in the caller's order.
+
+**What the three forms measure against 2.2.0.** Same three machines, one queue of 200 partitions,
+a 60 s deduplication window, 2026-10-12 (`benchmark-queen/2026-10-12-three-node-new-forms/`,
+before the fixes below): at 1M msg/s the push goes from 8.1 / 39.9 ms to 5.2 / 8.7 and the end to
+end from 27.1 / 85.0 to 11.5 / 18.4; the three brokers use 13.4 cores for 16.4 and the load
+machines 8.3 for 14.4; offered more than it can take, the cluster pushes 2.45M msg/s for 1.57M.
+Transactions of 10 messages at 12,000 a second commit in 3.6 / 8.6 ms with the binary body for
+5.3 / 12.4 on 2.2.0, and the ceiling moves from 11,320 to 12,890 a second; of 100 messages at
+3,000 a second, 4.1 / 7.0 ms for 6.1 / 19.2. The ceilings are still the planner's: one cycle at a
+time for pushes, one serial phase for transactions that ack.
+
+**Clients: binary push, push compression and framed pop in all six SDKs and the Laravel driver.**
+Three options, off by default everywhere, so a client that does not set them sends and reads JSON
+byte for byte as before: `binaryPush`, `pushCompression`, `framedPop` in JavaScript and PHP,
+`binary_push`, `push_compression`, `framed_pop` in Python, Rust and C++, `BinaryPush`,
+`PushCompression`, `FramedPop` in Go, and three keys of the same names in `config/queen.php`. With
+binary push a push goes out as the binary body; with push compression too, as framed groups, and a
+transaction that pushes as the binary transaction body; with framed pop the client asks for the
+stored records and unpacks them into the messages a JSON pop returns. A push or a transaction that
+carries a trace id stays JSON. zstd comes from Node.js itself, from Python 3.14's standard library
+or the new `zstd` extra before it, from a dependency of the Go module and of the Rust crate, from
+libzstd in C++ (`-DQUEEN_CLIENT_ZSTD`, `-lzstd`), and from the zstd extension in PHP, which the
+client asks for at construction when an option needs it. Binary push and push compression need a
+2.3.0 broker on every node: an older broker answers the binary bodies with 400 and no client falls
+back. Framed pop is safe against any broker.
+
+**Server: the deduplication filter of a busy partition takes 4 bytes a hash.** A push whose
+`transactionId` the filter cannot rule out is looked up in the partition's rows, and for a
+partition at thousands of messages a second one lookup scanned about 1,400 rows of 100 hashes: at
+1.85M msg/s on 200 partitions 0.34 to 0.40% of the messages paid one and the planner's lanes spent
+62% of their time there. A filter generation of 8,192 hashes or more now has 32 bits a hash instead
+of 16; smaller ones, which a quiet partition has, keep 16. The lookups fell to 0.026% of the
+messages and the most that queue pushes rose from 1.85M to 2.45M msg/s. The filter grew from 0.56
+to 1.23 GB in that run, so its default cap (`QUEEN_RAFT_DEDUP_FRONT_MB`) goes from 2 to 4 GiB.
+
+**Server: the durable point every 250 ms, and the checkpoint written in steps.** The store's
+checkpoint was written once a second and synced in one go, and the raft log's own sync waited
+behind it. `QUEEN_RAFT_DURABLE_EVERY_MS` is now 250 by default, each node of a cluster writes its
+checkpoint at its own place in that period (`QUEEN_RAFT_DURABLE_PHASE_MS`; `off` is the 2.2.0
+behaviour), and on Linux the checkpoint is handed to the disk 8 MB at a time before its sync
+(`QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB`; `0` hands it over in one go). No answer ever waited for
+the durable point, and none does now: it bounds what a restart replays. The 2.2.0 figures above
+ran with its 1 s default, so how much of the p99 these settings alone move was not measured on
+three machines.
 
 **A command's recorded outcome leaves when its window ends, not ten seconds' worth at a time.**
 Every command's outcome is kept `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s) to answer a retry. The step

@@ -29,6 +29,9 @@ verifiedBy:
 # sealed for retention or its size and not for its age): batcher.rs warns in the log when the log
 # files' mapped indexes pass 70% of vm.max_map_count. The timer tick and the fire step are
 # untouched.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): planner/timers.rs only converts a frame's type (a
+# timer's message is built as before); batcher.rs retires recorded request outcomes as their window
+# ends, which no timer rule depends on. Nothing this page states changes.
 ---
 
 A timer schedules a message for later. When it fires, the broker pushes the message into a real

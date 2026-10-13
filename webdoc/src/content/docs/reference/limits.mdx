@@ -53,6 +53,9 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-12 (the byte rate): the proxy no longer caps the items of a push
 # (`QUEEN_PROXY_MAX_BATCH_ITEMS` is gone with the plan's `max_batch_items`); the row says so. No limit
 # of the broker changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): batcher.rs looks every QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS
+# (10) whether 256 recorded outcomes have left their window and retires them in its next cycle; the
+# window itself, QUEEN_RAFT_REQUEST_ID_WINDOW_S, is still 60 s, as the table says.
 ---
 
 Most of Queen's limits exist to keep one request from costing everyone else: a body cap, a ceiling

@@ -69,6 +69,13 @@ digest: >-
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): the /health sample
 # gains quorumAckMs (a single node of this build), and the list of pages gains the operator and
 # Terraform.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): server/Cargo.toml moves the broker to 2.3.0, which the
+# /health example shows, with cluster version 6 as before. replicator/raft/mod.rs, cluster.rs and
+# network.rs let each raft group of a standby replay the source's group of the same number, read on
+# the raft port plus the group's number, and a group's leader hands leadership only to a voter and
+# not during a membership change. facade/real.rs, facade/mod.rs and handlers/raft.rs read a binary
+# push and transaction body, answer an ack with counts and a pop with the stored records, only for a
+# client that asks; a JSON request is served as before. Nothing else this page states changes.
 ---
 
 A Queen node is one process and one directory. It serves the HTTP API, the dashboard and its
@@ -121,7 +128,7 @@ curl -s localhost:6632/health
 ```
 
 ```json
-{"status":"healthy","engine":"raft","version":"2.2.0","raft":{"role":"leader","leader":true,"term":1,"applied":1,"commit":1,"lag":0,"quorumAckMs":0,"storageReady":true,"clusterVersion":6,"kinds":6}}
+{"status":"healthy","engine":"raft","version":"2.3.0","raft":{"role":"leader","leader":true,"term":1,"applied":1,"commit":1,"lag":0,"quorumAckMs":0,"storageReady":true,"clusterVersion":6,"kinds":6}}
 ```
 
 The dashboard is at `http://localhost:6632/`, and the image carries the CLI, so

@@ -69,6 +69,9 @@ sourceOfTruth:
 # binary_push, push_compression and framed_pop, off by default, and QueenConnector checks them and
 # gives them to the client. The comparison names none of them, and the keys and behaviour it does name
 # are unchanged. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0, PHP client 2.5.0): phase2/reads.rs gives POST
+# /api/v1/fetch a ceiling for the whole call; the reads this page describes are answered as before.
+# Nothing this page states changes.
 ---
 
 Queen is an alternative to Horizon and its Redis queue. Both run ordinary Laravel jobs and both
