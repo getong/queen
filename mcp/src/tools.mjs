@@ -584,7 +584,7 @@ const TOOLS = [
     name: "setup",
     title: "Set up a Queen feature",
     description:
-      "Step-by-step setup for one Queen feature: KV state, timers, locks and semaphores, stream processing, ephemeral queues (request/reply), Kafka clients through the Kafka facade, the Postgres source (tables into queues), the Postgres sink (queues into tables), and the S3 sink (queues into object storage). Returns the docs for it, the exact calls in the given language's SDK, and the traps that apply. Call with no feature to list them.",
+      "Step-by-step setup for one Queen feature: KV state, timers, locks and semaphores, stream processing, ephemeral queues (request/reply), the binary wire forms of the SDKs for high message rates (binary push, push compression, framed pop), Kafka clients through the Kafka facade, the Postgres source (tables into queues), the Postgres sink (queues into tables), and the S3 sink (queues into object storage). Returns the docs for it, the exact calls in the given language's SDK, and the traps that apply. Call with no feature to list them.",
     inputSchema: {
       type: "object",
       properties: {

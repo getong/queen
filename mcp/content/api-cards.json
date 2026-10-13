@@ -2716,5 +2716,138 @@
         }
       ]
     }
+  },
+  "wire-forms": {
+    "js": {
+      "status": "full",
+      "calls": [
+        {
+          "call": "new Queen({ url, binaryPush: true })",
+          "does": "A push, direct or buffered, goes out as one length-prefixed binary body instead of a JSON document. Needs no zstd.",
+          "source": "clients/client-js/client-v2/utils/defaults.js:45"
+        },
+        {
+          "call": "new Queen({ url, binaryPush: true, pushCompression: true })",
+          "does": "With binaryPush: each partition's batch is framed as the broker stores it, with message ids minted in the client, and compressed with zstd here; the broker stores those bytes without compressing again. A transaction that pushes sends its pushes the same way. zstd is Node.js's own (node:zlib).",
+          "source": "clients/client-js/client-v2/utils/defaults.js:51"
+        },
+        {
+          "call": "new Queen({ url, framedPop: true })",
+          "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same messages a JSON pop returns: handlers, acks and the consumer loop do not change.",
+          "source": "clients/client-js/client-v2/utils/defaults.js:55"
+        }
+      ],
+      "notes": "All three are off by default, and with them off the client sends and reads JSON as before. They change how messages travel and nothing else: the calls, their results, deduplication and the delivery guarantees stay the same. Binary push and push compression need broker 2.3.0 on EVERY node: a broker up to 2.2.0 answers the binary bodies with 400 and the client does not fall back to JSON, so turn them on after the last node is upgraded. Framed pop is safe against any broker (an older one ignores the request and answers JSON). The client itself stays on JSON for a push that carries a trace id, for a transaction with no push or with a trace id on a push, for a pop of a conflating group, and for every pop on a broker that runs with an encryption key. Turn them on when the broker's CPU or the network limits a high message rate; at a few hundred messages a second they change nothing you can measure."
+    },
+    "python": {
+      "status": "full",
+      "calls": [
+        {
+          "call": "Queen(url, binary_push=True)",
+          "does": "A push, direct or buffered, goes out as one length-prefixed binary body instead of a JSON document. Needs no zstd.",
+          "source": "clients/client-py/queen/client.py:101"
+        },
+        {
+          "call": "Queen(url, binary_push=True, push_compression=True)",
+          "does": "With binary_push: each partition's batch is framed as the broker stores it and compressed with zstd in the client; a transaction that pushes sends its pushes the same way. zstd is the standard library's from Python 3.14; before it install the extra: pip install \"queen-mq[zstd]\".",
+          "source": "clients/client-py/queen/client.py:102"
+        },
+        {
+          "call": "Queen(url, framed_pop=True)",
+          "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same messages a JSON pop returns. Needs zstd, as above.",
+          "source": "clients/client-py/queen/client.py:103"
+        }
+      ],
+      "notes": "All three are off by default, and with them off the client sends and reads JSON as before. They change how messages travel and nothing else: the calls, their results, deduplication and the delivery guarantees stay the same. Binary push and push compression need broker 2.3.0 on EVERY node: a broker up to 2.2.0 answers the binary bodies with 400 and the client does not fall back to JSON, so turn them on after the last node is upgraded. Framed pop is safe against any broker (an older one ignores the request and answers JSON). The client itself stays on JSON for a push that carries a trace id, for a transaction with no push or with a trace id on a push, for a pop of a conflating group, and for every pop on a broker that runs with an encryption key. Turn them on when the broker's CPU or the network limits a high message rate; at a few hundred messages a second they change nothing you can measure."
+    },
+    "go": {
+      "status": "full",
+      "calls": [
+        {
+          "call": "queen.New(queen.ClientConfig{URLs: urls, BinaryPush: true})",
+          "does": "A push travels as one length-prefixed binary body instead of a JSON document.",
+          "source": "clients/client-go/types.go:92"
+        },
+        {
+          "call": "queen.ClientConfig{BinaryPush: true, PushCompression: true}",
+          "does": "With BinaryPush: each partition's batch is framed as the broker stores it and compressed with zstd in the client; a transaction that pushes sends its pushes the same way. zstd is a dependency of the module.",
+          "source": "clients/client-go/types.go:104"
+        },
+        {
+          "call": "queen.ClientConfig{FramedPop: true}",
+          "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same Message values a JSON pop returns: QueueBuilder.Pop and the consumer loop do not change.",
+          "source": "clients/client-go/types.go:97"
+        }
+      ],
+      "notes": "All three are off by default, and with them off the client sends and reads JSON as before. They change how messages travel and nothing else: the calls, their results, deduplication and the delivery guarantees stay the same. Binary push and push compression need broker 2.3.0 on EVERY node: a broker up to 2.2.0 answers the binary bodies with 400 and the client does not fall back to JSON, so turn them on after the last node is upgraded. Framed pop is safe against any broker (an older one ignores the request and answers JSON). The client itself stays on JSON for a push that carries a trace id, for a transaction with no push or with a trace id on a push, for a pop of a conflating group, and for every pop on a broker that runs with an encryption key. Turn them on when the broker's CPU or the network limits a high message rate; at a few hundred messages a second they change nothing you can measure."
+    },
+    "rust": {
+      "status": "full",
+      "calls": [
+        {
+          "call": "Config::new(url).binary_push(true)",
+          "does": "A push travels as one length-prefixed binary body instead of a JSON document.",
+          "source": "clients/client-rust/src/config.rs:268"
+        },
+        {
+          "call": "Config::new(url).binary_push(true).push_compression(true)",
+          "does": "With binary_push: each partition's batch is framed as the broker stores it and compressed with zstd in the client; a transaction that pushes sends its pushes the same way. zstd is a dependency of the crate.",
+          "source": "clients/client-rust/src/config.rs:275"
+        },
+        {
+          "call": "Config::new(url).framed_pop(true)",
+          "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same messages a JSON pop returns.",
+          "source": "clients/client-rust/src/config.rs:281"
+        }
+      ],
+      "notes": "All three are off by default, and with them off the client sends and reads JSON as before. They change how messages travel and nothing else: the calls, their results, deduplication and the delivery guarantees stay the same. Binary push and push compression need broker 2.3.0 on EVERY node: a broker up to 2.2.0 answers the binary bodies with 400 and the client does not fall back to JSON, so turn them on after the last node is upgraded. Framed pop is safe against any broker (an older one ignores the request and answers JSON). The client itself stays on JSON for a push that carries a trace id, for a transaction with no push or with a trace id on a push, for a pop of a conflating group, and for every pop on a broker that runs with an encryption key. Turn them on when the broker's CPU or the network limits a high message rate; at a few hundred messages a second they change nothing you can measure."
+    },
+    "php": {
+      "status": "full",
+      "calls": [
+        {
+          "call": "new Queen(['url' => $url, 'binaryPush' => true])",
+          "does": "A push travels as one length-prefixed binary body instead of a JSON document. Needs no extension.",
+          "source": "clients/client-php/src/Http/HttpClient.php:76"
+        },
+        {
+          "call": "new Queen(['url' => $url, 'binaryPush' => true, 'pushCompression' => true])",
+          "does": "With binaryPush: each partition's batch is framed as the broker stores it and compressed with zstd in the client; a transaction that pushes sends its pushes the same way. Needs the zstd extension (pecl install zstd): without it the constructor throws.",
+          "source": "clients/client-php/src/Http/HttpClient.php:77"
+        },
+        {
+          "call": "new Queen(['url' => $url, 'framedPop' => true])",
+          "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same messages a JSON pop returns. Needs the zstd extension.",
+          "source": "clients/client-php/src/Http/HttpClient.php:78"
+        },
+        {
+          "call": "config/queen.php: 'binary_push' => true, 'push_compression' => true, 'framed_pop' => true",
+          "does": "The same three under Laravel: plain keys of config/queen.php, read from no environment variable, for the queue connection and the container's client. Workers and every process that dispatches need the zstd extension for the last two.",
+          "source": "clients/client-php/config/queen.php:83"
+        }
+      ],
+      "notes": "All three are off by default, and with them off the client sends and reads JSON as before. They change how messages travel and nothing else: the calls, their results, deduplication and the delivery guarantees stay the same. Binary push and push compression need broker 2.3.0 on EVERY node: a broker up to 2.2.0 answers the binary bodies with 400 and the client does not fall back to JSON, so turn them on after the last node is upgraded. Framed pop is safe against any broker (an older one ignores the request and answers JSON). The client itself stays on JSON for a push that carries a trace id, for a transaction with no push or with a trace id on a push, for a pop of a conflating group, and for every pop on a broker that runs with an encryption key. Turn them on when the broker's CPU or the network limits a high message rate; at a few hundred messages a second they change nothing you can measure."
+    },
+    "cpp": {
+      "status": "full",
+      "calls": [
+        {
+          "call": "ClientConfig config; config.binary_push = true;",
+          "does": "A push travels as one length-prefixed binary body instead of a JSON document. Needs no zstd.",
+          "source": "clients/client-cpp/queen_client.hpp:163"
+        },
+        {
+          "call": "config.push_compression = true;",
+          "does": "With binary_push: each partition's batch is framed as the broker stores it and compressed with zstd in the client. Compile with -DQUEEN_CLIENT_ZSTD and link -lzstd: zstd is opt-in at build time.",
+          "source": "clients/client-cpp/queen_client.hpp:170"
+        },
+        {
+          "call": "config.framed_pop = true;",
+          "does": "Pops ask for the stored records (frames=true) and the client unpacks them into the same messages a JSON pop returns. Needs the same build flag and library.",
+          "source": "clients/client-cpp/queen_client.hpp:175"
+        }
+      ],
+      "notes": "All three are off by default, and with them off the client sends and reads JSON as before. They change how messages travel and nothing else: the calls, their results, deduplication and the delivery guarantees stay the same. Binary push and push compression need broker 2.3.0 on EVERY node: a broker up to 2.2.0 answers the binary bodies with 400 and the client does not fall back to JSON, so turn them on after the last node is upgraded. Framed pop is safe against any broker (an older one ignores the request and answers JSON). The client itself stays on JSON for a push that carries a trace id, for a transaction with no push or with a trace id on a push, for a pop of a conflating group, and for every pop on a broker that runs with an encryption key. Turn them on when the broker's CPU or the network limits a high message rate; at a few hundred messages a second they change nothing you can measure."
+    }
   }
 }
