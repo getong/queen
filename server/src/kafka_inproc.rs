@@ -239,6 +239,7 @@ impl LocalDispatch for RouterDispatch {
         entries: Vec<queen_kafka::queen::FetchEntry>,
         max_wait_ms: i64,
         min_bytes: i64,
+        max_bytes: Option<i64>,
     ) -> BoxFuture<'static, Result<LocalAnswer<Vec<queen_kafka::queen::RawFetched>>, String>> {
         let Some((rsm, auth)) = self.kv.clone() else {
             return Box::pin(async { Err("no state machine for the record path".to_string()) });
@@ -249,12 +250,14 @@ impl LocalDispatch for RouterDispatch {
             }
             let max_wait_ms = max_wait_ms.clamp(0, 30_000) as u64;
             let tenant = crate::tenant::Tenant::default_tenant().as_str().to_string();
-            let ctx = crate::rsm::facade::ReqCtx::new(
+            let mut ctx = crate::rsm::facade::ReqCtx::new(
                 tenant,
                 crate::rsm::facade::Deadline::after(
                     RECORDS_BUDGET + Duration::from_millis(max_wait_ms),
                 ),
             );
+            // The route's top-level `maxBytes`: the ceiling of the whole call.
+            ctx.fetch_max_bytes = max_bytes.map(|b| b.max(1) as usize);
             // The route's bounds: a negative offset refuses the whole read, as
             // a 400 does there; a budget is clamped to 1 B..8 MiB.
             if entries.iter().any(|e| e.offset < 0) {
@@ -1254,6 +1257,48 @@ mod tests {
         let b = routed.fetch_raw(&small, 0, 0, None).await.unwrap();
         assert_eq!(a, b);
         assert_eq!(a[0].records.len(), 1);
+
+        // A ceiling on the whole call, the route's top-level `maxBytes`: the
+        // entries are read in order while any of it is left, and the ones
+        // reached with none left answer their bounds, or their error, and no
+        // records. Spent by the first record of the first entry:
+        let first = Some(envelope.len() as i64);
+        let a = typed
+            .fetch_owned(entries.clone(), 0, 0, first, None)
+            .await
+            .expect("typed, under a ceiling");
+        let b = routed
+            .fetch_owned(entries.clone(), 0, 0, first, None)
+            .await
+            .expect("routed, under a ceiling");
+        assert_eq!(a, b, "the record path's ceiling is the route's");
+        assert_eq!(a[0].records.len(), 1);
+        assert_eq!(a[0].high_watermark, 4);
+        assert!(a[1].records.is_empty() && a[1].error.is_none());
+        assert_eq!((a[1].high_watermark, a[1].log_start_offset), (1, 0));
+        assert_eq!(a[3].error.as_deref(), Some("UNKNOWN_TOPIC_OR_PARTITION"));
+        assert_eq!(a[4].error.as_deref(), Some("OFFSET_OUT_OF_RANGE"));
+        // With a byte left after the first entry, the second is read, and its
+        // first record goes whatever it weighs: a call never stalls on one.
+        let whole = typed.fetch_raw(&entries, 0, 0, None).await.unwrap();
+        let first_entry: usize = whole[0].records.iter().map(|r| r.payload.len()).sum();
+        let one_more = Some(first_entry as i64 + 1);
+        let a = typed
+            .fetch_owned(entries.clone(), 0, 0, one_more, None)
+            .await
+            .unwrap();
+        let b = routed
+            .fetch_owned(entries.clone(), 0, 0, one_more, None)
+            .await
+            .unwrap();
+        assert_eq!(a, b);
+        assert_eq!((a[0].records.len(), a[1].records.len()), (4, 1));
+        // And a ceiling nothing reaches changes nothing.
+        let roomy = typed
+            .fetch_owned(entries.clone(), 0, 0, Some(1 << 30), None)
+            .await
+            .unwrap();
+        assert_eq!(roomy, whole);
 
         // The route's refusal, read the same way.
         let bad = vec![FetchEntry {

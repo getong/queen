@@ -381,6 +381,7 @@ impl RaftFacade {
                 producer_sub: ctx.producer_sub.clone(),
                 stored_forms: None,
                 pop_frames: false,
+                fetch_max_bytes: None,
             };
             self.submit_effects(
                 &chunk_ctx,

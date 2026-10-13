@@ -447,8 +447,8 @@ pub struct Pushed {
 pub const MAX_FETCH_ENTRIES: usize = 1024;
 /// Max long-poll parking the broker will honour, milliseconds.
 pub const MAX_FETCH_WAIT_MS: i64 = 30_000;
-/// Max per-entry `maxBytes`, over the COMPRESSED segment bytes the read is
-/// budgeted in — not over the records that come back. See [`FetchEntry`].
+/// Max per-entry `maxBytes`, over the stored payload bytes the read is
+/// budgeted in. See [`FetchEntry`].
 pub const MAX_FETCH_BYTES_PER_ENTRY: i64 = 8 * 1024 * 1024;
 
 /// One partition to read, as `POST /api/v1/fetch` takes it.
@@ -463,12 +463,12 @@ pub struct FetchEntry {
     /// broker rejects the whole batch rather than reading a Kafka sentinel as
     /// an offset (server/src/handlers/fetch.rs).
     pub offset: i64,
-    /// Ceiling on the COMPRESSED segment bytes this entry may read. It is not
-    /// the size of the answer — Queen segments are zstd'd, so a budget spent in
-    /// compressed bytes buys an unknown, usually larger, number of record
-    /// bytes. Kafka's own `max_bytes` is documented as a soft limit for exactly
-    /// this class of reason (KIP-74), which is what makes the mapping in
-    /// `handlers::fetch` legitimate rather than approximate-and-hoping.
+    /// Ceiling on the payload bytes this entry may read, counted as they are
+    /// stored: each record's whole JSON document, uncompressed. For a Kafka
+    /// record that is its envelope, which is larger than the record itself
+    /// (`handlers::fetch` asks for the client's number in stored bytes). The
+    /// first record is read whatever it weighs, the soft limit Kafka documents
+    /// for its own `max_bytes` (KIP-74).
     #[serde(rename = "maxBytes")]
     pub max_bytes: i64,
 }
@@ -1157,6 +1157,33 @@ pub trait QueenApi: Send + Sync + 'static {
         })
     }
 
+    /// [`QueenApi::fetch_raw`] for a caller with no further use for its
+    /// entries, under a ceiling on the whole call: the same read and the same
+    /// answer. In-process, [`HttpQueen`] hands the entries to the broker as
+    /// they are, where a borrowed list has to be copied first, a queue and a
+    /// partition name for every entry of every fetch.
+    ///
+    /// `max_bytes` is the route's top-level `maxBytes`: the payload bytes the
+    /// call may read over all its entries, each still held to its own. The
+    /// entries are read in order while any of it is left, and one reached with
+    /// none left is answered its bounds and no records. `None` asks for no
+    /// ceiling. The default lends the entries to `fetch_raw` and has none to
+    /// send: a double answers everything it holds.
+    fn fetch_owned<'a>(
+        &'a self,
+        entries: Vec<FetchEntry>,
+        max_wait_ms: i64,
+        min_bytes: i64,
+        max_bytes: Option<i64>,
+        token: Option<&'a str>,
+    ) -> BoxFuture<'a, Result<Vec<RawFetched>>> {
+        let _ = max_bytes;
+        Box::pin(async move {
+            self.fetch_raw(&entries, max_wait_ms, min_bytes, token)
+                .await
+        })
+    }
+
     /// `POST /api/v1/kv` — one answer per operation, aligned to `ops` by the
     /// `index` each answer carries. `ops` must already be within
     /// [`MAX_KV_OPS_PER_CALL`] and [`MAX_KV_KEYS_PER_CALL`], because exceeding
@@ -1463,15 +1490,17 @@ pub trait LocalDispatch: Send + Sync + 'static {
     }
 
     /// `POST /api/v1/fetch` answered as records, without the JSON: the
-    /// broker's own read of these entries, long poll included.
+    /// broker's own read of these entries, long poll included. `max_bytes` is
+    /// the route's top-level `maxBytes`, the ceiling of the whole call.
     fn fetch_records(
         &self,
         bearer: Option<String>,
         entries: Vec<FetchEntry>,
         max_wait_ms: i64,
         min_bytes: i64,
+        max_bytes: Option<i64>,
     ) -> BoxFuture<'static, std::result::Result<LocalAnswer<Vec<RawFetched>>, String>> {
-        let _ = (bearer, entries, max_wait_ms, min_bytes);
+        let _ = (bearer, entries, max_wait_ms, min_bytes, max_bytes);
         Box::pin(async { Err("this broker does not serve records in-process".to_string()) })
     }
 }
@@ -1559,6 +1588,36 @@ impl HttpQueen {
     /// Whether this client reaches Queen without leaving the process.
     pub fn is_local(&self) -> bool {
         matches!(self.transport, Transport::Local(_))
+    }
+
+    /// `POST /api/v1/fetch` through the route, read as [`RawFetched`].
+    /// `max_bytes` is the whole call's ceiling, the body's top-level
+    /// `maxBytes` when there is one.
+    async fn fetch_routed(
+        &self,
+        entries: &[FetchEntry],
+        max_wait_ms: i64,
+        min_bytes: i64,
+        max_bytes: Option<i64>,
+        token: Option<&str>,
+    ) -> Result<Vec<RawFetched>> {
+        let payload = serde_json::to_string(&FetchBody {
+            entries,
+            max_wait_ms,
+            min_bytes,
+            max_bytes,
+        })
+        .map_err(|e| Error::Body(format!("cannot serialize the fetch body: {e}")))?;
+        let body = self
+            .call(
+                "POST",
+                "/api/v1/fetch",
+                token,
+                Some(payload),
+                Some(fetch_timeout(max_wait_ms)),
+            )
+            .await?;
+        align_raw_fetch_results(&body, entries)
     }
 
     /// One call. `timeout` overrides the client's default budget
@@ -1957,6 +2016,7 @@ impl QueenApi for HttpQueen {
                 entries,
                 max_wait_ms,
                 min_bytes,
+                max_bytes: None,
             })
             .map_err(|e| Error::Body(format!("cannot serialize the fetch body: {e}")))?;
             // The ONE call that overrides the client's budget. See
@@ -2025,50 +2085,49 @@ impl QueenApi for HttpQueen {
     ) -> BoxFuture<'a, Result<Vec<RawFetched>>> {
         Box::pin(async move {
             if let Some(dispatch) = self.records_dispatch() {
-                let budget = fetch_timeout(max_wait_ms);
-                let answer = tokio::time::timeout(
-                    budget,
-                    dispatch.fetch_records(
-                        token.map(str::to_string),
-                        entries.to_vec(),
+                return fetch_dispatched(
+                    dispatch.as_ref(),
+                    entries.to_vec(),
+                    max_wait_ms,
+                    min_bytes,
+                    None,
+                    token,
+                )
+                .await;
+            }
+            self.fetch_routed(entries, max_wait_ms, min_bytes, None, token)
+                .await
+        })
+    }
+
+    fn fetch_owned<'a>(
+        &'a self,
+        entries: Vec<FetchEntry>,
+        max_wait_ms: i64,
+        min_bytes: i64,
+        max_bytes: Option<i64>,
+        token: Option<&'a str>,
+    ) -> BoxFuture<'a, Result<Vec<RawFetched>>> {
+        Box::pin(async move {
+            match self.records_dispatch() {
+                // Handed over: the broker's read takes the names as they are.
+                Some(dispatch) => {
+                    fetch_dispatched(
+                        dispatch.as_ref(),
+                        entries,
                         max_wait_ms,
                         min_bytes,
-                    ),
-                )
-                .await
-                .map_err(|_| {
-                    Error::Transport(format!(
-                        "in-process fetch timed out after {} ms",
-                        budget.as_millis()
-                    ))
-                })?
-                .map_err(Error::Transport)?;
-                return match answer {
-                    LocalAnswer::Done(read) if read.len() == entries.len() => Ok(read),
-                    LocalAnswer::Done(read) => Err(Error::Body(format!(
-                        "fetch answered {} entries for {} asked",
-                        read.len(),
-                        entries.len()
-                    ))),
-                    LocalAnswer::Refused(r) => Err(refused(r)),
-                };
+                        max_bytes,
+                        token,
+                    )
+                    .await
+                }
+                // Over HTTP they are only serialized.
+                None => {
+                    self.fetch_routed(&entries, max_wait_ms, min_bytes, max_bytes, token)
+                        .await
+                }
             }
-            let payload = serde_json::to_string(&FetchBody {
-                entries,
-                max_wait_ms,
-                min_bytes,
-            })
-            .map_err(|e| Error::Body(format!("cannot serialize the fetch body: {e}")))?;
-            let body = self
-                .call(
-                    "POST",
-                    "/api/v1/fetch",
-                    token,
-                    Some(payload),
-                    Some(fetch_timeout(max_wait_ms)),
-                )
-                .await?;
-            align_raw_fetch_results(&body, entries)
         })
     }
 
@@ -2573,6 +2632,48 @@ fn fetch_timeout(max_wait_ms: i64) -> Duration {
     REQUEST_TIMEOUT + Duration::from_millis(max_wait_ms.clamp(0, MAX_FETCH_WAIT_MS) as u64)
 }
 
+/// One fetch through the in-process record path
+/// ([`LocalDispatch::fetch_records`]), under the budget an HTTP one gets. It
+/// takes the entries: the broker task they are read on outlives this call's
+/// borrow, and its read keeps each name.
+async fn fetch_dispatched(
+    dispatch: &dyn LocalDispatch,
+    entries: Vec<FetchEntry>,
+    max_wait_ms: i64,
+    min_bytes: i64,
+    max_bytes: Option<i64>,
+    token: Option<&str>,
+) -> Result<Vec<RawFetched>> {
+    let asked = entries.len();
+    let budget = fetch_timeout(max_wait_ms);
+    let answer = tokio::time::timeout(
+        budget,
+        dispatch.fetch_records(
+            token.map(str::to_string),
+            entries,
+            max_wait_ms,
+            min_bytes,
+            max_bytes,
+        ),
+    )
+    .await
+    .map_err(|_| {
+        Error::Transport(format!(
+            "in-process fetch timed out after {} ms",
+            budget.as_millis()
+        ))
+    })?
+    .map_err(Error::Transport)?;
+    match answer {
+        LocalAnswer::Done(read) if read.len() == asked => Ok(read),
+        LocalAnswer::Done(read) => Err(Error::Body(format!(
+            "fetch answered {} entries for {asked} asked",
+            read.len()
+        ))),
+        LocalAnswer::Refused(r) => Err(refused(r)),
+    }
+}
+
 /// The fetch request body. Borrowed, like [`PushBody`].
 #[derive(Serialize)]
 struct FetchBody<'a> {
@@ -2581,6 +2682,10 @@ struct FetchBody<'a> {
     max_wait_ms: i64,
     #[serde(rename = "minBytes")]
     min_bytes: i64,
+    /// The whole call's ceiling. Left out when there is none, so a fetch
+    /// without one is the body it always was.
+    #[serde(rename = "maxBytes", skip_serializing_if = "Option::is_none")]
+    max_bytes: Option<i64>,
 }
 
 /// One entry of the fetch response, with the two fields that say WHICH entry it
@@ -3516,6 +3621,9 @@ pub mod testing {
         pub push_reply: Mutex<Option<Vec<Pushed>>>,
         /// Every fetch, as it was sent: the entries plus the long-poll pair.
         pub fetches: Mutex<Vec<(Vec<FetchEntry>, i64, i64)>>,
+        /// The ceiling of each fetch that was handed over
+        /// ([`QueenApi::fetch_owned`]), in call order.
+        pub fetch_ceilings: Mutex<Vec<Option<i64>>>,
         /// When set, the next fetch answers this verbatim.
         pub fetch_reply: Mutex<Option<Vec<Fetched>>>,
         /// When set, the next fetch fails with exactly this error.
@@ -3694,6 +3802,7 @@ pub mod testing {
                 push_error: Mutex::new(None),
                 push_reply: Mutex::new(None),
                 fetches: Mutex::new(Vec::new()),
+                fetch_ceilings: Mutex::new(Vec::new()),
                 fetch_reply: Mutex::new(None),
                 fetch_error: Mutex::new(None),
                 logs: Mutex::new(HashMap::new()),
@@ -4393,6 +4502,23 @@ pub mod testing {
                         }
                     })
                     .collect())
+            })
+        }
+
+        /// Keeps the ceiling it was asked with, then reads as the default
+        /// does: the double answers everything its log holds.
+        fn fetch_owned<'a>(
+            &'a self,
+            entries: Vec<FetchEntry>,
+            max_wait_ms: i64,
+            min_bytes: i64,
+            max_bytes: Option<i64>,
+            token: Option<&'a str>,
+        ) -> BoxFuture<'a, Result<Vec<RawFetched>>> {
+            self.fetch_ceilings.lock().unwrap().push(max_bytes);
+            Box::pin(async move {
+                self.fetch_raw(&entries, max_wait_ms, min_bytes, token)
+                    .await
             })
         }
 

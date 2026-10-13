@@ -116,6 +116,9 @@ struct FetchBody {
     max_wait_ms: Option<u64>,
     #[serde(rename = "minBytes", default)]
     min_bytes: Option<i64>,
+    /// The ceiling of the whole call, beside each entry's own `maxBytes`.
+    #[serde(rename = "maxBytes", default)]
+    max_bytes: Option<i64>,
 }
 
 /// The partition NAME a fetch entry addresses: a string, a number spelled in
@@ -292,6 +295,11 @@ impl RaftFacade {
         }
         let max_wait = request.max_wait_ms.unwrap_or(0).min(30_000);
         let min_bytes = request.min_bytes.unwrap_or(1).max(0) as usize;
+        // The call's own ceiling ([`Self::fetch_once`]).
+        let ctx = ReqCtx {
+            fetch_max_bytes: request.max_bytes.map(|b| b.max(1) as usize),
+            ..ctx
+        };
         let asks: Vec<crate::rsm::facade::RecordFetch> = request
             .entries
             .into_iter()
@@ -434,6 +442,17 @@ impl RaftFacade {
     /// Answers the entries in order, and the payload bytes they carry (each
     /// record counted as at least one byte), which is what `min_bytes` is
     /// measured in.
+    ///
+    /// A call may carry a ceiling of its own ([`ReqCtx::fetch_max_bytes`]),
+    /// counted in the same bytes. The entries are then read in order while
+    /// any of it is left, each for no more than what is left, and an entry
+    /// reached with none left answers its bounds and no records: the caller
+    /// sees where that partition stands and reads it on its next call.
+    /// Without it a call read every entry to its own budget, up to 1024 times
+    /// 8 MiB, however little of that its caller could use (a Kafka consumer
+    /// behind on a thousand partitions is answered 32 MiB of a gigabyte). The
+    /// first record of an entry is read whatever it weighs, so a call goes
+    /// over its ceiling by one record at most and never stalls on a large one.
     async fn fetch_once(
         &self,
         ctx: &ReqCtx,
@@ -446,6 +465,7 @@ impl RaftFacade {
         let qlog = self.qlog_reader.clone();
         let reader = self.reader.clone();
         let encryption = self.encryption.clone();
+        let max_total = ctx.fetch_max_bytes.map(|total| total.max(1));
         let asks: Vec<(String, String, u64, usize)> = asks
             .iter()
             .map(|a| (a.queue.clone(), a.partition.clone(), a.offset, a.max_bytes))
@@ -503,6 +523,22 @@ impl RaftFacade {
                     });
                     continue;
                 }
+                // What is left of the call's ceiling is this entry's, when it
+                // is less than its own. The ceiling is at least a byte, so
+                // none left means something was read.
+                let max_bytes = match max_total {
+                    Some(total) if bytes >= total => {
+                        out.push(RecordsFetched {
+                            records: Vec::new(),
+                            high_watermark: high,
+                            log_start_offset: log_start,
+                            error: None,
+                        });
+                        continue;
+                    }
+                    Some(total) => max_bytes.min(total - bytes),
+                    None => max_bytes,
+                };
                 let mut records: Vec<RecordRead> = Vec::new();
                 let mut used = 0usize;
                 walk_payloads(
@@ -1688,6 +1724,14 @@ const FETCH_RECORDS_PER_ENTRY: usize = 10_000;
 /// offset, its segment's write time, its transaction id when `want_txn`, its
 /// payload as a slice of the segment it was read from (no copy) and whether that
 /// payload is encrypted. Same walk, same bounds, same gaps.
+///
+/// From the queue log a record is read as a pop renders it: looked up under
+/// its log's lock and read with the lock released, the next one looked for in
+/// the file this one came from. The walk used to hold the lock across the
+/// read: a fetch from an old offset reads from the disk, and the appends to
+/// that log waited behind it. Once it finds its records out of the page
+/// cache, the walk also has the kernel read ahead
+/// ([`QLogReader::read_owned_ahead`]).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn walk_payloads(
     reader: &crate::rsm::segments::Reader,
@@ -1702,11 +1746,12 @@ pub(super) fn walk_payloads(
     mut cb: impl FnMut(u64, i64, Option<String>, bytes::Bytes, bool) -> bool,
 ) -> Result<(), RsmError> {
     let qid = qlog.map(|_| QLogReader::queue_id_of(tenant, queue));
+    let mut ahead = crate::rsm::qlog::set::ReadAhead::default();
     let mut n = 0usize;
     while off < high && n < limit {
         let got = match (qlog, qid) {
             (Some(q), Some(id)) => q
-                .read_owned(id, part.pid, off)
+                .read_owned_ahead(id, part.pid, off, high, &mut ahead)
                 .map_err(|e| RsmError::Internal(format!("qlog read: {e}")))?
                 .map(|r| (r.base_offset, r.created_at_us, r.count, r.payload)),
             _ => reader

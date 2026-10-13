@@ -156,6 +156,10 @@ pub struct ReqCtx {
     /// The client asked for a pop's messages as the stored records
     /// (`frames=true`), not rendered as JSON.
     pub pop_frames: bool,
+    /// A fetch's ceiling on the payload bytes of the whole call (`maxBytes`
+    /// beside `entries`), whatever each entry may read by itself. `None`: the
+    /// entries' own budgets are the only ones.
+    pub fetch_max_bytes: Option<usize>,
 }
 
 /// One push group's stored form: its frames, concatenated, as one zstd frame.
@@ -177,6 +181,7 @@ impl ReqCtx {
             producer_sub: None,
             stored_forms: None,
             pop_frames: false,
+            fetch_max_bytes: None,
         }
     }
 
