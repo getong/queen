@@ -1,6 +1,6 @@
 ---
 title: "Queen vs Kafka on NVMe, 10 to 10M partitions"
-description: "Queen 2.3.0 and Kafka 4.3.1 on the same three GCP nodes with local NVMe disks, 2026-10-14: 3,000,000 msg/s of 256-byte messages and 1,000,000 msg/s of 1 KB messages from 10 to 10,000,000 partitions, the ceiling on 1,000 partitions, the machines, every setting, how we measured, and how ext4 had cost Kafka most of its tail."
+description: "Queen 2.3.0 and Kafka 4.3.1 on the same three GCP nodes with local NVMe disks, 2026-10-14: 3,000,000 msg/s of 256-byte messages and 1,000,000 msg/s of 1 KB messages from 10 to 10,000,000 partitions, the ceiling on 1,000 partitions, Kafka with an fsync on every append and in queue mode (share groups), the machines, every setting, how we measured, and how ext4 had cost Kafka most of its tail."
 type: reference
 tier: operate
 sidebar:
@@ -273,6 +273,39 @@ with 256-byte messages Kafka's p99 swung from 89 to 440 ms over the first 50 sec
 100 partitions): a page that is still filling is written again on every flush. Each point ran once,
 and Kafka's ceiling with an fsync on every append was not measured.
 
+## Kafka in queue mode
+
+Every Kafka number above uses a consumer group: each partition goes to one consumer, which commits
+one offset for everything it has read. Queen keeps a lease and an ack for every message. Kafka has
+a mode that does the same: a share group ([KIP-932](https://cwiki.apache.org/confluence/display/KAFKA/KIP-932%3A+Queues+for+Kafka)),
+where the partition's leader locks each record for the consumer that fetched it (30 s by
+default), takes an ack per record, redelivers what is released or times out, and writes that state
+to an internal topic through a share coordinator. Several consumers read one partition at once, so
+a share group keeps no order within a partition; Queen gives a partition to one worker at a time.
+We ran it at 3,000,000 msg/s with the same 297 consumers as the consumer-group runs, which needs
+`group.share.max.size` raised from its default of 200 to 300. Each consumer accepts every record it
+polls, and the acks travel with its next fetch. p50 / p99 in milliseconds (worst window in
+brackets) and the cores of the three brokers:
+
+| Partitions | Kafka, share group | cores | Kafka, consumer group | cores | Queen | cores |
+|---|---|---|---|---|---|---|
+| 100 | 6.3 / 9.3 (9) | 24.6 | 6.0 / 7.5 (8) | 18.5 | 21 / 54 (65) | 23.0 |
+| 1,000 | 6.4 / 23 (23) | 35.0 | 6.0 / 8.1 (8) | 21.0 | 21 / 47 (56) | 22.4 |
+| 10,000 | 78 / 163 (206) | 52.2 | 8.4 / 21 (78) | 52.8 | 24 / 61 (66) | 23.3 |
+
+<Figure id="benchmarks/gcp-3m-modes-p99" />
+
+<Figure id="benchmarks/gcp-3m-modes-p50" />
+
+<Figure id="benchmarks/gcp-3m-modes-cpu" />
+
+Every point was carried. Keeping a state for every record costs Kafka CPU first: 6 more cores at
+100 partitions and 14 more at 1,000, where it uses half again Queen's. At 1,000 partitions its p99
+nearly triples, to 23 ms, while its median stays near 6 ms. At 10,000 partitions the share group
+reads 78 / 163 ms, three times Queen's 24 / 61, on more than twice Queen's cores. Kafka still
+answers a write from memory here, where Queen waits for two fsyncs. Each point ran once, and the
+share group was not run at 10 partitions or above 10,000.
+
 ## Where each one leads
 
 Kafka, run as on this page, leads up to 10,000 partitions: on the median, by three to six times
@@ -285,6 +318,9 @@ ms, and did not carry 50,000, where Queen keeps the same latency on the same 14 
 answers a write only after two disks have it. With an fsync on every append Kafka keeps its lead at
 100 partitions and with 1 KB messages at 1,000, loses its steadiness at 1,000 with 256-byte
 messages, and falls behind Queen at 10,000 ([the runs](#kafka-with-an-fsync-on-every-append)).
+In queue mode, with a lock and an ack per record as Queen keeps, Kafka keeps its median up to
+1,000 partitions, needs more CPU than Queen from 1,000, and at 10,000 is three times slower than
+Queen ([the runs](#kafka-in-queue-mode)).
 
 ## What these runs do not show
 
@@ -293,6 +329,8 @@ messages, and falls behind Queen at 10,000 ([the runs](#kafka-with-an-fsync-on-e
   the filesystem and the thread pools together.
 - Repeated runs for every point: most points ran once.
 - Kafka at 1,000,000 and 10,000,000 partitions, and Queen at 25,000 and 50,000.
+- Kafka's share group at 10 partitions, above 10,000, with 1 KB messages, or at its ceiling, and
+  with consumers that release or reject records.
 
 ## The runs
 
@@ -303,6 +341,7 @@ ceilings), `m3lazy-*` (Queen with `lazytime`), `xq3-*`, `xq1k-*` and `xqc-*` (Qu
 Kafka: the `*-gcp24-xfs-t24` folders of `benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/` for
 the tables, `1x1000-<rate>k-gcp24-xfs-t24` for its ceiling; on ext4, `*-gcp24` (writeback from
 5%), `*-gcp24-dbb1g` (from 1 GiB) and `*-gcp24-lazy` (`lazytime`); `*-probe` and `*-lazytime` hold
-the kernel samples in `dstate/`. The load generators are `qload` and `kload` of
+the kernel samples in `dstate/`; `*-gcp24-xfs-t24-share` are the share-group runs (`kload
+-group-protocol share`). The load generators are `qload` and `kload` of
 [`benchmark-queen/2026-09-30-kafka-pulsar/mqload`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-09-30-kafka-pulsar/mqload).
 [How we measure](/benchmarks/methodology/) describes the harness.

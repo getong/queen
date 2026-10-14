@@ -121,6 +121,30 @@ func (c *consumers) start(ctx context.Context) error {
 		}
 		gs.local++
 		kcn := &kconsumer{ci: ci, gs: gs, cs: c.run.NewConsumerStats(), proc: core.NewProcSim(cfg.ProcUs)}
+		if c.kc.groupProtocol == "share" {
+			// KIP-932 (2026-10-14): a share group, every polled record ACCEPTed; the acks ride on the next
+			// ShareFetch. The group reads from the log start (share.auto.offset.reset=earliest, set once).
+			if gs.local == 1 {
+				if err := c.adm.shareEarliest(c.ctx, gname); err != nil {
+					return err
+				}
+			}
+			opts := append(c.kc.baseOpts(fmt.Sprintf("kload-%d-c%d", cfg.LoaderIndex, ci)),
+				kgo.ShareGroup(gname),
+				kgo.ConsumeTopics(gs.topics...),
+				kgo.ShareMaxRecords(int32(cfg.Poll)),
+				kgo.FetchMaxWait(c.kc.fetchMaxWait),
+			)
+			cl, err := kgo.NewClient(append(opts, c.extraOpts...)...)
+			if err != nil {
+				return err
+			}
+			kcn.cl = cl
+			c.list = append(c.list, kcn)
+			c.wg.Add(1)
+			go c.loop(kcn)
+			continue
+		}
 		opts := append(c.kc.baseOpts(fmt.Sprintf("kload-%d-c%d", cfg.LoaderIndex, ci)),
 			kgo.ConsumerGroup(gname),
 			kgo.ConsumeTopics(gs.topics...),
@@ -248,6 +272,10 @@ func (c *consumers) loop(k *kconsumer) {
 			c.readerTxn.ReaderSaw()
 		}
 		k.proc.Add(load + warm)
+		if c.kc.groupProtocol == "share" {
+			fs.EachRecord(func(r *kgo.Record) { r.Ack(kgo.AckAccept) })
+			continue
+		}
 		switch cfg.Ack {
 		case "async":
 			// the process-wide cap on in-flight commits: block, never shed
@@ -323,7 +351,7 @@ func (c *consumers) waitStable(ctx context.Context) error {
 			// member can hold every partition while the coordinator's target
 			// already moved some elsewhere (KIP-848 reconciles at the
 			// heartbeat cadence; classic cooperative rebalances in two phases).
-			full := gs.remoteFull && (gs.expected != gs.local || gs.assigned.Load() == gs.total)
+			full := gs.remoteFull && (gs.expected != gs.local || gs.assigned.Load() == gs.total || c.kc.groupProtocol == "share")
 			if !full {
 				gs.fullSince = time.Time{}
 			} else if gs.fullSince.IsZero() {
@@ -379,6 +407,36 @@ func (c *consumers) describeGroups(ctx context.Context) {
 	sort.Strings(names)
 	dctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	if c.kc.groupProtocol == "share" {
+		ds, _ := c.adm.adm.DescribeShareGroups(dctx, names...)
+		for _, n := range names {
+			gs := c.groups[n]
+			d, ok := ds[n]
+			gs.remoteFull = false
+			if !ok || d.Err != nil {
+				gs.remoteState = "?"
+				continue
+			}
+			union := map[string]map[int32]struct{}{}
+			for _, m := range d.Members {
+				for t, ps := range m.Assignment {
+					if union[t] == nil {
+						union[t] = map[int32]struct{}{}
+					}
+					for p := range ps {
+						union[t][p] = struct{}{}
+					}
+				}
+			}
+			assigned := 0
+			for _, ps := range union {
+				assigned += len(ps)
+			}
+			gs.remoteState, gs.remoteMembers, gs.remoteAssigned = d.GroupState, len(d.Members), assigned
+			gs.remoteFull = d.GroupState == "Stable" && len(d.Members) == gs.expected && int64(assigned) == gs.total
+		}
+		return
+	}
 	if c.kc.groupProtocol == "consumer" {
 		ds, _ := c.adm.adm.DescribeConsumerGroups(dctx, names...)
 		for _, n := range names {

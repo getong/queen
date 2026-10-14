@@ -138,7 +138,7 @@ Environment variables:
 | `-inflight-per-broker` | 5 | idempotent producers always run 5 per broker in franz-go (Kafka's max), and the option cannot be set with idempotency. A value other than 5 only prints a WARN |
 | `-batch-max-bytes` | 1048576 | ProducerBatchMaxBytes |
 | `-fetch-max-wait` / `-fetch-min-bytes` / `-fetch-max-partition-bytes` | 500ms / 1 / 1048576 | fetch settings |
-| `-group-protocol` | consumer | `consumer` = KIP-848 (ServerSideBalancer, broker "uniform" assignor); `classic` = cooperative-sticky |
+| `-group-protocol` | consumer | `consumer` = KIP-848 (ServerSideBalancer, broker "uniform" assignor); `classic` = cooperative-sticky; `share` = a KIP-932 share group (queue mode: every polled record ACCEPTed, the acks ride on the next fetch; the group set to `share.auto.offset.reset=earliest`; more than 200 members need the broker's `group.share.max.size` raised) |
 | `-session-timeout` | 45s | classic session timeout. KIP-848 uses the broker's `group.consumer.session.timeout.ms` |
 | `-stable-wait` / `-group-timeout` | 3s / 180s | group stability judgement (see below) |
 | `-create-chunk` | 5000 | partitions per CreateTopics/CreatePartitions request |

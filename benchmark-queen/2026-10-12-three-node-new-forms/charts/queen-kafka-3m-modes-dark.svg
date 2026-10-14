@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 840" width="960" height="840" role="img" aria-label="Queen 2.3.0 and Kafka 4.3.1 in streaming and queue mode at 3 million messages a second: end to end p99 and p50 and broker CPU from 10 to 10 million partitions">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}</style>
+<rect width="960" height="840" rx="10" fill="#0d1117"/>
+<text x="40.0" y="38.0" font-size="19" font-weight="600" fill="#e6edf3" text-anchor="start">3M msg/s: Queen next to Kafka in streaming and in queue mode</text>
+<text x="40.0" y="60.0" font-size="12.5" font-weight="400" fill="#8b949e" text-anchor="start">One queue or topic, 256-byte messages in batches of 100 · three c4-standard-24-lssd brokers with local NVMe on GCP · 2026-10-14</text>
+<line x1="40" y1="94" x2="64" y2="94" stroke="#5a96f5" stroke-width="3"/>
+<circle cx="52" cy="94" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/>
+<text x="72.0" y="98.5" font-size="13" font-weight="400" fill="#b9c1ca" text-anchor="start">Queen 2.3.0</text>
+<line x1="181.2" y1="94" x2="205.2" y2="94" stroke="#f0854a" stroke-width="3"/>
+<circle cx="193.2" cy="94" r="4" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/>
+<text x="213.2" y="98.5" font-size="13" font-weight="400" fill="#b9c1ca" text-anchor="start">Kafka, consumer group (streaming)</text>
+<line x1="480.8" y1="94" x2="504.8" y2="94" stroke="#3fd09c" stroke-width="3"/>
+<circle cx="492.8" cy="94" r="4" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/>
+<text x="512.8" y="98.5" font-size="13" font-weight="400" fill="#b9c1ca" text-anchor="start">Kafka, share group (queue mode)</text>
+<text x="30.0" y="130.0" font-size="14" font-weight="600" fill="#e6edf3" text-anchor="start">End to end p99, ms</text>
+<line x1="70" y1="372.0" x2="820" y2="372.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="376.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">0</text>
+<line x1="70" y1="317.0" x2="820" y2="317.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="321.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">50</text>
+<line x1="70" y1="262.0" x2="820" y2="262.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="266.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">100</text>
+<line x1="70" y1="207.0" x2="820" y2="207.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="211.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">150</text>
+<line x1="70" y1="152.0" x2="820" y2="152.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="156.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">200</text>
+<line x1="70" y1="372" x2="820" y2="372" stroke="#30363d" stroke-width="1"/>
+<text x="88.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10</text>
+<text x="207.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">100</text>
+<text x="326.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">1k</text>
+<text x="445.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10k</text>
+<text x="564.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">100k</text>
+<text x="683.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">1M</text>
+<text x="802.0" y="390.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10M</text>
+<path d="M88.0,288.1 L207.0,312.6 L326.0,319.9 L445.0,304.7 L564.0,314.3 L683.0,325.5 L802.0,321.0" fill="none" stroke="#5a96f5" stroke-width="3.0" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Queen 2.3.0, 10 partitions · e2e p50 37.1 ms, p99 76.3 ms · broker cores 18.6</title><circle cx="88.0" cy="288.1" r="12" fill="transparent"/><circle cx="88.0" cy="288.1" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 100 partitions · e2e p50 21.1 ms, p99 54.0 ms · broker cores 23.0</title><circle cx="207.0" cy="312.6" r="12" fill="transparent"/><circle cx="207.0" cy="312.6" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 1k partitions · e2e p50 20.9 ms, p99 47.4 ms · broker cores 22.4</title><circle cx="326.0" cy="319.9" r="12" fill="transparent"/><circle cx="326.0" cy="319.9" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 10k partitions · e2e p50 24.2 ms, p99 61.2 ms · broker cores 23.3</title><circle cx="445.0" cy="304.7" r="12" fill="transparent"/><circle cx="445.0" cy="304.7" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 100k partitions · e2e p50 23.4 ms, p99 52.5 ms · broker cores 23.4</title><circle cx="564.0" cy="314.3" r="12" fill="transparent"/><circle cx="564.0" cy="314.3" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 1M partitions · e2e p50 23.2 ms, p99 42.2 ms · broker cores 23.0</title><circle cx="683.0" cy="325.5" r="12" fill="transparent"/><circle cx="683.0" cy="325.5" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 10M partitions · e2e p50 23.4 ms, p99 46.3 ms · broker cores 23.4</title><circle cx="802.0" cy="321.0" r="12" fill="transparent"/><circle cx="802.0" cy="321.0" r="4" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<path d="M88.0,360.2 L207.0,363.7 L326.0,363.1 L445.0,349.0" fill="none" stroke="#f0854a" stroke-width="3.0" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Kafka, consumer group (streaming), 10 partitions · e2e p50 6.4 ms, p99 10.7 ms · broker cores 14.9</title><circle cx="88.0" cy="360.2" r="12" fill="transparent"/><circle cx="88.0" cy="360.2" r="4" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 100 partitions · e2e p50 6.0 ms, p99 7.5 ms · broker cores 18.5</title><circle cx="207.0" cy="363.7" r="12" fill="transparent"/><circle cx="207.0" cy="363.7" r="4" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 1k partitions · e2e p50 6.0 ms, p99 8.1 ms · broker cores 21.0</title><circle cx="326.0" cy="363.1" r="12" fill="transparent"/><circle cx="326.0" cy="363.1" r="4" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 10k partitions · e2e p50 8.4 ms, p99 20.9 ms · broker cores 52.8</title><circle cx="445.0" cy="349.0" r="12" fill="transparent"/><circle cx="445.0" cy="349.0" r="4" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 100k partitions · not carried</title><circle cx="564.0" cy="372.0" r="12" fill="transparent"/><circle cx="564.0" cy="372.0" r="4" fill="#0d1117" stroke="#f0854a" stroke-width="2"/></g>
+<path d="M207.0,361.8 L326.0,347.1 L445.0,192.9" fill="none" stroke="#3fd09c" stroke-width="3.0" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Kafka, share group (queue mode), 100 partitions · e2e p50 6.3 ms, p99 9.3 ms · broker cores 24.6</title><circle cx="207.0" cy="361.8" r="12" fill="transparent"/><circle cx="207.0" cy="361.8" r="4" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, share group (queue mode), 1k partitions · e2e p50 6.4 ms, p99 22.7 ms · broker cores 35.0</title><circle cx="326.0" cy="347.1" r="12" fill="transparent"/><circle cx="326.0" cy="347.1" r="4" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, share group (queue mode), 10k partitions · e2e p50 78.3 ms, p99 162.8 ms · broker cores 52.2</title><circle cx="445.0" cy="192.9" r="12" fill="transparent"/><circle cx="445.0" cy="192.9" r="4" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<text x="455.0" y="196.9" font-size="12" font-weight="600" fill="#e6edf3" text-anchor="start">Kafka queue mode 163 ms</text>
+<text x="812.0" y="325.0" font-size="12" font-weight="600" fill="#e6edf3" text-anchor="start">Queen 46 ms</text>
+<text x="455.0" y="353.0" font-size="12" font-weight="600" fill="#e6edf3" text-anchor="start">Kafka streaming 21 ms</text>
+<text x="88.0" y="406.0" font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">queue mode: not run</text>
+<text x="564.0" y="406.0" font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">streaming: not carried</text>
+<text x="564.0" y="419.0" font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">queue mode: not run</text>
+<text x="564.0" y="432.0" font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">Queen: 1 pop timed out</text>
+<text x="683.0" y="406.0" font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">Kafka: not run</text>
+<text x="802.0" y="406.0" font-size="10" font-weight="400" fill="#8b949e" text-anchor="middle">Kafka: not run</text>
+<text x="445.0" y="460.0" font-size="12.5" font-weight="400" fill="#b9c1ca" text-anchor="middle">partitions (each step is 10 times the one before)</text>
+<text x="30.0" y="506.0" font-size="12.5" font-weight="600" fill="#b9c1ca" text-anchor="start">End to end p50, ms</text>
+<line x1="70" y1="664.0" x2="430" y2="664.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="668.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">0</text>
+<line x1="70" y1="630.0" x2="430" y2="630.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="634.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">20</text>
+<line x1="70" y1="596.0" x2="430" y2="596.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="600.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">40</text>
+<line x1="70" y1="562.0" x2="430" y2="562.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="566.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">60</text>
+<line x1="70" y1="528.0" x2="430" y2="528.0" stroke="#21262d" stroke-width="1"/>
+<text x="62.0" y="532.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">80</text>
+<line x1="70" y1="664" x2="430" y2="664" stroke="#30363d" stroke-width="1"/>
+<text x="88.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10</text>
+<text x="196.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">1k</text>
+<text x="304.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">100k</text>
+<text x="412.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10M</text>
+<path d="M88.0,600.9 L142.0,628.1 L196.0,628.5 L250.0,622.9 L304.0,624.2 L358.0,624.6 L412.0,624.2" fill="none" stroke="#5a96f5" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Queen 2.3.0, 10 partitions · e2e p50 37.1 ms, p99 76.3 ms · broker cores 18.6</title><circle cx="88.0" cy="600.9" r="12" fill="transparent"/><circle cx="88.0" cy="600.9" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 100 partitions · e2e p50 21.1 ms, p99 54.0 ms · broker cores 23.0</title><circle cx="142.0" cy="628.1" r="12" fill="transparent"/><circle cx="142.0" cy="628.1" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 1k partitions · e2e p50 20.9 ms, p99 47.4 ms · broker cores 22.4</title><circle cx="196.0" cy="628.5" r="12" fill="transparent"/><circle cx="196.0" cy="628.5" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 10k partitions · e2e p50 24.2 ms, p99 61.2 ms · broker cores 23.3</title><circle cx="250.0" cy="622.9" r="12" fill="transparent"/><circle cx="250.0" cy="622.9" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 100k partitions · e2e p50 23.4 ms, p99 52.5 ms · broker cores 23.4</title><circle cx="304.0" cy="624.2" r="12" fill="transparent"/><circle cx="304.0" cy="624.2" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 1M partitions · e2e p50 23.2 ms, p99 42.2 ms · broker cores 23.0</title><circle cx="358.0" cy="624.6" r="12" fill="transparent"/><circle cx="358.0" cy="624.6" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 10M partitions · e2e p50 23.4 ms, p99 46.3 ms · broker cores 23.4</title><circle cx="412.0" cy="624.2" r="12" fill="transparent"/><circle cx="412.0" cy="624.2" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<path d="M88.0,653.1 L142.0,653.7 L196.0,653.7 L250.0,649.7" fill="none" stroke="#f0854a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Kafka, consumer group (streaming), 10 partitions · e2e p50 6.4 ms, p99 10.7 ms · broker cores 14.9</title><circle cx="88.0" cy="653.1" r="12" fill="transparent"/><circle cx="88.0" cy="653.1" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 100 partitions · e2e p50 6.0 ms, p99 7.5 ms · broker cores 18.5</title><circle cx="142.0" cy="653.7" r="12" fill="transparent"/><circle cx="142.0" cy="653.7" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 1k partitions · e2e p50 6.0 ms, p99 8.1 ms · broker cores 21.0</title><circle cx="196.0" cy="653.7" r="12" fill="transparent"/><circle cx="196.0" cy="653.7" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 10k partitions · e2e p50 8.4 ms, p99 20.9 ms · broker cores 52.8</title><circle cx="250.0" cy="649.7" r="12" fill="transparent"/><circle cx="250.0" cy="649.7" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 100k partitions · not carried</title><circle cx="304.0" cy="664.0" r="12" fill="transparent"/><circle cx="304.0" cy="664.0" r="3.2" fill="#0d1117" stroke="#f0854a" stroke-width="2"/></g>
+<path d="M142.0,653.3 L196.0,653.2 L250.0,530.8" fill="none" stroke="#3fd09c" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Kafka, share group (queue mode), 100 partitions · e2e p50 6.3 ms, p99 9.3 ms · broker cores 24.6</title><circle cx="142.0" cy="653.3" r="12" fill="transparent"/><circle cx="142.0" cy="653.3" r="3.2" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, share group (queue mode), 1k partitions · e2e p50 6.4 ms, p99 22.7 ms · broker cores 35.0</title><circle cx="196.0" cy="653.2" r="12" fill="transparent"/><circle cx="196.0" cy="653.2" r="3.2" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, share group (queue mode), 10k partitions · e2e p50 78.3 ms, p99 162.8 ms · broker cores 52.2</title><circle cx="250.0" cy="530.8" r="12" fill="transparent"/><circle cx="250.0" cy="530.8" r="3.2" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<text x="490.0" y="506.0" font-size="12.5" font-weight="600" fill="#b9c1ca" text-anchor="start">CPU of the three brokers, cores (of 72)</text>
+<line x1="530" y1="664.0" x2="890" y2="664.0" stroke="#21262d" stroke-width="1"/>
+<text x="522.0" y="668.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">0</text>
+<line x1="530" y1="618.7" x2="890" y2="618.7" stroke="#21262d" stroke-width="1"/>
+<text x="522.0" y="622.7" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">20</text>
+<line x1="530" y1="573.3" x2="890" y2="573.3" stroke="#21262d" stroke-width="1"/>
+<text x="522.0" y="577.3" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">40</text>
+<line x1="530" y1="528.0" x2="890" y2="528.0" stroke="#21262d" stroke-width="1"/>
+<text x="522.0" y="532.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">60</text>
+<line x1="530" y1="664" x2="890" y2="664" stroke="#30363d" stroke-width="1"/>
+<text x="548.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10</text>
+<text x="656.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">1k</text>
+<text x="764.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">100k</text>
+<text x="872.0" y="682.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="middle">10M</text>
+<path d="M548.0,621.8 L602.0,611.9 L656.0,613.2 L710.0,611.2 L764.0,611.0 L818.0,611.9 L872.0,611.0" fill="none" stroke="#5a96f5" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Queen 2.3.0, 10 partitions · e2e p50 37.1 ms, p99 76.3 ms · broker cores 18.6</title><circle cx="548.0" cy="621.8" r="12" fill="transparent"/><circle cx="548.0" cy="621.8" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 100 partitions · e2e p50 21.1 ms, p99 54.0 ms · broker cores 23.0</title><circle cx="602.0" cy="611.9" r="12" fill="transparent"/><circle cx="602.0" cy="611.9" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 1k partitions · e2e p50 20.9 ms, p99 47.4 ms · broker cores 22.4</title><circle cx="656.0" cy="613.2" r="12" fill="transparent"/><circle cx="656.0" cy="613.2" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 10k partitions · e2e p50 24.2 ms, p99 61.2 ms · broker cores 23.3</title><circle cx="710.0" cy="611.2" r="12" fill="transparent"/><circle cx="710.0" cy="611.2" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 100k partitions · e2e p50 23.4 ms, p99 52.5 ms · broker cores 23.4</title><circle cx="764.0" cy="611.0" r="12" fill="transparent"/><circle cx="764.0" cy="611.0" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 1M partitions · e2e p50 23.2 ms, p99 42.2 ms · broker cores 23.0</title><circle cx="818.0" cy="611.9" r="12" fill="transparent"/><circle cx="818.0" cy="611.9" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Queen 2.3.0, 10M partitions · e2e p50 23.4 ms, p99 46.3 ms · broker cores 23.4</title><circle cx="872.0" cy="611.0" r="12" fill="transparent"/><circle cx="872.0" cy="611.0" r="3.2" fill="#5a96f5" stroke="#0d1117" stroke-width="1.5"/></g>
+<path d="M548.0,630.2 L602.0,622.1 L656.0,616.4 L710.0,544.3" fill="none" stroke="#f0854a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Kafka, consumer group (streaming), 10 partitions · e2e p50 6.4 ms, p99 10.7 ms · broker cores 14.9</title><circle cx="548.0" cy="630.2" r="12" fill="transparent"/><circle cx="548.0" cy="630.2" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 100 partitions · e2e p50 6.0 ms, p99 7.5 ms · broker cores 18.5</title><circle cx="602.0" cy="622.1" r="12" fill="transparent"/><circle cx="602.0" cy="622.1" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 1k partitions · e2e p50 6.0 ms, p99 8.1 ms · broker cores 21.0</title><circle cx="656.0" cy="616.4" r="12" fill="transparent"/><circle cx="656.0" cy="616.4" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 10k partitions · e2e p50 8.4 ms, p99 20.9 ms · broker cores 52.8</title><circle cx="710.0" cy="544.3" r="12" fill="transparent"/><circle cx="710.0" cy="544.3" r="3.2" fill="#f0854a" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, consumer group (streaming), 100k partitions · not carried</title><circle cx="764.0" cy="664.0" r="12" fill="transparent"/><circle cx="764.0" cy="664.0" r="3.2" fill="#0d1117" stroke="#f0854a" stroke-width="2"/></g>
+<path d="M602.0,608.2 L656.0,584.7 L710.0,545.7" fill="none" stroke="#3fd09c" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>Kafka, share group (queue mode), 100 partitions · e2e p50 6.3 ms, p99 9.3 ms · broker cores 24.6</title><circle cx="602.0" cy="608.2" r="12" fill="transparent"/><circle cx="602.0" cy="608.2" r="3.2" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, share group (queue mode), 1k partitions · e2e p50 6.4 ms, p99 22.7 ms · broker cores 35.0</title><circle cx="656.0" cy="584.7" r="12" fill="transparent"/><circle cx="656.0" cy="584.7" r="3.2" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<g><title>Kafka, share group (queue mode), 10k partitions · e2e p50 78.3 ms, p99 162.8 ms · broker cores 52.2</title><circle cx="710.0" cy="545.7" r="12" fill="transparent"/><circle cx="710.0" cy="545.7" r="3.2" fill="#3fd09c" stroke="#0d1117" stroke-width="1.5"/></g>
+<text x="890.0" y="700.0" font-size="11" font-weight="400" fill="#8b949e" text-anchor="end">hollow: not carried</text>
+<text x="40.0" y="734.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="start">Each value: the median of three steady 10 s windows, each window the slowest of nine load processes; a fresh cluster a point, 70 s of load.</text>
+<text x="40.0" y="752.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="start">Queen: a write is answered after the leader's fsync and one follower's; one worker per partition at a time, acks counted per message.</text>
+<text x="40.0" y="770.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="start">Kafka: RF 3, acks=all, idempotent, lz4; writes answered from the page cache (no fsync); XFS, 24/12/12 threads, writeback from 1 GB.</text>
+<text x="40.0" y="788.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="start">Streaming: a consumer group, one offset per partition. Queue mode: a share group (KIP-932), every record locked and acked; 297 consumers</text>
+<text x="40.0" y="806.0" font-size="11.5" font-weight="400" fill="#8b949e" text-anchor="start">(group.share.max.size raised from 200 to 300). Streaming also carried 25k partitions (p50 / p99 58 / 105 ms, 57 cores), not 50k.</text>
+</svg>

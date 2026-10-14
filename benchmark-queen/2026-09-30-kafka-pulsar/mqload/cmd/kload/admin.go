@@ -13,6 +13,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"mqload/internal/core"
 )
@@ -354,4 +355,29 @@ func (a *admin) printConfigs(ctx context.Context, run *core.Run, topic string) {
 		fmt.Printf("  [config] %s = %s\n", k, out[k])
 	}
 	run.SetInfo("configs", out)
+}
+
+// shareEarliest sets the share group's share.auto.offset.reset to earliest (KIP-932: the default "latest" delivers
+// only what is produced after the group starts). A GROUP config resource (type 32), set before any member joins.
+func (a *admin) shareEarliest(ctx context.Context, group string) error {
+	req := kmsg.NewPtrIncrementalAlterConfigsRequest()
+	res := kmsg.NewIncrementalAlterConfigsRequestResource()
+	res.ResourceType = kmsg.ConfigResourceTypeGroupConfig
+	res.ResourceName = group
+	cfg := kmsg.NewIncrementalAlterConfigsRequestResourceConfig()
+	cfg.Name = "share.auto.offset.reset"
+	v := "earliest"
+	cfg.Value = &v
+	res.Configs = append(res.Configs, cfg)
+	req.Resources = append(req.Resources, res)
+	resp, err := req.RequestWith(ctx, a.cl)
+	if err != nil {
+		return fmt.Errorf("share group %s: set share.auto.offset.reset: %w", group, err)
+	}
+	for _, r := range resp.Resources {
+		if err := kerr.ErrorForCode(r.ErrorCode); err != nil {
+			return fmt.Errorf("share group %s: set share.auto.offset.reset: %w", group, err)
+		}
+	}
+	return nil
 }

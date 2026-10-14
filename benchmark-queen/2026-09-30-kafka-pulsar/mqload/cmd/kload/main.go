@@ -78,7 +78,7 @@ func (k *kafkaFlags) register(fs *flag.FlagSet) {
 	core.DurationVar(fs, &k.fetchMaxWait, "fetch-max-wait", 500*time.Millisecond, "FetchMaxWait")
 	fs.IntVar(&k.fetchMinBytes, "fetch-min-bytes", 1, "FetchMinBytes")
 	fs.IntVar(&k.fetchMaxPartBytes, "fetch-max-partition-bytes", 1048576, "FetchMaxPartitionBytes")
-	fs.StringVar(&k.groupProtocol, "group-protocol", "consumer", "consumer (KIP-848, server-side uniform assignor) | classic (cooperative-sticky)")
+	fs.StringVar(&k.groupProtocol, "group-protocol", "consumer", "consumer (KIP-848, server-side uniform assignor) | classic (cooperative-sticky) | share (KIP-932 share group: per-record locks and acks, no order)")
 	core.DurationVar(fs, &k.sessionTimeout, "session-timeout", 45*time.Second, "group session timeout (classic; KIP-848 uses the broker's group.consumer.session.timeout.ms)")
 	core.DurationVar(fs, &k.stableWait, "stable-wait", 3*time.Second, "group stable = every partition assigned and no assignment change for this long")
 	core.DurationVar(fs, &k.groupTimeout, "group-timeout", 180*time.Second, "give up if the groups are not stable within this")
@@ -117,9 +117,9 @@ func (k *kafkaFlags) finalize() error {
 		return fmt.Errorf("-compression %q", k.compression)
 	}
 	switch k.groupProtocol {
-	case "consumer", "classic":
+	case "consumer", "classic", "share":
 	default:
-		return fmt.Errorf("-group-protocol %q: want consumer|classic", k.groupProtocol)
+		return fmt.Errorf("-group-protocol %q: want consumer|classic|share", k.groupProtocol)
 	}
 	if k.producers < 1 {
 		k.producers = 1
