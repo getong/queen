@@ -29,9 +29,9 @@
     node=2 rss_MB=11070 threads=179 maps=200913 fds=100267 data_MB=1608 part_dirs=100001 gc_pauses=197 gc_max_ms=79.596 gc_sum_ms=2789 errors=0 warns=265412 isr_shrinks=26829 isr_updates=52549 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=240
     node=3 rss_MB=11043 threads=177 maps=200911 fds=100255 data_MB=1608 part_dirs=100001 gc_pauses=240 gc_max_ms=47.272 gc_sum_ms=3495 errors=0 warns=2 isr_shrinks=23246 isr_updates=46811 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=240
 [2026-10-14T11:22:33Z] run 1x100000-3000k-gcp24-dbb1g: 4. launch 9 kload processes
-    launched 0 1 2 on queen-load-1.europe-west1-b.c.smartness-stage.internal
-    launched 6 7 8 on queen-load-3.europe-west1-b.c.smartness-stage.internal
-    launched 3 4 5 on queen-load-2.europe-west1-b.c.smartness-stage.internal
+    launched 0 1 2 on queen-load-1.europe-west1-b.c.<gcp-project>.internal
+    launched 6 7 8 on queen-load-3.europe-west1-b.c.<gcp-project>.internal
+    launched 3 4 5 on queen-load-2.europe-west1-b.c.<gcp-project>.internal
 [2026-10-14T11:22:47Z] run 1x100000-3000k-gcp24-dbb1g:    READY 0/9
 [2026-10-14T11:23:02Z] run 1x100000-3000k-gcp24-dbb1g:    all 9 READY after 284s since start
 [2026-10-14T11:23:05Z] run 1x100000-3000k-gcp24-dbb1g: 5. start instant 1791976994445 (loader-1 clock + 10s) written to 9 start files; producing 70s (ramp 10s)

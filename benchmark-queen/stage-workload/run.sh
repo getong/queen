@@ -18,7 +18,7 @@
 # nothing is pushed to a registry. The build takes about a minute before the first line.
 set -euo pipefail
 
-CTX=gke_smartness-stage_europe-west1_k8s-03-stage
+CTX=gke_<gcp-project>_europe-west1_k8s-03-stage
 NS=queen
 POD=queen-workload
 CM=queen-workload-src

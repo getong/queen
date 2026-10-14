@@ -1,4 +1,4 @@
-[2026-10-14T10:11:29Z] os-tune broker on queen-bench-2.europe-west1-b.c.smartness-stage.internal (10.250.0.11)
+[2026-10-14T10:11:29Z] os-tune broker on queen-bench-2.europe-west1-b.c.<gcp-project>.internal (10.250.0.11)
   vm.swappiness = 1 (already)
   vm.max_map_count = 4194304 (already)
   vm.dirty_background_ratio = 5 (already)
