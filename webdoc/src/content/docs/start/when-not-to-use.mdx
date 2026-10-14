@@ -1,6 +1,6 @@
 ---
 title: "When not to use Queen MQ, and what to use instead"
-description: "For applications, microservices and transactions, Queen is the better choice. The exception is extreme throughput on a few partitions, where Kafka and Pulsar lead. The numbers behind both, and the smaller cases with what to use instead."
+description: "For applications, microservices and transactions, Queen is the better choice. The exception is a firehose of millions of messages a second on up to some thousands of partitions, where Kafka and Pulsar lead. The numbers behind both, and the smaller cases with what to use instead."
 type: concept
 tier: use
 sidebar:
@@ -23,14 +23,15 @@ sourceOfTruth:
 
 For building applications, Queen is the better choice: services that handle events per customer,
 order or conversation, microservices that hand work to each other, and steps that have to commit
-whole. The exception is extreme throughput on a few partitions, where Kafka and Pulsar are ahead.
+whole. The exception is a firehose of millions of messages a second on up to some thousands of
+partitions, where Kafka and Pulsar are ahead.
 
 | You are building | Use |
 |---|---|
 | Services that handle events per customer, order, device or conversation | Queen |
 | Microservices that hand work to each other: jobs, fan-out, retries, delayed work | Queen |
 | Steps that must commit whole: the ack, the state, the next events and the timer | Queen |
-| A firehose: millions of messages a second through a few hundred partitions, where the median matters most | Kafka or Pulsar |
+| A firehose: millions of messages a second through up to some thousands of partitions, where every millisecond matters | Kafka or Pulsar |
 
 The rest of this page gives the reasons for the first three rows, the numbers for the last one, and
 the smaller cases where another system fits. The side-by-side view of the same systems is on
@@ -43,9 +44,10 @@ its own [partition](/concepts/partitions/), created by the first message that na
 entity delays only itself. In Kafka an entity shares its partition with every other entity whose
 key hashes there, and a slow one delays them all. The cost of a Queen partition does not grow with
 the count: one queue carried 3,000,000 messages a second on 10 partitions and on 10,000,000, at an
-e2e p99 between 47 and 78 ms and on 19 to 23 cores. On the same machines Kafka's p99 went from
-61 ms at 100 partitions to 104 ms at 1,000 and 110 ms at 10,000, where it used 47 cores, and at
-100,000 it did not keep up, where Queen read 71 ms ([Queen vs Kafka](/benchmarks/queen-vs-kafka/)).
+e2e p99 between 42 and 76 ms and on 19 to 23 cores. On the same machines Kafka was faster up to
+10,000 partitions, and paid for each one: 53 cores at 10,000, 57 at 25,000 with a p99 of 105 ms,
+and at 50,000 and 100,000 it did not keep up, where Queen read 53 ms at 100,000
+([Queen vs Kafka](/benchmarks/queen-vs-kafka/)).
 
 **One commit per step.** A worker's step is the ack, the state it changes, the events it emits and
 the timer it sets, and in Queen they commit as one entry or not at all
@@ -72,29 +74,33 @@ to it unchanged ([Kafka](/guides/kafka/)). It runs as one binary with no databas
 coordination service beside it, as one node or a cluster of three or five, and
 [Queen Cloud](https://queenmq.cloud/) runs it for you with a free tier.
 
-## The exception: extreme throughput on a few partitions
+## The exception: a firehose on up to some thousands of partitions
 
 Queen is fast. On three GCP nodes with 24 vCPU and local NVMe, one queue of 1,000 partitions
-carried 2,000,000 messages a second in and out at an e2e p99 of 18 ms, 3,000,000 at 78 ms and
-3,500,000 at 98 ms, with every write fsynced on two of the three nodes before its producer was
+carried 2,000,000 messages a second in and out at an e2e p99 of 17 ms, 3,000,000 at 50 ms and
+3,500,000 at 97 ms, with every write fsynced on two of the three nodes before its producer was
 answered; 4,000,000 was not carried
 ([Queen vs Kafka](/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions)). One leader orders
 all of a queue's writes, and more nodes do not raise that.
 
-On a few hundred partitions Kafka answers sooner. On the same machines at 3,000,000 messages a
-second on 100 partitions its median was 6 ms against Queen's 21, it used 16 cores against 23, and
-its p99 matched Queen's (61 ms against 65). On 16-vCPU nodes it kept up with 4,000,000 messages a second on
-100 partitions, where Queen stopped between 2,000,000 and 2,500,000
-([throughput](/benchmarks/throughput/)). Kafka acknowledges a write from memory, before an fsync,
-which is part of its lead. Pulsar waits for the same two fsyncs as Queen; in September it held a
-p99 near 20 ms up to 2,000,000 a second, and it has not been run against 2.3.0. That lead belongs to
-small partition counts: at 10,000 partitions Kafka used 47 cores against Queen's 23, for a p99 of
-110 ms against 66. These runs used 256-byte messages in batches of 100, and Queen 2.3.0 with the
+Up to 10,000 partitions Kafka answers sooner and goes further. On the same machines, with Kafka on
+XFS, one topic of 1,000 partitions carried about 8,000,000 messages a second at a p99 near 12 ms.
+At 3,000,000 messages a second its median was 6 to 8 ms against Queen's 21 to 37 and its p99 7.5
+to 21 ms against 47 to 76, and up to 1,000 partitions it used less CPU (15 to 21 cores against 19
+to 23). On 16-vCPU nodes it kept up with 4,000,000 messages a second on 100 partitions, where
+Queen stopped between 2,000,000 and 2,500,000 ([throughput](/benchmarks/throughput/)). Kafka
+acknowledges a write from memory, before an fsync, which is a small part of its lead with few
+partitions: with an fsync on every append it read 7.5 / 12 ms at 100 partitions, and 95 / 281 ms at
+10,000, where Queen read 24 / 61. Pulsar waits for the same two fsyncs
+as Queen; in September it held a p99 near 20 ms up to 2,000,000 a second, and it has not been run
+against 2.3.0. That lead ends as partitions multiply: at 10,000 partitions Kafka used 53 cores
+against Queen's 23, at 25,000 its p99 rose to 105 ms on 57 cores, and it did not carry 50,000.
+These runs used 256-byte messages in batches of 100, and Queen 2.3.0 with the
 binary wire forms its clients turn on and deduplication off.
 
-Use Kafka or Pulsar when your keys fit a few hundred partitions, the order you need is per
-partition rather than per entity, and you need a median of a few milliseconds at millions of
-messages a second, or more than one Queen raft group carries: 3,500,000 a second on the 24-vCPU
+Use Kafka or Pulsar when your keys fit up to some thousands of partitions, the order you need is
+per partition rather than per entity, and you need a p99 near 10 ms at millions of messages a
+second, or more than one Queen raft group carries: 3,500,000 a second on the 24-vCPU
 nodes, between 2,000,000 and 2,500,000 on the 16-vCPU ones.
 
 The far end of transaction rates is the same kind of case. One leader plans a tenant's

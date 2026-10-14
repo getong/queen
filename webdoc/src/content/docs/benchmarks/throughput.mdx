@@ -27,7 +27,8 @@ stopped. On three 16-vCPU DigitalOcean nodes, pre-release builds of Queen 2.3.0 
 messages a second here with an end-to-end p99 of 19 ms and 2,000,000 with 63 ms. Kafka, on the same
 machines the same day, read 11 ms and 43 ms and went on to 4,000,000, where Queen did not go on
 these machines: 2,500,000 is the first rate it did not carry (2026-10-13). On three GCP nodes with
-24 vCPU and local NVMe, the released 2.3.0 carried 3,500,000 on 1,000 partitions and not 4,000,000
+24 vCPU and local NVMe, the released 2.3.0 carried 3,500,000 on 1,000 partitions and not 4,000,000,
+and Kafka, on XFS there, about 8,000,000 at a p99 near 12 ms
 ([Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions)).
 [Compare](/start/compare/) explains where each system is better.
 

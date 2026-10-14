@@ -236,7 +236,7 @@ export const proof: { figure: string; unit: string; body: string; href: string }
   {
     figure: "10,000,000",
     unit: "partitions in one queue",
-    body: "Each one created by a push, none declared. 3,000,000 msg/s in and out on the same three nodes at an e2e p99 of 54 ms; Kafka did not carry 100,000.",
+    body: "Each one created by a push, none declared. 3,000,000 msg/s in and out on the same three nodes at an e2e p99 of 54 ms; Kafka did not carry 50,000.",
     href: "/benchmarks/queen-vs-kafka/",
   },
   {

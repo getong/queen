@@ -4,10 +4,10 @@ c4-standard-24-lssd, data on a RAID0 of four local NVMe disks), one queue / one 
 Top: end to end p50 and p99. Under it: broker CPU (three brokers summed), memory of the busiest broker, disk writes a
 broker (mean of the three). Light and dark; system fonts; every point carries a <title> for hover.
 
-One statistic on both sides, the one of Kafka's report (../2026-09-30-kafka-pulsar/report/report.py) and of the 10-13
-comparison: per load process, the 10 s windows of the steady part (the producing windows [-4:-1]); p50 and p99 = the
-highest window value over the nine processes. Read from each process's JSON (Queen runs/m3-p<P>-r3000000/3000000/q*.json,
-Kafka ../2026-09-30-kafka-pulsar/runs/kafka/1x<P>-3000k-gcp24/loaders/l*/p*.json). Resources: Queen from
+One statistic on both sides: per load process, the 10 s windows of the steady part (the producing windows [-4:-1]);
+each window takes the slowest of the nine processes, and p50 and p99 are the median of those three windows (see worst()).
+Read from each process's JSON (Queen runs/m3-p<P>-r3000000/3000000/q*.json, Kafka
+../2026-09-30-kafka-pulsar/runs/kafka/1x<P>-3000k-gcp24-xfs-t24/loaders/l*/p*.json). Resources: Queen from
 runs/matrix-gcp24-3m.json (harness cores; RSS max; md0 MB/s), Kafka from its report row (same definitions: cores
 summed over the loaded window, busiest node's RSS, mean disk write per node).
 
@@ -22,26 +22,33 @@ sys.path.insert(0, HERE)
 import gcp24_3m_svg as base  # noqa: E402
 from gcp24_3m_svg import png, esc  # noqa: E402
 
-W, H = 960, 854
+W, H = 960, 872
 PARTS = (10, 100, 1000, 10_000, 100_000, 1_000_000, 10_000_000)
 TICK = {10: "10", 100: "100", 1000: "1k", 10_000: "10k", 100_000: "100k", 1_000_000: "1M", 10_000_000: "10M"}
-# Kafka runs: "-gcp24-dbb1g" = brokers with vm.dirty_background_bytes=1 GiB (the chart's default since 10-14 11:30Z);
-# KSUF=-gcp24 draws the first runs (dirty_background_ratio=5: ~3.6 GB of dirty pages on 88 GB, flushed in bursts at the
-# RAID0's limit, which made Kafka's p99 1.25 to 2.7 times as high)
-KSUF = os.environ.get("KSUF", "-gcp24-dbb1g")
+# Kafka runs: "-gcp24-xfs-t24" = XFS (mkfs.xfs defaults, noatime), num.io.threads=24, num.network.threads=12,
+# num.replica.fetchers=12, vm.dirty_background_bytes=1 GiB (the chart's default since 10-14 evening). The ext4 runs:
+# KSUF=-gcp24 (dirty_background_ratio=5: ~3.6 GB of dirty pages on 88 GB), -gcp24-dbb1g (1 GiB), -gcp24-lazy (ext4
+# lazytime + 1 GiB). On ext4 each append's mtime update could wait for the jbd2 commit (see the docs page).
+KSUF = os.environ.get("KSUF", "-gcp24-xfs-t24")
 FOOT_KAFKA = ["Kafka: three replicas, acks=all, min.insync 2, idempotent producer, lz4, linger 5 ms, 6 GB heap; writes go to "
-              "the page cache (no fsync per write),",
-              "written out from 1 GB of dirty pages (vm.dirty_background_bytes; at 5% of RAM its p99 at 3M was 1.25-2.7 times as high).",
-              "Queen ran with the harness default, 5% of RAM: a write is answered after the leader's fsync and one follower's;",
+              "the page cache (no fsync per write);",
+              "XFS noatime, 24 request handler, 12 network and 12 replica fetcher threads, writeback from 1 GB of dirty pages "
+              "(on ext4 its p99 was up to ten times higher).",
+              "Queen on ext4 noatime, writeback from 5% of RAM (XFS gave it no gain): a write is answered after the leader's "
+              "fsync and one follower's;",
               "binary push, zstd, counts acks, framed pops, dedup off; 10M partitions with QUEEN_CONSUME_IDLE_UNLOAD_S=30.",
               "Kafka's memory leaves out the page cache it reads from."]
 CFGS = {
     "3m": dict(rate=3_000_000, qjson="matrix-gcp24-3m.json", ktag=lambda p: f"1x{p}-3000k{KSUF}", out="queen-kafka-3m",
-               load="3M msg/s", ymax=160,
+               load="3M msg/s", ymax=None,
+               between="Kafka between the drawn counts: 25k partitions carried, p50 / p99 58 / 105 ms on 57 cores; 50k not "
+                       "carried (601k msg/s pushed); Queen not run there.",
                first="Fresh cluster a point, 70 s of load, 100 messages of 256 B a request, nine load processes, the same "
                      "settings as the DigitalOcean comparison of 2026-10-13."),
-    "1m1k": dict(rate=1_000_000, qjson="matrix-gcp24-1m1k.json", ktag=lambda p: f"1x{p}-1000k-p1k-gcp24-dbb1g",
-                 out="queen-kafka-1m1k", load="1M msg/s of 1 KB messages", ymax=None,
+    "1m1k": dict(rate=1_000_000, qjson="matrix-gcp24-1m1k.json", ktag=lambda p: f"1x{p}-1000k-p1k{KSUF}",
+                 out="queen-kafka-1m1k", load="1M msg/s of 1 KB messages", ymax=60,
+                 between="Kafka between the drawn counts: 25k partitions carried, p50 / p99 15 / 45 ms on 56 cores; 50k not "
+                         "carried (159k msg/s pushed); Queen not run there.",
                  first="Fresh cluster a point, 70 s of load, 100 JSON messages of 1 KB a request (1,027 B), nine load "
                        "processes; otherwise the settings of the 3M matrix."),
 }
@@ -58,13 +65,19 @@ THEMES = {
 
 
 def worst(files):
-    e50 = e99 = 0.0
+    """The median of the three windows in seconds 30 to 60, each window = the slowest of the load processes (since
+    10-14 15:00Z; before, the worst window: one spike decided Kafka's cells)."""
+    import statistics
+    per = []
     for f in files:
         w = [x for x in json.load(open(f))["windows"] if x["offered_per_s"] > 0]
         s = w[-4:-1] if len(w) >= 4 else w[-3:]
-        e50 = max([e50] + [x["e2e_p50_ms"] for x in s])
-        e99 = max([e99] + [x["e2e_p99_ms"] for x in s])
-    return e50, e99
+        per.append([(x["e2e_p50_ms"], x["e2e_p99_ms"]) for x in s])
+    if not per:
+        return 0.0, 0.0
+    n = min(len(p) for p in per)
+    return (statistics.median(max(p[i][0] for p in per) for i in range(n)),
+            statistics.median(max(p[i][1] for p in per) for i in range(n)))
 
 
 def kafka_row(p):
@@ -138,7 +151,7 @@ def render(theme, Q, K):
         o.append(f'<circle cx="{lx + 13}" cy="{ly}" r="3.5" fill="{t[key]}"/>')
         text(lx + 33, ly + 4.5, label, 13, t["mid"])
         lx += 33 + 7.4 * len(label) + 24
-    text(lx + 2, ly + 4.5, "end to end, the slowest load process's worst 10 s", 12, t["low"])
+    text(lx + 2, ly + 4.5, "end to end, median of three 10 s windows (slowest process)", 12, t["low"])
 
     X0, X1, Y0, Y1 = 64, 860, 138, 392
     YMAX = CFG["ymax"] or next(v for v in (40, 80, 120, 160, 200, 240, 320, 400) if v >= max(
@@ -165,7 +178,7 @@ def render(theme, Q, K):
     text((X0 + X1) / 2, Y1 + 68, "partitions in one queue or topic (each step is 10 times the one before)", 13, t["mid"],
          "middle")
 
-    ends = []
+    ends, mids, lines = [], [], []
     for sysname, rows, key in (("Queen", Q, "queen"), ("Kafka", K, "kafka")):
         for stat, dash, w in (("e99", "", 3.0), ("e50", "6 4", 2.2)):
             seg, segs, last = [], [], None
@@ -181,6 +194,7 @@ def render(theme, Q, K):
             if seg:
                 segs.append(seg)
             path(segs, t[key], dash, w)
+            lines.extend(segs)
             for i, p in enumerate(PARTS):
                 r = rows.get(p)
                 if r is None or (not r["carried"] and sysname == "Kafka"):
@@ -196,9 +210,29 @@ def render(theme, Q, K):
             if last and last[0] == xs(len(PARTS) - 1):
                 ends.append([last[1], f"{sysname} {'p99' if stat == 'e99' else 'p50'} {last[2]:.0f}"])
             elif last:
-                # a line that ends mid-chart: its p50 label goes above the point, clear of the other system's p50
-                text(last[0] + 9, last[1] + (4 if stat == "e99" else -9), f"{sysname} {'p99' if stat == 'e99' else 'p50'} {last[2]:.0f}",
-                     11.5, t["mid"])
+                mids.append((last[0], last[1], f"{sysname} {'p99' if stat == 'e99' else 'p50'} {last[2]:.0f}"))
+    # a line that ends mid-chart: its label goes right of the last point, at the first height that crosses no line
+    # and no label placed before it
+    def y_at(seg, x):
+        for (x1, y1), (x2, y2) in zip(seg, seg[1:]):
+            if x1 <= x <= x2:
+                return y1 if x2 == x1 else y1 + (y2 - y1) * (x - x1) / (x2 - x1)
+        return None
+    boxes = []
+    for px, py, label in mids:
+        lx0, lx1 = px + 9, px + 9 + 6.4 * len(label)
+        for off in (4, -9, 17, -22, 30, -35, 43):
+            b = py + off
+            top, bot = b - 10, b + 3
+            if top < Y0 or bot > Y1:
+                continue
+            hit = any(y is not None and top - 3 <= y <= bot + 3
+                      for seg in lines for xx in range(int(lx0), int(lx1) + 1, 3) for y in [y_at(seg, xx)])
+            hit = hit or any(not (bot < bt or top > bb) for bt, bb in boxes)
+            if not hit:
+                break
+        boxes.append((top, bot))
+        text(lx0, b, label, 11.5, t["mid"])
     ends.sort()
     for k in range(1, len(ends)):
         ends[k][0] = max(ends[k][0], ends[k - 1][0] + 14)
@@ -246,7 +280,7 @@ def render(theme, Q, K):
     text(PX + 2 * (PW + GAP), PY1 + 34, "hollow: Kafka, not carried", 11, t["low"])
 
     fy = 738
-    for s in [CFG["first"]] + FOOT_KAFKA:
+    for s in [CFG["first"]] + FOOT_KAFKA[:2] + [CFG["between"]] + FOOT_KAFKA[2:]:
         text(40, fy, s, 11.5, t["low"])
         fy += 18
     style = ("text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;"

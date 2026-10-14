@@ -9,15 +9,16 @@ digest: >-
   Queen MQ benchmarks run on three nodes in one raft group, every write fsynced on two of three
   nodes before its answer, JSON messages pushed 100 at a time to one partition. The released 2.3.0
   on three GCP c4-standard-24-lssd nodes (24 vCPU, local NVMe; 2026-10-14, a fresh cluster and
-  70 s per point, latency over seconds 30 to 60, deduplication off, the binary wire forms on)
-  carried 3,000,000 msg/s of 256-byte messages in and out of one queue at every partition count
-  from 10 to 10,000,000, e2e p99 47 to 78 ms on 19 to 23 cores, and 1,000,000 msg/s of 1 KB
-  messages at a p99 of 27 to 34 ms from 100 to 1,000,000 partitions. One queue of 1,000 partitions
-  carried 3,500,000 msg/s (p99 98 ms) and not 4,000,000. Kafka 4.3.1 on the same machines
-  (acks=all, no fsync) had a median three to six times lower and used less CPU up to 1,000
-  partitions; its p99 was 61 ms at 100 partitions, 104 and 110 ms at 1,000 and 10,000, and it did
-  not carry 100,000. Exactly-once consume-transform-produce transactions of 10 messages commit in
-  3 to 4 ms at the median and peak near 12,900 a second (16-vCPU nodes, 2026-10-12). A soak at
+  70 s per point, latency the median of the 10-second windows in seconds 30 to 60, deduplication
+  off, the binary wire forms on) carried 3,000,000 msg/s of 256-byte messages in and out of one
+  queue at every partition count from 10 to 10,000,000, e2e p99 42 to 76 ms on 19 to 23 cores, and
+  1,000,000 msg/s of 1 KB messages at a p99 of 26 to 30 ms from 100 to 1,000,000 partitions. One
+  queue of 1,000 partitions carried 3,500,000 msg/s (p99 97 ms) and not 4,000,000. Kafka 4.3.1 on
+  the same machines (acks=all, no fsync, XFS) was faster up to 10,000 partitions: a median three
+  to six times lower, a p99 of 7.5 to 21 ms at 3,000,000 msg/s and 9.4 to 19 ms with 1 KB
+  messages, and about 8,000,000 msg/s on one topic of 1,000 partitions. From 10,000 partitions it
+  used about twice Queen's CPU, and it did not carry 50,000 or 100,000. Exactly-once
+  consume-transform-produce transactions of 10 messages commit in 3 to 4 ms at the median and peak near 12,900 a second (16-vCPU nodes, 2026-10-12). A soak at
   500,000 msg/s on 2.0.0-beta.1 held e2e p99 near 86 ms for 3 h 23 min through kill -9 and
   graceful restarts of the leader. Jepsen: 244 tests on the code of 2.3.0, all valid.
 ---
@@ -41,9 +42,9 @@ and names its machines and build, and no number is compared across two sets of m
 
 | Result | Conditions | Page |
 |---|---|---|
-| 3,000,000 msg/s of 256-byte messages at an e2e p99 of 47 to 78 ms from 10 to 10,000,000 partitions, on 19 to 23 cores. Kafka on the same machines: a median three to six times lower, a p99 of 61 ms at 100 partitions and about 105 ms at 1,000 and 10,000, twice Queen's CPU from 10,000, not carried at 100,000 | Queen 2.3.0 and Kafka 4.3.1 on three GCP `c4-standard-24-lssd` brokers with local NVMe in RAID0, 2026-10-14; 70 s per point, seconds 30 to 60; Kafka with background writeback from 1 GiB | [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/) |
-| 1,000,000 msg/s of 1 KB messages, about 1 GB/s, at an e2e p99 of 27 to 34 ms from 100 to 1,000,000 partitions. Kafka on the same machines: 98 to 136 ms, with the medians close (Queen 9.5 to 12 ms, Kafka 7.5 to 9.8), not carried at 100,000 | the same machines and day; JSON messages of 1,027 bytes on average | [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#1000000-msgs-of-1-kb-messages) |
-| One queue of 1,000 partitions: e2e p50 / p99 of 6 / 18 ms at 2,000,000 msg/s, 21 / 78 ms at 3,000,000 and 47 / 98 ms at 3,500,000; 4,000,000 not carried | Queen 2.3.0 on the same machines, a fresh cluster for each rate | [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions) |
+| 3,000,000 msg/s of 256-byte messages at an e2e p99 of 42 to 76 ms from 10 to 10,000,000 partitions, on 19 to 23 cores. Kafka on the same machines: a median three to six times lower and a p99 of 7.5 to 21 ms up to 10,000 partitions, about twice Queen's CPU at 10,000, a p99 of 105 ms on 57 cores at 25,000, not carried at 50,000 and 100,000 | Queen 2.3.0 and Kafka 4.3.1 on three GCP `c4-standard-24-lssd` brokers with local NVMe in RAID0, 2026-10-14; 70 s per point, the median of the windows in seconds 30 to 60; Kafka on XFS with thread pools for 24 vCPU (on ext4 its p99 was up to ten times higher) | [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/) |
+| 1,000,000 msg/s of 1 KB messages, about 1 GB/s, at an e2e p99 of 26 to 30 ms from 100 to 1,000,000 partitions. Kafka on the same machines: 9.4 to 19 ms up to 10,000 partitions and 45 ms at 25,000, with the medians close (Queen 9.4 to 11 ms, Kafka 7.4 to 8.8), not carried at 50,000 | the same machines and day; JSON messages of 1,027 bytes on average | [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#1000000-msgs-of-1-kb-messages) |
+| One queue of 1,000 partitions: e2e p50 / p99 of 5.8 / 17 ms at 2,000,000 msg/s, 21 / 50 ms at 3,000,000 and 46 / 97 ms at 3,500,000; 4,000,000 not carried. Kafka on one topic of 1,000 partitions: 6.0 / 8.1 ms at 3,000,000 and 5.8 / 12.5 ms at 8,000,000 | Queen 2.3.0 and Kafka 4.3.1 on the same machines, a fresh cluster for each rate, the median window | [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions) |
 | On 16-vCPU nodes: 100,000 to 2,000,000 msg/s pushed and consumed into one queue at every partition count from 10 to 10,000,000. At 1,000,000 msg/s the e2e p99 is 18 to 21 ms up to 100,000 partitions, 32 ms at a million, 38 ms at ten million | three DigitalOcean nodes with 16 vCPU and 31 GB; pre-release builds of 2.3.0, 2026-10-12 and 13; a fresh cluster and 90 s per point, seconds 30 to 60; deduplication off; the binary wire forms on | [Partition count](/benchmarks/partitions/) |
 | On the same 16-vCPU nodes: 2,000,000 msg/s at an e2e p99 of 59 to 73 ms from 100 to 10,000,000 partitions; 2,500,000 not carried. Kafka there: 25 ms at 1,000 partitions, 134 ms at 10,000, not carried at 100,000, and 4,000,000 msg/s carried on 100 partitions | same runs; Kafka 4.3.1, 2026-10-13 | [Throughput and latency](/benchmarks/throughput/) |
 | With a 60 s deduplication window and completed messages deleted after 60 s: 1,500,000 msg/s at an e2e p99 of 36 to 51 ms from 100 to 1,000,000 partitions | the 16-vCPU nodes, the last pre-release build, 2026-10-13; 200 s per point, the last 60 | [Throughput and latency](/benchmarks/throughput/#deduplication-and-retention-on) |
@@ -60,23 +61,28 @@ Queen hardly notices the partition count. A partition costs every node about 1 K
 its messages go into its queue's log next to every other partition's, so ten million partitions
 are written and fsynced the way ten are. We are proudest of this result, because it is the reason
 Queen exists: one partition per entity, as many entities as you have. Kafka gives each partition
-a log and a replication state of its own. On the GCP nodes at 3,000,000 msg/s its p99 went from
-61 ms at 100 partitions to 104 ms at 1,000 and 110 ms at 10,000, where it used 47 cores against
-Queen's 23, and at 100,000 it pushed 200,000 of the 3,000,000 messages a second offered; Queen ran
-the same load over ten million partitions with a p99 of 54 ms on 23 cores. In September, at
+a log and a replication state of its own. On the GCP nodes at 3,000,000 msg/s it used 53 cores
+at 10,000 partitions against Queen's 23, and 57 at 25,000 for a p99 of 105 ms; at 50,000 and
+100,000 it pushed 601,000 and 174,000 of the 3,000,000 messages a second offered. Queen ran the
+same load over ten million partitions with a p99 of 46 ms on 23 cores. In September, at
 1,000,000 msg/s, Pulsar and Redpanda fell behind from 50,000 partitions.
 
-Kafka answers sooner. At 3,000,000 msg/s its median was 6 to 9 ms where Queen's was 21 to 38,
-three to six times lower at every count it carried, and up to 1,000 partitions it used less CPU
-(13 to 20 cores against Queen's 19 to 23). With 1 KB messages at 1,000,000 msg/s the medians come
-close (Kafka 7.5 to 9.8 ms, Queen 9.5 to 12) and Queen's p99 is the lower one, 27 to 34 ms against
-98 to 136. Durability explains part of the gap at the median, since Kafka answered from memory
-where Queen waited for two fsyncs. The rest comes from two choices we made: a Queen pop is a write
+Up to 10,000 partitions Kafka answers sooner and goes further. At 3,000,000 msg/s its median was
+6 to 8 ms where Queen's was 21 to 37, and its p99 7.5 to 21 ms where Queen's was 47 to 76; up to
+1,000 partitions it used less CPU (15 to 21 cores against Queen's 19 to 23). With 1 KB messages
+at 1,000,000 msg/s the medians come close (Kafka 7.4 to 8.8 ms, Queen 9.4 to 11 from 100
+partitions up) and Kafka's p99 is still the lower one, 9.4 to 19 ms against 26 to 47. On one topic
+of 1,000 partitions Kafka carried about 8,000,000 msg/s at a p99 near 12 ms; one Queen queue
+carried 3,500,000 and not 4,000,000, with neither the disks nor the leader's CPU full, and what
+stops it there is not profiled yet. Durability explains little of the gap with few partitions:
+with an fsync on every append Kafka still read 7.5 / 12 ms at 100 partitions, and only at 10,000
+did its fsyncs, one file per partition, put it behind Queen (95 / 281 ms against 24 / 61,
+[fsync runs](/benchmarks/queen-vs-kafka/#kafka-with-an-fsync-on-every-append)). The rest comes
+from Queen's design: it writes about 1.7 times Kafka's bytes per message, a Queen pop is a write
 too, because the lease it hands out commits through the log before the consumer sees a message,
-and one leader orders every write of a raft group. One queue of 1,000 partitions carried
-3,500,000 msg/s and not 4,000,000, with neither the disks nor the leader's CPU full; what stops it
-there is not profiled yet. On the 16-vCPU nodes Kafka went on to 4,000,000 msg/s on 100
-partitions, where one Queen raft group stopped between 2,000,000 and 2,500,000.
+and one leader orders every write of a raft group. On the 16-vCPU nodes Kafka went on to
+4,000,000 msg/s on 100 partitions, where one Queen raft group stopped between 2,000,000 and
+2,500,000.
 
 Transactions are where that design pays. A step's acks and pushes are one log entry, so a
 transaction costs about one write: 3 to 4 ms at the median. In September's comparison 9,000
@@ -93,13 +99,15 @@ The released 2.3.0 ran against Kafka on six GCP VMs in one zone and one VPC: thr
 clients used six DigitalOcean droplets with 16 vCPU and 31 GB each, in one VPC, the three with the
 fastest disks as brokers: a Xeon Gold 6548N that leads Queen's raft group and two Xeon Platinum
 8358. Kafka spreads its partition leaders over all three brokers. Each system ran alone on the
-brokers, with the same OS settings.
+brokers, with the same OS settings, except Kafka's filesystem and page cache writeback on the GCP
+nodes (XFS and writeback from 1 GiB, which its tail needed there).
 
 An e2e latency is measured per message, from the instant its producer was scheduled to send it to
-the instant a consumer received it, before the ack. In the 2.3.0 runs a latency is the worst load
-process's worst 10-second window in seconds 30 to 60 of the load (70 seconds on the GCP nodes, 90
-on the DigitalOcean ones), on a fresh cluster, and a rate is carried when nothing was shed,
-nothing erred and 99% of what was pushed was consumed; September's runs took the last 30 seconds
+the instant a consumer received it, before the ack. In the 2.3.0 runs each 10-second window takes
+the slowest load process, on a fresh cluster; on the DigitalOcean nodes a latency is the worst
+window in seconds 30 to 60 of 90, and on the GCP nodes the median of the three windows in seconds
+30 to 60 of 70, with the worst in brackets. A rate is carried when nothing was shed, nothing
+erred and 99% of what was pushed was consumed; September's runs took the last 30 seconds
 of 60 and called a system behind under 97%. Every number names its build and date, and the engine
 moves fast: read a figure as what that build did on that rig. The GCP figures are the released
 image; the DigitalOcean ones are the builds of the two days before the release. Both ran with the
