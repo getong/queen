@@ -19,6 +19,7 @@ sourceOfTruth:
   - webdoc/scripts/gen-snippets.mjs
   - webdoc/scripts/check-sourceoftruth.mjs
   - webdoc/scripts/check-prose.mjs
+  - .github/workflows/dco.yml
 # sourceOfTruth re-read 2026-10-03 (cb0329f74): the Dockerfile's queenctl -X paths moved to the /v2 module path; the image and what it runs are unchanged. Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-05 (bc1b5bfb6, 2.0.1): version 2.0.1. Nothing this page states changes.
 # sourceOfTruth re-read 2026-10-06 (Laravel examples): gen-snippets.mjs reads examples/apps/laravel
@@ -46,6 +47,8 @@ sourceOfTruth:
 # toolchain, its features and the commands on this page are unchanged.
 # sourceOfTruth re-read 2026-10-13 (2.3.0): server/Cargo.toml moves the broker to 2.3.0; its
 # toolchain, its features and the commands on this page are unchanged.
+# sourceOfTruth re-read 2026-10-14 (DCO): CONTRIBUTING.md asks for a Signed-off-by line on every commit and
+# links GOVERNANCE.md, MAINTAINERS.md and CODE_OF_CONDUCT.md; dco.yml checks the sign-off. The page says so.
 ---
 
 Queen is one repository with one Rust binary at its center: the broker, which links the proxy and
@@ -56,6 +59,13 @@ Rust toolchain are enough to build a node and run it, and that is a property we 
 Pull requests target `master`. Run the suite of the component you touched, and read the rules
 below before you change the engine: each one is there because breaking it is silent until it is
 expensive.
+
+Every commit carries a `Signed-off-by:` line from its author, which `git commit -s` adds. It
+certifies the [Developer Certificate of Origin](https://developercertificate.org): the author wrote
+the change, or has the right to submit it under the Apache 2.0 license. `.github/workflows/dco.yml`
+refuses a pull request with a commit that lacks the line, because the project can license only code
+its contributors had the right to give. How the project is run and who runs it are in
+`GOVERNANCE.md` and `MAINTAINERS.md`.
 
 ## The repository
 

@@ -1,0 +1,38 @@
+name: DCO
+
+# Every commit of a pull request carries a Signed-off-by line from its author:
+# the Developer Certificate of Origin (https://developercertificate.org), which
+# says the author had the right to submit the change under the project's
+# license. `git commit -s` adds the line; CONTRIBUTING.md says how.
+#
+# Merge commits and bot commits are not checked.
+
+on:
+  pull_request:
+
+jobs:
+  signoff:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # The checkout is GitHub's test merge of the pull request: its first
+    # parent is the base branch, its second the pull request's head.
+    - name: Every commit is signed off by its author
+      run: |
+        missing=0
+        for c in $(git rev-list --no-merges HEAD^1..HEAD^2); do
+          email=$(git log -1 --format='%ae' "$c")
+          case "$email" in *'[bot]@users.noreply.github.com') continue ;; esac
+          if ! git log -1 --format='%(trailers:key=Signed-off-by,valueonly)' "$c" | grep -qiF "<$email>"; then
+            echo "::error::$(git log -1 --format='%h %s' "$c"): no Signed-off-by line from $email"
+            missing=1
+          fi
+        done
+        if [ "$missing" = 1 ]; then
+          echo "Sign off each commit with 'git commit -s'. For commits already made: git rebase --signoff master"
+          exit 1
+        fi
+        echo "every commit is signed off"

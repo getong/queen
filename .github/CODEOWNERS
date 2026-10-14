@@ -1,7 +1,13 @@
 # Code owners for queen
 #
 # Every pull request targeting a protected branch (master) requires an
-# approving review from a code owner. Branch protection on master also
-# restricts merges to the same owner.
+# approving review from a code owner of the files it changes. Branch
+# protection on master also restricts who can merge. The maintainers and
+# their areas are in MAINTAINERS.md; the last matching line wins.
 
 * @alice-viola
+
+/clients/client-php/ @alice-viola @albertovincenzi
+/supervisor/ @alice-viola @albertovincenzi
+/app/ @alice-viola @albertovincenzi
+/webdoc/ @alice-viola @albertovincenzi
