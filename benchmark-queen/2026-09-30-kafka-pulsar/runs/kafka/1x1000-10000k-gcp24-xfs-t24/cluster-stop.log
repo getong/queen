@@ -1,0 +1,4 @@
+[2026-10-14T16:42:43Z] cluster: stop all 3
+  n1 [2026-10-14T16:42:47Z] kc.sh n1: stopped pid 323707 in 3.3s
+  n2 [2026-10-14T16:42:47Z] kc.sh n2: stopped pid 297661 in 2.8s
+  n3 ssh: connect to host <broker-public-address> port 22: Operation timed out

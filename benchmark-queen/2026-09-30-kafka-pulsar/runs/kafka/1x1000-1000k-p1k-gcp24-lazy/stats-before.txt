@@ -1,0 +1,3 @@
+ssh: connect to host <broker-public-address> port 22: Operation timed out
+node=2 rss_MB=6570 threads=176 maps=2889 fds=1252 data_MB=10 part_dirs=1001 gc_pauses=9 gc_max_ms=8.602 gc_sum_ms=33 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=27
+node=3 rss_MB=6654 threads=177 maps=2902 fds=1260 data_MB=10 part_dirs=1001 gc_pauses=9 gc_max_ms=8.024 gc_sum_ms=33 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=27

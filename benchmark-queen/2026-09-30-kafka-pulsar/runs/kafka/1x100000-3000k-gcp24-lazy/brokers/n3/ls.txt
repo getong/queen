@@ -1,0 +1,12 @@
+total 491404
+drwxr-xr-x 2 root root      4096 Oct 14 14:23 .
+drwxr-xr-x 3 root root      4096 Oct 14 14:23 ..
+-rw-r--r-- 1 root root  51126533 Oct 14 14:27 controller.log
+-rw-r--r-- 1 root root         0 Oct 14 14:23 kafka-authorizer.log
+-rw-r--r-- 1 root root         0 Oct 14 14:23 kafka-request.log
+-rw-r--r-- 1 root root    468663 Oct 14 14:30 kafkaServer-gc.log
+-rw-r--r-- 1 root root 151163498 Oct 14 14:27 kafkaServer.out
+-rw-r--r-- 1 root root       244 Oct 14 14:23 log-cleaner.log
+-rw-r--r-- 1 root root 151163498 Oct 14 14:27 server.log
+-rw-r--r-- 1 root root 149246547 Oct 14 14:27 state-change.log
+5.7G	/root/bench/data/kafka

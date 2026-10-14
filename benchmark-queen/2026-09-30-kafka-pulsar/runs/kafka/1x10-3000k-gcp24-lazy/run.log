@@ -1,0 +1,41 @@
+[2026-10-14T14:08:20Z] run 1x10-3000k-gcp24-lazy: start: rate=3000000 over N=9 processes (3 loader hosts x 3) = 333333 msg/s each; 1 topic(s) x 10 partitions (10 total), entities=0 mode=batch batch=100 consumers=1/process (9 total) warm=0 profile=default PROFILE=vm out=/Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x10-3000k-gcp24-lazy
+[2026-10-14T14:08:20Z] run 1x10-3000k-gcp24-lazy: note: 3000000 is not divisible by 9; offering 2999997 msg/s
+[2026-10-14T14:08:26Z] run 1x10-3000k-gcp24-lazy: 1. cluster reset (profile default, PARTS=10)
+    [2026-10-14T14:08:37Z] cluster: healthy in 11s: cluster id Fmo4DWn0fsqJ0LWzHo_ZpA
+      n1 node=1 alive=1 leader=3 voters=3 unfenced=3 fenced=0 maxlag=0
+      n2 node=2 alive=1 leader=3 voters=3 unfenced=3 fenced=0 maxlag=0
+      n3 node=3 alive=1 leader=3 voters=3 unfenced=3 fenced=0 maxlag=0
+    [2026-10-14T14:08:38Z] cluster: versions (conf_hash must be equal: nodes differ only in node.id + listener IPs)
+      n1 node=1 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=dd627c59 pid=162861 jvm=[-Xms6g -Xmx6g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+      n2 node=2 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=dd627c59 pid=150112 jvm=[-Xms6g -Xmx6g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+      n3 node=3 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=dd627c59 pid=150264 jvm=[-Xms6g -Xmx6g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+    [2026-10-14T14:08:40Z] cluster: features: eligible.leader.replicas.version=1 group.version=1 kraft.version=0 metadata.version=4.3-IV0 share.version=1 streams.version=1 transaction.version=2 
+[2026-10-14T14:08:41Z] run 1x10-3000k-gcp24-lazy: 2. samplers start (kafka-1x10-3000k-gcp24-lazy, every 2s) on 3 brokers + 3 loader hosts
+[2026-10-14T14:08:42Z] run 1x10-3000k-gcp24-lazy: 3. create 1 topic(s) x 10 partitions, RF 3, min.insync 2 on loader 1
+      [config] broker.num.network.threads = 8 (STATIC_BROKER_CONFIG)
+      [config] broker.num.replica.fetchers = 8 (STATIC_BROKER_CONFIG)
+      [config] topic.compression.type = producer (STATIC_BROKER_CONFIG)
+      [config] topic.flush.messages = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+    [create] done: 1 topics x 10 partitions ready
+[2026-10-14T14:08:50Z] run 1x10-3000k-gcp24-lazy:    topics ready after 30s since start
+    node=1 rss_MB=6483 threads=167 maps=856 fds=223 data_MB=1 part_dirs=11 gc_pauses=8 gc_max_ms=7.336 gc_sum_ms=23 errors=0 warns=6 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=19
+    node=2 rss_MB=6512 threads=166 maps=857 fds=223 data_MB=1 part_dirs=11 gc_pauses=8 gc_max_ms=8.654 gc_sum_ms=25 errors=0 warns=1 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=19
+    node=3 rss_MB=6525 threads=166 maps=854 fds=228 data_MB=1 part_dirs=11 gc_pauses=8 gc_max_ms=8.183 gc_sum_ms=25 errors=0 warns=4 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=19
+[2026-10-14T14:08:51Z] run 1x10-3000k-gcp24-lazy: 4. launch 9 kload processes
+ssh: connect to host <loader-3-public-address> port 22: Operation timed out
+[2026-10-14T14:09:07Z] run 1x10-3000k-gcp24-lazy: ERROR ship /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x10-3000k-gcp24-lazy/loaders/l3/p6.sh
+[2026-10-14T14:09:07Z] run 1x10-3000k-gcp24-lazy: FAILED: ship /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x10-3000k-gcp24-lazy/loaders/l3/p6.sh
+[2026-10-14T14:09:07Z] run 1x10-3000k-gcp24-lazy: 6. collect
+    node=1 rss_MB=6485 threads=165 maps=856 fds=223 data_MB=1 part_dirs=11 gc_pauses=8 gc_max_ms=7.336 gc_sum_ms=23 errors=0 warns=6 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=37
+    node=2 rss_MB=6519 threads=164 maps=857 fds=223 data_MB=1 part_dirs=11 gc_pauses=8 gc_max_ms=8.654 gc_sum_ms=25 errors=0 warns=1 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=37
+    node=3 rss_MB=6519 threads=164 maps=854 fds=228 data_MB=1 part_dirs=11 gc_pauses=8 gc_max_ms=8.183 gc_sum_ms=25 errors=0 warns=4 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=37
+bash: line 1: cd: /root/bench/runs/kafka/1x10-3000k-gcp24-lazy: No such file or directory
+[2026-10-14T14:09:36Z] run 1x10-3000k-gcp24-lazy:    collected 316K into /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x10-3000k-gcp24-lazy
+[2026-10-14T14:09:36Z] run 1x10-3000k-gcp24-lazy:    stopping the cluster (data kept until the next reset)

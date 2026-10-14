@@ -1,0 +1,11 @@
+2026-10-14T16:52:22Z
+p0: msgs offered=21666200 achieved=21666200 shed=0 pushed=21666200 popped=21645000 lag=21200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.51/292.86/370.69 ms | e2e p50/p99/p999=8.38/366.59/452.61 ms | cpu=103.8%
+p1: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=21839800 lag=-173200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.26/292.86/370.69 ms | e2e p50/p99/p999=8.38/366.59/448.51 ms | cpu=105.1%
+p2: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=20864400 lag=802100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/296.96/370.69 ms | e2e p50/p99/p999=8.38/358.40/444.42 ms | cpu=103.1%
+p3: msgs offered=21666300 achieved=21666300 shed=0 pushed=21666300 popped=21254800 lag=411500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/292.86/370.69 ms | e2e p50/p99/p999=8.38/358.40/444.42 ms | cpu=104.0%
+p4: msgs offered=21667200 achieved=21667200 shed=0 pushed=21667200 popped=22034500 lag=-367300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/292.86/374.78 ms | e2e p50/p99/p999=8.26/366.59/448.51 ms | cpu=105.3%
+p5: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=22229800 lag=-563200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/296.96/370.69 ms | e2e p50/p99/p999=8.51/362.50/448.51 ms | cpu=105.2%
+p6: msgs offered=21666800 achieved=21666800 shed=0 pushed=21666800 popped=22035000 lag=-368200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/296.96/374.78 ms | e2e p50/p99/p999=8.16/362.50/444.42 ms | cpu=108.4%
+p7: msgs offered=21667000 achieved=21667000 shed=0 pushed=21667000 popped=21060400 lag=606600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/292.86/370.69 ms | e2e p50/p99/p999=8.16/354.30/444.42 ms | cpu=106.7%
+p8: msgs offered=21665700 achieved=21665700 shed=0 pushed=21665700 popped=22035200 lag=-369500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.38/292.86/374.78 ms | e2e p50/p99/p999=8.26/362.50/448.51 ms | cpu=108.3%
+total: 9/9 processes with a final line | msgs offered=194998900 achieved=194998900 shed=0 pushed=194998900 popped=194998900 errors=0 | worst produce p99=296.96 ms | worst e2e p99=366.59 ms

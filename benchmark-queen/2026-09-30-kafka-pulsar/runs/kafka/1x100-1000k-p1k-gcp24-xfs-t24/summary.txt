@@ -1,0 +1,10 @@
+p0: msgs offered=7222500 achieved=7222500 shed=0 pushed=7222500 popped=7150200 lag=72300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.07/9.15/29.57 ms | e2e p50/p99/p999=7.39/9.41/23.94 ms | cpu=85.9%
+p1: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7150000 lag=72100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.01/9.15/24.19 ms | e2e p50/p99/p999=7.20/9.41/23.17 ms | cpu=84.3%
+p2: msgs offered=7222500 achieved=7222500 shed=0 pushed=7222500 popped=7150000 lag=72500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.07/9.28/24.45 ms | e2e p50/p99/p999=6.82/9.41/27.26 ms | cpu=85.2%
+p3: msgs offered=7222000 achieved=7222000 shed=0 pushed=7222000 popped=7800000 lag=-578000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.01/9.15/21.63 ms | e2e p50/p99/p999=7.07/9.41/25.47 ms | cpu=80.3%
+p4: msgs offered=7222400 achieved=7222400 shed=0 pushed=7222400 popped=7150000 lag=72400 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.94/9.02/24.19 ms | e2e p50/p99/p999=7.39/9.41/20.10 ms | cpu=78.1%
+p5: msgs offered=7222200 achieved=7222200 shed=0 pushed=7222200 popped=7149900 lag=72300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.01/9.15/22.91 ms | e2e p50/p99/p999=7.07/9.15/24.45 ms | cpu=78.8%
+p6: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7150100 lag=72000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.07/9.15/26.50 ms | e2e p50/p99/p999=7.07/9.28/23.94 ms | cpu=86.5%
+p7: msgs offered=7222400 achieved=7222400 shed=0 pushed=7222400 popped=7150200 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.07/9.41/29.57 ms | e2e p50/p99/p999=7.14/9.02/23.17 ms | cpu=86.0%
+p8: msgs offered=7222400 achieved=7222400 shed=0 pushed=7222400 popped=7150100 lag=72300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/9.28/28.03 ms | e2e p50/p99/p999=7.26/9.28/21.38 ms | cpu=86.1%
+total: 9/9 processes with a final line | msgs offered=65000600 achieved=65000600 shed=0 pushed=65000600 popped=65000500 errors=0 | worst produce p99=9.41 ms | worst e2e p99=9.41 ms

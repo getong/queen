@@ -1,0 +1,141 @@
+[2026-10-14T16:04:20Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: start: rate=1000000 over N=9 processes (3 loader hosts x 3) = 111111 msg/s each; 1 topic(s) x 50000 partitions (50000 total), entities=0 mode=batch batch=100 consumers=33/process (297 total) warm=1 profile=default PROFILE=vm out=/Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x50000-1000k-p1k-gcp24-xfs-t24
+[2026-10-14T16:04:20Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: note: 1000000 is not divisible by 9; offering 999999 msg/s
+[2026-10-14T16:04:25Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: 1. cluster reset (profile default, PARTS=50000)
+    [2026-10-14T16:04:56Z] cluster: healthy in 31s: cluster id FufZrxMNISm_RWBxKmGxyQ
+      n1 node=1 alive=1 leader=3 voters=3 unfenced=3 fenced=0 maxlag=0
+      n2 node=2 alive=1 leader=3 voters=3 unfenced=3 fenced=0 maxlag=0
+      n3 node=3 alive=1 leader=3 voters=3 unfenced=3 fenced=0 maxlag=0
+    [2026-10-14T16:04:57Z] cluster: versions (conf_hash must be equal: nodes differ only in node.id + listener IPs)
+      n1 node=1 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=14ace2a2 pid=285337 jvm=[-Xms10g -Xmx10g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+      n2 node=2 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=14ace2a2 pid=262879 jvm=[-Xms10g -Xmx10g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+      n3 node=3 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=14ace2a2 pid=262217 jvm=[-Xms10g -Xmx10g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+    [2026-10-14T16:04:59Z] cluster: features: eligible.leader.replicas.version=1 group.version=1 kraft.version=0 metadata.version=4.3-IV0 share.version=1 streams.version=1 transaction.version=2 
+[2026-10-14T16:05:00Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: 2. samplers start (kafka-1x50000-1000k-p1k-gcp24-xfs-t24, every 2s) on 3 brokers + 3 loader hosts
+[2026-10-14T16:05:01Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: 3. create 1 topic(s) x 50000 partitions, RF 3, min.insync 2, warm on loader 1
+      [config] broker.num.network.threads = 12 (STATIC_BROKER_CONFIG)
+      [config] broker.num.replica.fetchers = 12 (STATIC_BROKER_CONFIG)
+      [config] topic.compression.type = producer (STATIC_BROKER_CONFIG)
+      [config] topic.flush.messages = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+    [create] done: 1 topics x 50000 partitions ready
+[2026-10-14T16:07:07Z] run 1x50000-1000k-p1k-gcp24-xfs-t24:    topics ready after 167s since start
+    node=1 rss_MB=11075 threads=207 maps=100978 fds=50302 data_MB=603 part_dirs=50001 gc_pauses=81 gc_max_ms=26.857 gc_sum_ms=879 errors=0 warns=4 isr_shrinks=1226 isr_updates=2452 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=138
+    node=2 rss_MB=11016 threads=208 maps=100990 fds=50302 data_MB=603 part_dirs=50001 gc_pauses=84 gc_max_ms=23.738 gc_sum_ms=911 errors=0 warns=3 isr_shrinks=1138 isr_updates=2276 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=138
+    node=3 rss_MB=11019 threads=208 maps=100985 fds=50314 data_MB=603 part_dirs=50001 gc_pauses=74 gc_max_ms=36.698 gc_sum_ms=816 errors=0 warns=3 isr_shrinks=1667 isr_updates=1929 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=138
+[2026-10-14T16:07:09Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: 4. launch 9 kload processes
+    launched 6 7 8 on queen-load-3.europe-west1-b.c.<gcp-project>.internal
+    launched 3 4 5 on queen-load-2.europe-west1-b.c.<gcp-project>.internal
+ssh: connect to host <loader-1-public-address> port 22: Operation timed out
+    p0 GONE
+    p1 GONE
+    p2 GONE
+    --- 10.250.0.10 p*.log
+    --- 10.250.0.8 p3.log
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+      [group] 33 consumers in 1 groups (k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+      [group] t=+0.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide ? members=0 assigned=0)
+      [group] t=+2.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+4.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+6.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+8.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+10.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+12.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 8337/50000 partitions (group-wide Stable members=198 assigned=50000)
+    --- 10.250.0.8 p4.log
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+      [group] 33 consumers in 1 groups (k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+      [group] t=+0.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide ? members=0 assigned=0)
+      [group] t=+2.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+4.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+6.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+8.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+10.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+12.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 8335/50000 partitions (group-wide Stable members=198 assigned=50000)
+    --- 10.250.0.8 p5.log
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+      [group] 33 consumers in 1 groups (k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+      [group] t=+0.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide ? members=0 assigned=0)
+      [group] t=+2.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+4.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+6.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+8.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+10.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+12.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 8332/50000 partitions (group-wide Stable members=198 assigned=50000)
+    --- 10.250.0.9 p6.log
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+      [group] 33 consumers in 1 groups (k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+      [group] t=+0.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide ? members=0 assigned=0)
+      [group] t=+2.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+4.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+6.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+8.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+10.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+12.2s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 8333/50000 partitions (group-wide Stable members=198 assigned=50000)
+    --- 10.250.0.9 p7.log
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+      [group] 33 consumers in 1 groups (k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+      [group] t=+0.0s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide ? members=0 assigned=0)
+      [group] t=+2.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+4.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+6.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+8.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+10.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+12.2s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 8332/50000 partitions (group-wide Stable members=198 assigned=50000)
+    --- 10.250.0.9 p8.log
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+      [group] 33 consumers in 1 groups (k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+      [group] t=+0.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/50000 partitions (group-wide ? members=0 assigned=0)
+      [group] t=+2.1s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 50000/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+4.2s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 50000/50000 partitions (group-wide Assigning members=198 assigned=50000)
+      [group] t=+6.2s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 253/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+8.2s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 253/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+10.2s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 253/50000 partitions (group-wide Reconciling members=198 assigned=253)
+      [group] t=+12.3s waiting: k1x50000-1000k-p1k-gcp24-xfs-t24-g-t0: local members 33/297 hold 8331/50000 partitions (group-wide Stable members=198 assigned=50000)
+[2026-10-14T16:07:33Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: FAILED: a load process exited before READY
+[2026-10-14T16:07:34Z] run 1x50000-1000k-p1k-gcp24-xfs-t24: 6. collect
+    node=1 rss_MB=11120 threads=211 maps=101079 fds=50352 data_MB=617 part_dirs=50051 gc_pauses=87 gc_max_ms=26.857 gc_sum_ms=967 errors=0 warns=4 isr_shrinks=1226 isr_updates=2452 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=165
+    node=2 rss_MB=11055 threads=212 maps=101091 fds=50352 data_MB=617 part_dirs=50051 gc_pauses=93 gc_max_ms=26.667 gc_sum_ms=1056 errors=0 warns=4 isr_shrinks=1138 isr_updates=2276 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=165
+    node=3 rss_MB=11096 threads=210 maps=101089 fds=50364 data_MB=617 part_dirs=50051 gc_pauses=87 gc_max_ms=36.698 gc_sum_ms=1020 errors=0 warns=4 isr_shrinks=1667 isr_updates=1929 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=165
+[2026-10-14T16:07:59Z] run 1x50000-1000k-p1k-gcp24-xfs-t24:    collected  17M into /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x50000-1000k-p1k-gcp24-xfs-t24
+[2026-10-14T16:07:59Z] run 1x50000-1000k-p1k-gcp24-xfs-t24:    stopping the cluster (data kept until the next reset)

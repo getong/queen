@@ -1,0 +1,60 @@
+[2026-10-14T10:18:13Z] run 1x1000-3000k-gcp24: start: rate=3000000 over N=9 processes (3 loader hosts x 3) = 333333 msg/s each; 1 topic(s) x 1000 partitions (1000 total), entities=0 mode=batch batch=100 consumers=33/process (297 total) warm=0 profile=default PROFILE=vm out=/Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x1000-3000k-gcp24
+[2026-10-14T10:18:13Z] run 1x1000-3000k-gcp24: note: 3000000 is not divisible by 9; offering 2999997 msg/s
+[2026-10-14T10:18:18Z] run 1x1000-3000k-gcp24: 1. cluster reset (profile default, PARTS=1000)
+    [2026-10-14T10:18:31Z] cluster: healthy in 13s: cluster id pQQuLfAeI3_LNonyVZgP-g
+      n1 node=1 alive=1 leader=1 voters=3 unfenced=3 fenced=0 maxlag=0
+      n2 node=2 alive=1 leader=1 voters=3 unfenced=3 fenced=0 maxlag=0
+      n3 node=3 alive=1 leader=1 voters=3 unfenced=3 fenced=0 maxlag=0
+    [2026-10-14T10:18:32Z] cluster: versions (conf_hash must be equal: nodes differ only in node.id + listener IPs)
+      n1 node=1 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=dd627c59 pid=38526 jvm=[-Xms6g -Xmx6g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+      n2 node=2 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=dd627c59 pid=37305 jvm=[-Xms6g -Xmx6g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+      n3 node=3 kafka=4.3.1 java="openjdk version "21.0.12.1" 2026-08-18" profile=default PROFILE=vm conf_hash=dd627c59 pid=37264 jvm=[-Xms6g -Xmx6g -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+AlwaysPreTouch] nofile=1048576
+    [2026-10-14T10:18:34Z] cluster: features: eligible.leader.replicas.version=1 group.version=1 kraft.version=0 metadata.version=4.3-IV0 share.version=1 streams.version=1 transaction.version=2 
+[2026-10-14T10:18:34Z] run 1x1000-3000k-gcp24: 2. samplers start (kafka-1x1000-3000k-gcp24, every 2s) on 3 brokers + 3 loader hosts
+[2026-10-14T10:18:35Z] run 1x1000-3000k-gcp24: 3. create 1 topic(s) x 1000 partitions, RF 3, min.insync 2 on loader 1
+      [config] broker.num.network.threads = 8 (STATIC_BROKER_CONFIG)
+      [config] broker.num.replica.fetchers = 8 (STATIC_BROKER_CONFIG)
+      [config] topic.compression.type = producer (STATIC_BROKER_CONFIG)
+      [config] topic.flush.messages = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+      [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+      [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+      [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+      [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+    [create] done: 1 topics x 1000 partitions ready
+[2026-10-14T10:18:44Z] run 1x1000-3000k-gcp24:    topics ready after 31s since start
+    node=1 rss_MB=6576 threads=176 maps=2894 fds=1260 data_MB=10 part_dirs=1001 gc_pauses=9 gc_max_ms=8.492 gc_sum_ms=33 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=18
+    node=2 rss_MB=6552 threads=177 maps=2892 fds=1252 data_MB=10 part_dirs=1001 gc_pauses=9 gc_max_ms=7.748 gc_sum_ms=32 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=18
+    node=3 rss_MB=6565 threads=176 maps=2888 fds=1252 data_MB=10 part_dirs=1001 gc_pauses=9 gc_max_ms=7.864 gc_sum_ms=32 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=18
+[2026-10-14T10:18:44Z] run 1x1000-3000k-gcp24: 4. launch 9 kload processes
+    launched 0 1 2 on queen-load-1.europe-west1-b.c.<gcp-project>.internal
+    launched 6 7 8 on queen-load-3.europe-west1-b.c.<gcp-project>.internal
+    launched 3 4 5 on queen-load-2.europe-west1-b.c.<gcp-project>.internal
+[2026-10-14T10:18:58Z] run 1x1000-3000k-gcp24:    READY 0/9
+ssh: connect to host <loader-1-public-address> port 22: Operation timed out
+[2026-10-14T10:19:20Z] run 1x1000-3000k-gcp24:    READY 6/9
+[2026-10-14T10:19:24Z] run 1x1000-3000k-gcp24:    all 9 READY after 71s since start
+[2026-10-14T10:19:27Z] run 1x1000-3000k-gcp24: 5. start instant 1791973176965 (loader-1 clock + 10s) written to 9 start files; producing 70s (ramp 10s)
+[2026-10-14T10:19:35Z] run 1x1000-3000k-gcp24:    0/9 exited | p0: 
+[2026-10-14T10:20:06Z] run 1x1000-3000k-gcp24:    0/9 exited | p0: [10:19:56] offered=   333299/s achieved=   333339/s shed=        0/s inflight=    17 | p50=   6.05 p99=  116.22 p999=  152.58 ms | push=4997900 pop=5038675 lag=-40775 | errs push=0 pop=0 empty=0 gor=5
+[2026-10-14T10:20:36Z] run 1x1000-3000k-gcp24:    0/9 exited | p0: [10:20:26] offered=   333327/s achieved=   333027/s shed=        0/s inflight=    56 | p50=   5.92 p99=   19.84 p999=   38.14 ms | push=14994300 pop=15114200 lag=-119900 | errs push=0 pop=0 empty=0 go
+[2026-10-14T10:20:51Z] run 1x1000-3000k-gcp24:    load finished after 158s since start
+[2026-10-14T10:20:51Z] run 1x1000-3000k-gcp24: 6. collect
+    node=1 rss_MB=6735 threads=178 maps=3023 fds=1318 data_MB=27092 part_dirs=1051 gc_pauses=89 gc_max_ms=9.074 gc_sum_ms=344 errors=0 warns=4 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='2026-10-14 10:19:26' uptime_s=147
+    node=2 rss_MB=6708 threads=178 maps=3020 fds=1309 data_MB=27092 part_dirs=1051 gc_pauses=75 gc_max_ms=8.577 gc_sum_ms=291 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='2026-10-14 10:19:26' uptime_s=147
+    node=3 rss_MB=6723 threads=177 maps=3025 fds=1309 data_MB=27092 part_dirs=1051 gc_pauses=76 gc_max_ms=8.561 gc_sum_ms=293 errors=0 warns=4 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='2026-10-14 10:19:26' uptime_s=147
+[2026-10-14T10:21:11Z] run 1x1000-3000k-gcp24:    collected 1.6M into /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x1000-3000k-gcp24
+    p0: msgs offered=21666400 achieved=21666400 shed=0 pushed=21666400 popped=21839600 lag=-173200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.05/107.01/156.67 ms | e2e p50/p99/p999=5.98/107.01/162.82 ms | cpu=98.8%
+    p1: msgs offered=21667000 achieved=21667000 shed=0 pushed=21667000 popped=21840000 lag=-173000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.11/105.98/152.58 ms | e2e p50/p99/p999=6.11/107.01/160.77 ms | cpu=98.4%
+    p2: msgs offered=21666300 achieved=21666300 shed=0 pushed=21666300 popped=21449800 lag=216500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.05/108.03/156.67 ms | e2e p50/p99/p999=6.18/108.03/160.77 ms | cpu=97.2%
+    p3: msgs offered=21666000 achieved=21666000 shed=0 pushed=21666000 popped=21645100 lag=20900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.05/105.98/154.62 ms | e2e p50/p99/p999=5.98/105.98/156.67 ms | cpu=99.0%
+    p4: msgs offered=21667200 achieved=21667200 shed=0 pushed=21667200 popped=21839700 lag=-172500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.11/107.01/156.67 ms | e2e p50/p99/p999=5.98/104.96/158.72 ms | cpu=98.5%
+    p5: msgs offered=21666300 achieved=21666300 shed=0 pushed=21666300 popped=21449700 lag=216600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.11/107.01/158.72 ms | e2e p50/p99/p999=5.92/105.98/158.72 ms | cpu=98.2%
+    p6: msgs offered=21665900 achieved=21665900 shed=0 pushed=21665900 popped=21644900 lag=21000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.11/109.06/162.82 ms | e2e p50/p99/p999=6.18/108.03/162.82 ms | cpu=103.7%
+    p7: msgs offered=21666700 achieved=21666700 shed=0 pushed=21666700 popped=22034600 lag=-367900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.18/105.98/154.62 ms | e2e p50/p99/p999=6.18/107.01/160.77 ms | cpu=103.2%
+    p8: msgs offered=21667000 achieved=21667000 shed=0 pushed=21667000 popped=21255100 lag=411900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=6.11/109.06/156.67 ms | e2e p50/p99/p999=6.11/107.01/158.72 ms | cpu=102.4%
+    total: 9/9 processes with a final line | msgs offered=194998800 achieved=194998800 shed=0 pushed=194998800 popped=194998500 errors=0 | worst produce p99=109.06 ms | worst e2e p99=108.03 ms
+[2026-10-14T10:21:13Z] run 1x1000-3000k-gcp24:    stopping the cluster (data kept until the next reset)
+[2026-10-14T10:21:21Z] run 1x1000-3000k-gcp24: DONE in 188s -> /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/1x1000-3000k-gcp24

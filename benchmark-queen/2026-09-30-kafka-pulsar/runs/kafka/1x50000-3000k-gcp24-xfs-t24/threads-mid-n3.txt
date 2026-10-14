@@ -1,0 +1,16 @@
+node=3 total=1.95 cores over 3s (211 threads, 208 named by jstack)
+    0.92 cores    48 thr  max1=0.09  data-plane-kafka-request-handler
+    0.62 cores    24 thr  max1=0.05  ReplicaFetcherThread
+    0.15 cores    12 thr  max1=0.02  data-plane-kafka-network-thread-PLAINTEXT-PLAINTEXT
+    0.09 cores     1 thr  max1=0.09  G Refine#
+    0.06 cores     1 thr  max1=0.06  executor-Fetch
+    0.06 cores    18 thr  max1=0.00  GC Thread#
+    0.01 cores     2 thr  max1=0.01  metrics-meter-tick-thread
+    0.01 cores     1 thr  max1=0.01  ExpirationReaper-Fetch
+    0.00 cores     1 thr  max1=0.00  VM Thread
+    0.00 cores     2 thr  max1=0.00  C CompilerThread
+    0.00 cores     1 thr  max1=0.00  kafka-raft-io-thread
+    0.00 cores     1 thr  max1=0.00  kafka-metadata-loader-event-handler
+    0.00 cores     1 thr  max1=0.00  client-metrics-reaper
+    0.00 cores     1 thr  max1=0.00  ExpirationReaper-ShareFetch
+    0.00 cores     3 thr  max1=0.00  ?native

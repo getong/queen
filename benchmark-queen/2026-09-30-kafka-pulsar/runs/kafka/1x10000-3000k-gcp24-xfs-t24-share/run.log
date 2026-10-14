@@ -29,9 +29,9 @@
     node=2 rss_MB=6705 threads=209 maps=20979 fds=10301 data_MB=120 part_dirs=10001 gc_pauses=28 gc_max_ms=8.172 gc_sum_ms=145 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=24
     node=3 rss_MB=6652 threads=208 maps=20982 fds=10310 data_MB=121 part_dirs=10001 gc_pauses=29 gc_max_ms=9.587 gc_sum_ms=154 errors=0 warns=3 isr_shrinks=0 isr_updates=0 errors_since_mark=0 isr_shrinks_since_mark=0 isr_updates_since_mark=0 mark='none' uptime_s=24
 [2026-10-14T18:09:54Z] run 1x10000-3000k-gcp24-xfs-t24-share: 4. launch 9 kload processes
-    launched 0 1 2 on queen-load-1.europe-west1-b.c.smartness-stage.internal
-    launched 3 4 5 on queen-load-2.europe-west1-b.c.smartness-stage.internal
-    launched 6 7 8 on queen-load-3.europe-west1-b.c.smartness-stage.internal
+    launched 0 1 2 on queen-load-1.europe-west1-b.c.<gcp-project>.internal
+    launched 3 4 5 on queen-load-2.europe-west1-b.c.<gcp-project>.internal
+    launched 6 7 8 on queen-load-3.europe-west1-b.c.<gcp-project>.internal
 [2026-10-14T18:10:08Z] run 1x10000-3000k-gcp24-xfs-t24-share:    READY 0/9
 ssh: connect to host <loader-3-public-address> port 22: Operation timed out
 [2026-10-14T18:10:26Z] run 1x10000-3000k-gcp24-xfs-t24-share:    READY 6/9

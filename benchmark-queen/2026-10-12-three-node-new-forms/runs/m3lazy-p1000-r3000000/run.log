@@ -1,0 +1,7 @@
+[14:53:49] run m3lazy-p1000-r3000000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[14:54:19] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[14:56:08] 3,000,000: last 30 s: offered 2,999,995 pushed 3,000,834 consumed 3,000,728 | run: shed 0 errors 0 | push p50 9.2 p99 22.8 | e2e p50 21.2 p99 45.6 worst 46.1 | cores 11.3 / 5.6 / 5.6 | mem GB 10.1 / 9.5 / 9.4 | loaders 19.3c  OK 
+RUN_DONE

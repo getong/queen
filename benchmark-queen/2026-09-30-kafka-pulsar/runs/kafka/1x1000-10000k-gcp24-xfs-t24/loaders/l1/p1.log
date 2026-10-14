@@ -1,0 +1,51 @@
+kload tag=1x1000-10000k-gcp24-xfs-t24-p1 loader=1/9 mode=batch rate=1111111 msg/s batch=100 batch-max=0 max-inflight=5000 ramp=10s duration=1m10s report=10s drain=0s GOMAXPROCS=16 GOGC=400 seed=1791995889165475572
+  offered: 1111111 msg/s = 11111.1 units/s (avg 100.0 msgs/unit) across 64 pacer workers (173.61 units/s each)
+  topics: 1 x 1000 partitions (k1x1000-10000k-gcp24-xfs-t24..k1x1000-10000k-gcp24-xfs-t24), entities/topic=0 (explicit partition) | picker: topics=rr entities: rr over space=1000 starting at 111
+  payload: goload jsonEvent target 256 B, avg 289.5 B raw, ~320 B stamped ({"ts":µs,"src":1,...}), pool 64x100
+  consumers: 33 here (ci 33..65 of 297), poll=1000 proc-us=0 ack=async ack-inflight=256 local-src=[0 1 2]
+  kafka: brokers=10.250.0.12:9092,10.250.0.11:9092,10.250.0.13:9092 rf=3 min-isr=2 producers=4 linger=5ms compression=lz4 acks=all idempotent batch-max-bytes=1048576 | consumers: protocol=consumer fetch-max-wait=500ms fetch-min-bytes=1 fetch-max-partition-bytes=1048576 session=45s
+  [topic] READY after 0.0s: 1 topics x 1000 partitions, leaders + full ISR
+  [config] broker.compression.type = producer (STATIC_BROKER_CONFIG)
+  [config] broker.default.replication.factor = 3 (STATIC_BROKER_CONFIG)
+  [config] broker.group.consumer.assignors = uniform,range (DEFAULT_CONFIG)
+  [config] broker.group.coordinator.rebalance.protocols = classic,consumer,streams (DEFAULT_CONFIG)
+  [config] broker.group.initial.rebalance.delay.ms = 3000 (DEFAULT_CONFIG)
+  [config] broker.log.flush.interval.messages = 9223372036854775807 (DEFAULT_CONFIG)
+  [config] broker.log.flush.interval.ms = <nil> (DEFAULT_CONFIG)
+  [config] broker.max.incremental.fetch.session.cache.slots = 4000 (STATIC_BROKER_CONFIG)
+  [config] broker.min.insync.replicas = 2 (DYNAMIC_DEFAULT_BROKER_CONFIG)
+  [config] broker.num.io.threads = 24 (STATIC_BROKER_CONFIG)
+  [config] broker.num.network.threads = 12 (STATIC_BROKER_CONFIG)
+  [config] broker.num.replica.fetchers = 12 (STATIC_BROKER_CONFIG)
+  [config] topic.compression.type = producer (STATIC_BROKER_CONFIG)
+  [config] topic.flush.messages = 9223372036854775807 (DEFAULT_CONFIG)
+  [config] topic.flush.ms = 9223372036854775807 (DEFAULT_CONFIG)
+  [config] topic.max.message.bytes = 16777216 (STATIC_BROKER_CONFIG)
+  [config] topic.message.timestamp.type = CreateTime (DEFAULT_CONFIG)
+  [config] topic.min.insync.replicas = 2 (DYNAMIC_TOPIC_CONFIG)
+  [config] topic.retention.ms = 600000 (DYNAMIC_TOPIC_CONFIG)
+  [config] topic.segment.bytes = 268435456 (DYNAMIC_TOPIC_CONFIG)
+  [config] topic.unclean.leader.election.enable = false (STATIC_BROKER_CONFIG)
+  [group] 33 consumers in 1 groups (k1x1000-10000k-gcp24-xfs-t24-g-t0 ... ), protocol consumer
+  [group] t=+0.0s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/1000 partitions (group-wide ? members=0 assigned=0)
+  [group] t=+2.0s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/1000 partitions (group-wide Assigning members=297 assigned=1000)
+  [group] t=+4.0s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/1000 partitions (group-wide Assigning members=297 assigned=1000)
+  [group] t=+6.0s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/1000 partitions (group-wide Reconciling members=297 assigned=4)
+  [group] t=+8.1s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/1000 partitions (group-wide Reconciling members=297 assigned=4)
+  [group] t=+10.1s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 0/1000 partitions (group-wide Reconciling members=297 assigned=4)
+  [group] t=+12.1s waiting: k1x1000-10000k-gcp24-xfs-t24-g-t0: local members 33/297 hold 115/1000 partitions (group-wide Stable members=297 assigned=1000)
+  [group] STABLE after 14.1s: 1 groups, 33 local members holding 115 partitions, assignEv=66 revokeEv=0 lostEv=0
+  [produce] 4 clients connected to every broker with producer IDs in 0.27s; max buffered 501024 records per client
+READY 1791996049271
+[start] waiting 9.174s for the common start 1791996066969
+[start] GO 16:41:06.969 (unix ms 1791996066969)
+[16:41:16] offered=   555531/s achieved=   554821/s shed=        0/s inflight=    76 | p50=   6.69 p99=   14.27 p999=  181.25 ms | push=5547700 pop=5741893 lag=-194193 | errs push=0 pop=0 empty=0 gor=778 | ack=   569882/s ackErr=0 ackAvg=10.11ms | e2e p50=6.94 p99=15.81 p999=160.77 n=5741893 | e2e_local p50=6.88 p99=14.91 n=1911508
+[16:41:26] offered=  1111079/s achieved=  1111139/s shed=        0/s inflight=    75 | p50=   6.82 p99=   26.50 p999=  203.78 ms | push=16660200 pop=17239288 lag=-579088 | errs push=0 pop=0 empty=0 gor=731 | ack=  1149665/s ackErr=0 ackAvg=22.98ms | e2e p50=8.64 p99=173.06 p999=268.29 n=11497395 | e2e_local p50=8.64 p99=173.06 n=3832992
+[16:41:36] offered=  1111021/s achieved=  1111211/s shed=        0/s inflight=    51 | p50=   6.69 p99=   15.81 p999=   27.52 ms | push=27771400 pop=28741200 lag=-969800 | errs push=0 pop=0 empty=0 gor=761 | ack=  1150732/s ackErr=0 ackAvg=26.11ms | e2e p50=8.38 p99=20.61 p999=31.87 n=11502078 | e2e_local p50=8.51 p99=21.63 n=3834800
+[16:41:46] offered=  1111252/s achieved=  1110652/s shed=        0/s inflight=   111 | p50=   7.01 p99=  117.25 p999=  301.06 ms | push=38878300 pop=40236200 lag=-1357900 | errs push=0 pop=0 empty=0 gor=758 | ack=  1149118/s ackErr=0 ackAvg=28.99ms | e2e p50=9.92 p99=325.63 p999=403.46 n=11494834 | e2e_local p50=9.92 p99=325.63 n=3832800
+[16:41:56] offered=  1111116/s achieved=  1111596/s shed=        0/s inflight=    62 | p50=   6.69 p99=   14.27 p999=   20.10 ms | push=49993600 pop=51740186 lag=-1746586 | errs push=0 pop=0 empty=0 gor=753 | ack=  1150413/s ackErr=0 ackAvg=29.45ms | e2e p50=8.38 p99=18.56 p999=25.47 n=11503986 | e2e_local p50=8.51 p99=19.07 n=3834800
+[16:42:06] offered=  1111160/s achieved=  1111280/s shed=        0/s inflight=    46 | p50=   6.94 p99=  101.89 p999=  374.78 ms | push=61106400 pop=63240585 lag=-2134185 | errs push=0 pop=0 empty=0 gor=760 | ack=  1150109/s ackErr=0 ackAvg=30.53ms | e2e p50=9.41 p99=374.78 p999=481.28 n=11500399 | e2e_local p50=9.41 p99=378.88 n=3833100
+[16:42:16] offered=  1111027/s achieved=  1110897/s shed=        0/s inflight=    59 | p50=   6.75 p99=   29.57 p999=  110.08 ms | push=72216300 pop=74742900 lag=-2526600 | errs push=0 pop=0 empty=0 gor=712 | ack=  1150253/s ackErr=0 ackAvg=30.67ms | e2e p50=8.51 p99=44.29 p999=127.49 n=11502315 | e2e_local p50=8.51 p99=43.78 n=3833000
+[info] steady window 60s (after the ramp, before the producers stopped): offered 1111109/s pushed 1111129/s popped 1150002/s cpu 443.7% = 0.40 cores per 100k msg/s (produce+consume)
+[final] offered=722222 achieved=722222 shed=0 (msgs: offered=72222200 achieved=72222200 shed=0) pushErr=0 | pushed=72222200 popped=74750200 lag=-2528000 | popErr=0 empty=0 | overall p50=6.82 p99=43.78 p999=242.69 ms | acked=74750200 ackErr=0 ackLag=-2528000 ackAvg=30.74ms | e2e p50=8.64 p99=259.07 p999=407.55 ms
+load_cpu=286.0%

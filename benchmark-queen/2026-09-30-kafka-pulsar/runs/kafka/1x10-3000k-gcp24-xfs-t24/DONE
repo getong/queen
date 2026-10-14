@@ -1,0 +1,11 @@
+2026-10-14T15:24:28Z
+p0: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=19500000 lag=2166500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.79/7.71/17.54 ms | e2e p50/p99/p999=6.37/8.10/48.38 ms | cpu=96.7%
+p1: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=38999900 lag=-17333400 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/7.71/17.28 ms | e2e p50/p99/p999=5.79/8.26/36.61 ms | cpu=112.4%
+p2: msgs offered=21666900 achieved=21666900 shed=0 pushed=21666900 popped=19499900 lag=2167000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/7.78/16.77 ms | e2e p50/p99/p999=6.43/8.51/39.68 ms | cpu=96.8%
+p3: msgs offered=21666400 achieved=21666400 shed=0 pushed=21666400 popped=19499800 lag=2166600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.92/7.97/17.28 ms | e2e p50/p99/p999=6.37/9.79/80.38 ms | cpu=94.9%
+p4: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=19499900 lag=2166600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/7.78/16.51 ms | e2e p50/p99/p999=4.05/7.84/30.59 ms | cpu=94.5%
+p5: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=19499900 lag=2166700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/7.71/16.19 ms | e2e p50/p99/p999=5.92/8.26/69.12 ms | cpu=95.2%
+p6: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=19499800 lag=2166800 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.92/7.84/17.79 ms | e2e p50/p99/p999=6.30/7.97/29.82 ms | cpu=97.6%
+p7: msgs offered=21666900 achieved=21666900 shed=0 pushed=21666900 popped=19499900 lag=2167000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.92/7.90/17.28 ms | e2e p50/p99/p999=5.34/7.84/30.85 ms | cpu=97.4%
+p8: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=19499900 lag=2166600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.98/7.84/18.30 ms | e2e p50/p99/p999=6.11/8.10/30.85 ms | cpu=97.1%
+total: 9/9 processes with a final line | msgs offered=194999400 achieved=194999400 shed=0 pushed=194999400 popped=194999000 errors=0 | worst produce p99=7.97 ms | worst e2e p99=9.79 ms

@@ -1,0 +1,7 @@
+[15:47:54] run xq1k-p1000-r1000000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[15:48:17] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[15:50:06] 1,000,000: last 30 s: offered 999,995 pushed 999,905 consumed 999,849 | run: shed 0 errors 0 | push p50 4.8 p99 12.3 | e2e p50 9.1 p99 24.6 worst 25.3 | cores 8.6 / 4.1 / 3.9 | mem GB 4.6 / 3.6 / 3.7 | loaders 15.9c  OK 
+RUN_DONE

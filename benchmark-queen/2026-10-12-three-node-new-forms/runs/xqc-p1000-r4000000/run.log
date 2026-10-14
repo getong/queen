@@ -1,0 +1,7 @@
+[16:43:01] run xqc-p1000-r4000000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 4000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:43:24] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[16:45:31] 4,000,000: last 30 s: offered 4,000,061 pushed 2,731,849 consumed 2,744,146 | run: shed 71,535,400 errors 1722390 | push p50 63.0 p99 22806.5 | e2e p50 124.9 p99 4325.4 worst 4325.4 | cores 12.9 / 7.4 / 0.9 | mem GB 12.6 / 11.5 / 9.8 | loaders 19.3c  NOT CARRIED 
+RUN_DONE
