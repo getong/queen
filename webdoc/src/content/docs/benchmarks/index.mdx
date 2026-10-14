@@ -18,7 +18,7 @@ digest: >-
   Exactly-once consume-transform-produce transactions of 10 messages commit in 3 to 4 ms at the
   median and peak near 12,900 a second. A soak at 500,000 msg/s on 2.0.0-beta.1 held e2e p99 near
   86 ms for 3 h 23 min through kill -9 and graceful restarts of the leader. Jepsen: 244 tests on
-  the code of 2.2.0, all valid.
+  the code of 2.3.0, all valid.
 ---
 
 Queen replicates every write through raft, so we measure it as a cluster: three nodes, every
@@ -92,7 +92,7 @@ September's runs took the last 30 seconds of 60 and called a system behind under
 names its build and date, and the engine moves fast: read a figure as what that build did on that
 rig. The 2.3.0 figures were measured on the builds of the two days before the release, with the
 binary wire forms a client turns on; the released binary and the default JSON forms have not been
-run through the matrix. The Jepsen campaign ran on the code of 2.2.0. The full method, each
+run through the matrix. The Jepsen campaign ran on the code of 2.3.0. The full method, each
 system's settings and the commands to run it again are in
 [how we measure](/benchmarks/methodology/).
 

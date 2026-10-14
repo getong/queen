@@ -124,9 +124,10 @@ and consumed 1,000,000 messages a second through one queue at every partition co
 10 to ten million, with an end-to-end p99 between 18 and 38 ms, and 2,000,000 a second at 59 to
 100 ms. An exactly-once step of 10 messages commits in 3 to 4 ms at the median, and one raft group
 tops out near 12,900 such transactions a second (pre-release builds, 2026-10-12 and 13, with Kafka
-measured on the same machines). The latest full Jepsen campaign, on the code of 2.2.0, ran 244 tests under kill -9,
-partitions, pauses, clock jumps and power loss: all were valid, one of them at its second run,
-after the test harness had crashed in the first
+measured on the same machines). The latest full Jepsen campaign, on the code of 2.3.0, ran 244 tests under kill -9,
+partitions, pauses, clock jumps and power loss: all were valid, three of them once their histories
+were checked again with more memory, one at its second run, after the test harness had crashed in
+the first
 ([Jepsen](/benchmarks/jepsen/)). Every number, with its conditions and
 the places where other systems did better, is on [benchmarks](/benchmarks/), and what the
 guarantees cover is on [guarantees](/concepts/guarantees/).

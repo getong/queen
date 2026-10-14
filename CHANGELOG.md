@@ -123,7 +123,7 @@ document that was expired, malformed or dated in the future by a clock step made
 drain every worker and exit. It is now removed with one log line and supervision goes on, as in the
 PHP engine; one that cannot be removed still stops the master, as a fault of the state directory.
 
-## 2.3.0
+## 2.3.0 - 2026-10-14
 
 **Three brokers, a million messages a second: end to end p99 from 100-160 ms to about 20.** Measured on
 2026-10-12 and 13 with the fixes below and this release's wire forms (binary push, compressed groups,
