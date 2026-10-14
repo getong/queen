@@ -31,9 +31,10 @@ A million messages a second is worth nothing if one of them can go missing. We c
 Jepsen: five nodes, clients driving the native API as hard as they can, a nemesis that kills,
 pauses, partitions, skews clocks and cuts power, and checkers that read the whole history
 afterwards looking for a message lost, delivered twice, acked twice or seen out of order. The
-latest full campaign ran 244 tests on the code of 2.2.0, on 2026-10-09 and 10, a standby cluster's
-failover among them: all 244 came back valid, one of them at its second run, after the harness had
-crashed in the first. That is evidence, not proof. Jepsen finds bugs and cannot show there are
+latest full campaign ran 244 tests on the code of 2.3.0, on 2026-10-13 and 14, a standby cluster's
+failover among them: all 244 came back valid, three of them once their histories were checked
+again with more memory, one at its second run, after the harness had crashed in the first. That is
+evidence, not proof. Jepsen finds bugs and cannot show there are
 none, and further down is every bug it found in Queen 2.
 
 ## How a test runs
@@ -112,6 +113,7 @@ lein run test --nodes n1,n2,n3,n4,n5 --username root --bin /root/bin/queen \
 | Failover | 2026-10-08 and 09 | the same build | 37: W12 on two clusters of three nodes, with crashes of the source, planned switches, transactions and crashes that find the standby 10 s behind, under kills, power loss, pauses, partitions, clock faults, restarts and all of them at once | 36 valid; the other was the harness, and the 10 planned switches ran again valid |
 | Rows window, first pass | 2026-10-09 | `e8efda8cb`, the first build of 2.2.0's rows window | 41: the queue, the pipeline, retention, the log, dead letters, dedup, the KV register and Elle with rows that live two seconds, on 256 KiB log files sealed after 10 s, so that consumers read messages that have no row; under kills, power loss, pauses, partitions, clock faults, restarts, membership changes, bridges and a deaf leader | 37 valid; the other 4 were the two refusals to start below |
 | 2.2.0 | 2026-10-09 and 10 | `3b1a6d9bb`, the code of 2.2.0 without its last three commits | 244: the 153 of the 2.1.0 campaign, 40 of the first pass, 12 on the same small log files with rows that stay, 8 on shared logs, and 31 failovers, 4 of them with rows that live two seconds | 244 valid, one at its second run: the harness crashed in the first |
+| 2.3.0 | 2026-10-13 and 14 | `1c7136d4a`, the server code of 2.3.0, as the binary of the 2.3.0-beta.2 image | 244: the tests of the 2.2.0 campaign | 244 valid: three once their histories were checked again with more memory, one at its second run, after the harness crashed in the first |
 
 The unknown of 2026-10-02 is W9 under bridge partitions. After the last heal, a follower's pops
 kept timing out for about 90 seconds although it had caught up, so the final reads did not finish
@@ -174,6 +176,19 @@ end, the tests that damage a node's files on purpose left out, and no other run 
 a panic. Eleven of the tests then ran on the final code, `8f5342d29`, and all were valid. The
 verdicts, the builds and the node logs' scan are in `benchmark-queen/2026-10-09-jepsen-220/`.
 
+The 2.3.0 campaign ran the same 244 tests on what that release changes: the consumption engine
+(its scan of idle partitions in turns, and a checkpoint taken as soon as an answer waits for one),
+when a command's recorded outcome is retired, retention spread over its interval, the planner's
+tables of partition names, a durable point every 250 ms written out in steps, and the dedup filter
+of busy partitions. It ran on one set of six nodes, `n1` to `n5` for 213 tests and all six for the
+31 failovers, from 2026-10-13 11:58 to 2026-10-14 11:50 UTC. Three tests of the log workload first
+came back unknown: the checker of their histories ran out of memory on a control of 4 GB, and the
+other checkers had found nothing. Their stored histories were checked again with 8 GB, and all
+three are valid, with no anomaly, no duplicate and no torn read. One failover test crashed in the
+harness before any load ran, for the reason the 2.2.0 campaign met on its sixth node, and it ran
+again valid. The binary wire forms that 2.3.0 adds were not part of it, as its clients speak JSON.
+The verdicts are in `benchmark-queen/2026-10-13-jepsen-230/`.
+
 ## What the tests found
 
 Every row is a bug in Queen that a campaign caught, and the commit that fixed it names the test
@@ -215,19 +230,25 @@ every node's log after each test since, and such a run is `REFUSED`. And a failo
 in the harness, the first one that needed lazyfs on six nodes: the sixth had never built it, and
 the build took longer than a node's setup may. It ran again valid.
 
+The 2.3.0 campaign had two as well. Its control had 4 GB, where the earlier controls had 31: the
+log workload's checker ran out of memory on three histories, which were checked again once the
+control had 16 GB. And its sixth node met the lazyfs build of the 2.2.0 campaign again, since the
+harness still builds lazyfs during a test's setup the first time a node needs it.
+
 ## Limits
 
 This is testing. A valid run shows that these histories, under these faults, broke no rule a
 checker knows, and every campaign ran one raft group with one tenant over the native HTTP API:
-several raft groups, several tenants, the Kafka facade and the embedded proxy were not part of any.
+several raft groups, several tenants, the Kafka facade, the embedded proxy and the binary wire
+forms of 2.3.0 (binary push, compressed groups, framed pops, the binary transaction body) were not
+part of any.
 Lease exclusivity across a leader change needs the nodes' clocks within
 `QUEEN_RAFT_MAX_CLOCK_SKEW_MS` (500 ms) of each other. Losing a majority of the disks for good can
 lose acknowledged writes, since raft survives the loss of a minority. The full campaign last ran
-on `3b1a6d9bb`. 2.2.0's server code adds three commits to it: one line of the rule for how long a
-push keeps its row, which a queue's completed retention no longer extends, `/health` answering
-ready only while the leader has its majority, and tests. Eleven of the tests ran again on that
-code, and no campaign ran on the released binary. No test sets a completed retention above its
-queue's dedup window, so none of them tells the old rule from the new one. A standby's failover
+on `1c7136d4a`, with the binary of the 2.3.0-beta.2 image; the server code of 2.3.0 differs from it
+in its version line only. No test sets a completed retention above its queue's dedup window, so
+none of them checks the rule of 2.2.0 by which a queue's completed retention no longer extends how
+long a push keeps its row. A standby's failover
 has its own workload since 2026-10-08, on a standby that starts empty beside its source: a seeded
 standby, one that follows across a version upgrade, and two clusters in different places were not
 part of it.

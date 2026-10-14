@@ -11,7 +11,7 @@ Queen MQ is a transactional event broker. When a worker handles an event, the ac
 changes, the events it emits and the timer it sets commit as one entry of a replicated log, or not
 at all. 
 
-On three nodes it carries up to 2M msg/s in and out of one queue of 10M partitions.
+On three nodes it carries up to 3M msg/s in and out of one queue of 10M partitions.
 
 Queen speaks HTTP but is also compatible with Kafka clients.
 
@@ -71,12 +71,13 @@ same machines (Redpanda 26.2.3 and Pulsar 4.2.4 were last run in September, besi
 2.0.0-beta.2). Each row links to the run and its conditions.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/bench-partitions-p99-dark.svg">
-  <img src="assets/bench-partitions-p99-light.svg" alt="End to end p99 as one queue grows from 10 to 10 million partitions: 7 to 8 ms at 100k msg/s, 18 to 38 ms at 1M, 59 to 100 ms at 2M, and 36 to 51 ms at 1.5M with deduplication and deletes on" width="820">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/bench-queen-e2e-dark.svg">
+  <img src="assets/bench-queen-e2e-light.svg" alt="End to end p99 as one queue grows from 10 to 10 million partitions on three GCP nodes with local NVMe: 47 to 78 ms at 3M msg/s of 256-byte messages; at 1M msg/s of 1 KB messages 27 to 34 ms from 100 to 1M partitions, 68 and 65 ms at 10 and 10M" width="820">
 </picture>
 
-<sub>End to end p99, the worst load process in seconds 30-60 of 70. With deduplication and deletes after 60 s: the
-last 60 s of 200, pooled; not carried at 10 and 10M partitions.</sub>
+<sub>Queen 2.3.0 on three GCP c4-standard-24-lssd nodes with local NVMe, 2026-10-14: end to end p99 at 3M msg/s of
+256-byte messages and at 1M msg/s of 1 KB messages, the worst load process in seconds 30-60 of 70.
+[Queen vs Kafka on NVMe](https://queenmq.com/benchmarks/queen-vs-kafka/).</sub>
 
 | | Result |
 |---|---|
@@ -85,7 +86,7 @@ last 60 s of 200, pooled; not carried at 10 and 10M partitions.</sub>
 | [Transactions](https://queenmq.com/benchmarks/transactions/) | 10 messages per transaction: commit p99 **4 ms** at 6,000 transactions a second, a ceiling near 12,900 a second. In September's comparison: commit p99 4 ms against Kafka's 34 and Pulsar's 32. |
 | [Kafka clients](https://queenmq.com/benchmarks/kafka-clients/) | franz-go at 1,000,000 msg/s through Queen's Kafka port, e2e p99 48 ms. |
 | [Soak](https://queenmq.com/benchmarks/soak/) | 500,000 msg/s for 3 h 23 min over 1,000,000 partitions, through a kill -9 of the leader and of a follower: e2e p99 86 ms in the median window. |
-| [Jepsen](https://queenmq.com/benchmarks/jepsen/) | **244 tests** on the code of 2.2.0: all valid, one of them at its second run, after the test harness had crashed in the first. No acknowledged message lost, no lease held twice, transactions atomic. |
+| [Jepsen](https://queenmq.com/benchmarks/jepsen/) | **244 tests** on the code of 2.3.0: all valid, three of them once their histories were checked again with more memory, one at its second run, after the test harness had crashed in the first. No acknowledged message lost, no lease held twice, transactions atomic. |
 | [Laravel](https://queenmq.com/benchmarks/laravel/) | 2,753 jobs/s with 32 workers on one node, against 1,124 for Horizon on Redis. |
 
 Where Queen is behind: with few partitions Kafka is faster and carries more (4M msg/s at p99

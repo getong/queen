@@ -1,0 +1,214 @@
+---
+title: "Queen vs Kafka on NVMe, 10 to 10M partitions"
+description: "Queen 2.3.0 and Kafka 4.3.1 on the same three GCP nodes with local NVMe disks, 2026-10-14: 3,000,000 msg/s of 256-byte messages from 10 to 10,000,000 partitions, 1,000,000 msg/s of 1 KB messages, the machines, every setting, how we measured and what Kafka's page cache writeback did to its tail."
+type: reference
+tier: operate
+sidebar:
+  label: "Queen vs Kafka on NVMe"
+  order: 3.5
+---
+
+We ran Queen 2.3.0 and Kafka 4.3.1 on the same three GCP brokers with local NVMe disks, with the
+same load generators, the same load and the same report. At 3,000,000 msg/s of 256-byte messages
+Queen carried every partition count from 10 to 10,000,000 with an end-to-end p99 between 47 and
+78 ms, on 19 to 23 cores for the three brokers together. Kafka's median is three to six times
+lower than Queen's wherever it carries the load. Its p99 matches Queen's at 100 partitions (61
+against 65 ms), is about twice Queen's at 1,000 and 10,000, and 514 ms at 10 partitions; from
+10,000 partitions it needs twice Queen's CPU, and at 100,000 it does not carry the rate. With
+1 KB messages at 1,000,000 msg/s the medians come close (Kafka 7.5 to 9.8 ms, Queen 9.5 to 12),
+while Queen's p99 stays at 27 to 34 ms and Kafka's at 98 to 136. All numbers are from
+2026-10-14; the runs are linked at the end.
+
+## The machines
+
+Six VMs in one GCP zone (`europe-west1-b`) and one VPC, Ubuntu 24.04. Both systems ran on the
+same three brokers, one system at a time, with nothing else on them.
+
+| Role | Machine type | CPU | Memory | Disk for the data |
+|---|---|---|---|---|
+| 3 brokers | `c4-standard-24-lssd` | 24 vCPU, Intel Xeon 6985P-C | 88 GB | the four local NVMe disks of the machine type (4 × 375 GB) in one RAID0, ext4, `noatime` |
+| 3 load generators | `c4-highcpu-16` | 16 vCPU, Intel Xeon Platinum 8581C | 32 GB | boot disk only |
+
+We measured every broker's disks before giving them roles, because one slow disk on a follower
+becomes the p99 of every client of that follower. On all three: a 32 KB write followed by
+`fdatasync` took 0.055 ms at the median and 0.21 ms at p99, about 16,000 a second; sequential 1 MB
+writes ran at 1,340 MB/s, which is GCP's limit of about 335 to 350 MB/s for each local disk, four
+times. The boot disk (Hyperdisk Balanced, about 700 syncs a second on the 16-vCPU machines we
+tried first) holds nothing of either system's data.
+
+## How we ran it
+
+- **The load.** Nine load processes, three on each load generator, open loop: each process
+  keeps its schedule when the broker slows down, so a stall shows up as latency instead of
+  lowering the load. Producers send 100 messages a request to one partition, in turn over all the
+  partitions. Each Queen process talks to one of the three brokers; Kafka's clients talk to each
+  partition's leader.
+- **The messages.** JSON events of 256 bytes, or about 1,027 bytes in the 1 KB runs, the same
+  generator on both sides.
+- **Consumers.** One consumer group. 9 consumers in all for 10 partitions, 99 for 100 and 297 for
+  every larger count, the same on both sides. From 1,000 partitions Queen's consumers pop up to 10
+  partitions and 1,000 messages at a time (one partition and up to 20,000 or 5,000 messages with 10
+  and 100 partitions) and acknowledge without waiting; Kafka's poll up to 1,000 records.
+- **A point.** A fresh cluster, the queue or topic created with all its partitions and warmed
+  before the timed run, then 70 seconds of load, the first 10 a ramp. No system was measured
+  while it created partitions.
+- **The figures.** End-to-end latency is from the moment a message was scheduled to be sent to
+  the moment a consumer received it. The tables give the slowest load process's worst
+  10-second window in seconds 30 to 60, the same statistic for both systems.
+- **Carried.** A point is carried when nothing is shed, nothing errs and at least 99% of what was
+  pushed is consumed.
+- **Resources.** CPU is the three brokers' cores added up over the loaded window. Memory is the
+  resident memory of the busiest broker. Disk is the mean write rate of a broker's data volume.
+  Each broker and loader was sampled every one or two seconds.
+- **One run a point.** We ran most points once. The 1,000-partition point at 3,000,000 msg/s ran
+  twice for Queen on the same machines, with a p99 of 56 and of 78 ms by this statistic: read a
+  difference of 20 ms between two cells as noise.
+
+## The settings
+
+| | Queen 2.3.0 | Kafka 4.3.1 |
+|---|---|---|
+| Build | the released image `ghcr.io/queen-mq/queen:2.3.0` (digest `967fc40c`), its defaults | the Apache release, JDK 21, KRaft with the three brokers as controllers |
+| Durability | three replicas in one raft group; a write is answered after the leader and one follower have fsynced it | three replicas, `acks=all`, `min.insync.replicas=2`; a write is answered when the in-sync replicas hold it in memory, with no fsync |
+| Producer | binary push body compressed with zstd | idempotent, lz4, `linger.ms=5`, 4 producers a process, batches up to 1 MiB (franz-go) |
+| Consumer | framed pops, acknowledgements answered as counts | the KIP-848 consumer protocol, `fetch.max.wait.ms=500`, `fetch.min.bytes=1` |
+| Broker | deduplication off, completed messages kept 1,800 s (nothing deleted during a point); 10,000,000 partitions with `QUEEN_CONSUME_IDLE_UNLOAD_S=30` | 6 GB heap with G1 and a 20 ms pause goal; 16 request handler threads, 8 network threads, 8 replica fetchers; retention 10 minutes |
+| Page cache | background writeback from 5% of memory | background writeback from 1 GiB (`vm.dirty_background_bytes`), see below |
+
+Both ran with the same kernel settings otherwise (`vm.swappiness=1`, `vm.dirty_ratio=60`,
+`vm.min_free_kbytes=524288`, 1,048,576 open files, larger socket buffers). Kafka's settings are the ones of our September
+comparison and of 2026-10-13, sized then for 16-vCPU brokers; we checked that none of them held
+Kafka back here. At 1,000 partitions and 3,000,000 msg/s a Kafka broker used 6 to 10 of its 24
+cores, its busiest request handler thread 28% of a core and its busiest network thread 45%; the
+heap held at most 380 MB after a collection, and the collector paused for about 0.3 s in a whole
+run, never more than 9 ms at a time.
+
+## 3,000,000 msg/s of 256-byte messages
+
+End-to-end latency, p50 / p99 in milliseconds, and the cores of the three brokers together.
+
+| Partitions | Queen | Queen cores | Kafka | Kafka cores |
+|---|---|---|---|---|
+| 10 | 38 / 78 | 18.6 | 6.5 / 514 | 12.8 |
+| 100 | 21 / 65 | 23.0 | 6.0 / 61 | 15.7 |
+| 1,000 | 22 / 56 | 22.4 | 6.3 / 104 | 19.9 |
+| 10,000 | 25 / 66 | 23.3 | 9.0 / 110 | 46.8 |
+| 100,000 | 24 / 71 | 23.4 | not carried: 200,000 msg/s pushed, p99 51 s | 58.8 |
+| 1,000,000 | 25 / 47 | 23.0 | not run | |
+| 10,000,000 | 23 / 54 | 23.4 | not run | |
+
+<Figure id="benchmarks/gcp-3m-p99" />
+
+<Figure id="benchmarks/gcp-3m-cpu" />
+
+Kafka's median is three to six times lower than Queen's at every count it carries: it answers a
+write when the replicas hold it in memory, where Queen waits for two fsyncs. Its p99 is the same
+as Queen's at 100 partitions and about twice Queen's at 1,000 and 10,000, and its tail comes in
+bursts: one load process at 1,000 partitions read 12 to 146 ms from one 10-second window to the
+next, where Queen's windows at that point stayed between 37 and 54 ms. At 10 partitions
+each of Kafka's nine consumers reads 333,000 messages a second and its p99 settles at 300 to
+470 ms a window. From 10,000 partitions Kafka pays for every partition: 47 cores at 10,000, and at
+100,000 it pushed 200,000 of the 3,000,000 messages a second offered. Its topic of 100,000
+partitions took about six minutes to create; we did not run a million.
+
+Queen's CPU, memory and disk do not follow the partition count. A broker's resident memory goes
+from 11 GB at 10 partitions to 16 GB at a million and 25 GB at ten million, and each broker wrote
+713 to 958 MB/s, under the disks' 1,340. The 100,000-partition point is marked not carried by
+the rule because one pop of several million timed out (HTTP 503) in the first seconds of the load;
+every other number at that point is in line with its neighbours.
+
+## Kafka and the page cache
+
+Kafka writes into the page cache and leaves the writing to disk to the kernel. Our hosts start the
+background writeback when dirty pages reach 5% of memory. On 88 GB brokers that is about 3.6 GB:
+the dirty pages built up to that, and the kernel then wrote them out at 1,270 to 1,330 MB/s,
+the RAID's limit, about every 12 seconds. On the 31 GB machines of 2026-10-13 the same setting
+kept about 1 GB dirty and the writes smooth. With the writeback starting at 1 GiB the bursts
+stopped up to 1,000 partitions (at most 700 to 800 MB/s; at 10,000 the dirty pages still reached
+2 GB), and Kafka's p99 fell:
+
+<Figure id="benchmarks/gcp-kafka-writeback" />
+
+The tables on this page use Kafka's better setting. Queen does not depend on it: it fsyncs what
+it writes, so at 1,000 partitions its dirty pages never passed 0.1 GB, under either threshold. Queen's numbers here are
+with the 5% default; one point at 1,000 partitions repeated with 1 GiB showed no gain.
+
+At 2,000,000 msg/s with the 5% setting, Kafka's p99 here was 74 ms at 100 partitions and 71 ms at
+1,000, against 43 and 25 ms on the DigitalOcean machines of
+[the partition page](/benchmarks/partitions/#kafka-on-the-same-machines). Its median was lower
+here (6 ms against 8 to 9). With 1 GiB some of the difference in the tail remains, and we have
+not found where.
+
+## 1,000,000 msg/s of 1 KB messages
+
+The same matrix with 1 KB JSON messages (1,027 bytes on average) at 1,000,000 msg/s, about 1 GB/s of
+messages. Everything else as above; Kafka again with the writeback from 1 GiB.
+
+| Partitions | Queen | Queen cores | Kafka | Kafka cores |
+|---|---|---|---|---|
+| 10 | 16 / 68 | 13.8 | 8.3 / 553 | 7.7 |
+| 100 | 9.9 / 34 | 17.4 | 7.6 / 136 | 9.1 |
+| 1,000 | 9.5 / 27 | 16.1 | 7.5 / 98 | 12.2 |
+| 10,000 | 11 / 28 | 16.2 | 9.8 / 132 | 32.2 |
+| 100,000 | 11 / 27 | 16.5 | not carried: 166,000 msg/s pushed, p99 44 s | 58.4 |
+| 1,000,000 | 12 / 29 | 16.0 | not run | |
+| 10,000,000 | 10 / 65 | 16.5 | not run | |
+
+<Figure id="benchmarks/gcp-1m1k-p99" />
+
+<Figure id="benchmarks/gcp-1m1k-cpu" />
+
+Larger messages bring the two medians close: Kafka's is 7.5 to 9.8 ms, Queen's 9.5 to 12 ms from 100
+partitions up. The tails stay apart: Queen's p99 is 27 to 34 ms from 100 to 1,000,000 partitions,
+Kafka's 98 to 136 ms, three to five times higher, and 553 ms at 10 partitions. Kafka needs less CPU
+up to 1,000 partitions (8 to 12 cores against 14 to 17), twice Queen's at 10,000, and it does not
+carry 100,000. The two 65 ms cells of Queen at 10 and 10,000,000 partitions are each one load
+process's one window; over all nine processes the last 30 seconds read 45 and 28 ms. Each Queen
+broker wrote 665 to 732 MB/s and each Kafka broker about 610 MB/s: both compress these JSON
+messages, Queen with zstd and Kafka with lz4. A Queen broker held 5 to 9 GB of memory up to a
+million partitions and 18 GB at ten million.
+
+## The ceiling at 1,000 partitions
+
+How far one queue of 1,000 partitions goes on these brokers, Queen 2.3.0, a fresh cluster for
+each rate:
+
+| msg/s | e2e p50 / p99 | cores | disk writes a broker |
+|---|---|---|---|
+| 2,000,000 | 6 / 18 | 20.0 | 610 MB/s |
+| 2,500,000 | 9 / 27 | 20.8 | 680 MB/s |
+| 3,000,000 | 21 / 78 | 22.2 | 760 MB/s |
+| 3,500,000 | 47 / 98 | 26.2 | 865 MB/s |
+| 4,000,000 | not carried: 3,950,000 pushed, 1.2 s | 34.6 | 960 MB/s |
+
+At 4,000,000 msg/s neither the disks (960 of 1,340 MB/s) nor the leader's CPU (16 of 24 cores)
+was full; what stopped it is not profiled yet. On the smaller `c4-standard-16-lssd` (16 vCPU,
+two local disks, 670 MB/s) the same queue carried 2,000,000 msg/s at a p99 of 60 ms, 2,250,000 at
+400 ms and not 2,500,000, with the disks writing 550 to 620 MB/s of their 670.
+
+## Where each one leads
+
+Kafka leads on the median, by three to six times, and on CPU up to 1,000 partitions. If your
+partition count is in the hundreds and a few milliseconds at the median matter more than the
+p99, Kafka on these machines is the faster broker. Queen leads on the tail from 1,000 partitions
+up, on CPU from 10,000, and it is the only one of the two that carries 100,000 partitions and
+more: at ten million its p99 is 54 ms on 23 cores. It also answers a write only after two disks
+have it, which Kafka in this configuration does not.
+
+## What these runs do not show
+
+- Kafka with an fsync on every write (`flush.messages=1`), which would compare durability for
+  durability. We ran Kafka as it is usually run.
+- Kafka's thread pools sized for 24 cores. They were not saturated at the counts it carried.
+- Repeated runs for every point: most points ran once.
+- Kafka at 1,000,000 and 10,000,000 partitions.
+
+## The runs
+
+Queen: [`benchmark-queen/2026-10-12-three-node-new-forms/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-10-12-three-node-new-forms),
+the `m3-*` folders (3,000,000 msg/s), `p1k-*` (1 KB), `gcp24-*` and `gcp-*` (the ceilings), with
+`runs/matrix-gcp24-3m.md` for every node's CPU, memory and disk. Kafka: the `*-gcp24` and
+`*-gcp24-dbb1g` folders of `benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/`. The load
+generators are `qload` and `kload` of
+[`benchmark-queen/2026-09-30-kafka-pulsar/mqload`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-09-30-kafka-pulsar/mqload).
+[How we measure](/benchmarks/methodology/) describes the harness.
