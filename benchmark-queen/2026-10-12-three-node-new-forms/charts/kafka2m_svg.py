@@ -24,7 +24,7 @@ PARTS = (10, 100, 1000, 10_000, 100_000, 1_000_000, 10_000_000)
 TICK = {10: "10", 100: "100", 1000: "1k", 10_000: "10k", 100_000: "100k", 1_000_000: "1M", 10_000_000: "10M"}
 
 
-def queen_rows():
+def queen_rows(rate=RATE):
     rows = {}
     for line in open(os.path.join(RUNS, "grid-final.jsonl")):
         line = line.strip()
@@ -34,7 +34,7 @@ def queen_rows():
             r = json.loads(line)
         except ValueError:
             continue
-        if r.get("rate") == RATE:
+        if r.get("rate") == rate:
             rows[r["partitions"]] = r  # a point run again replaces its earlier row
     out = {}
     for p, r in rows.items():

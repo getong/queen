@@ -1,0 +1,6 @@
+[03:37:39] run sg-p10000000: binary p3, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 90s at: 25000 50000 75000 100000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_CONSUME_IDLE_UNLOAD_S=30 | QEXTRA=-push-wire bin -ack-counts -pop-frames -tail 30s
+[03:42:26] start 1: the cluster did not become healthy, starting it again
+[03:47:13] start 2: the cluster did not become healthy, starting it again
+[03:52:00] start 3: the cluster did not become healthy, starting it again
+[03:56:47] start 4: the cluster did not become healthy, starting it again
+[03:56:47] FAILED: the cluster did not become healthy in four starts

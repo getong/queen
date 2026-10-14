@@ -1,0 +1,9 @@
+== rpc-paced-1k (rpc, 10 s measured)
+  round trips               10000         1000 /s
+  answered at the deadline            3            0 /s
+  round trip         p50 0.405  p90 0.497  p99 0.629  p99.9 6.348  max 101.422 ms
+  broker cores       0.42
+  loader cores       0.35
+  max schedule lag   69.441 ms
+RESULT {"answered at the deadline":3,"answered at the deadline/s":0.3,"broker cores":0.421,"errors":{},"loader cores":0.3450316,"max lag ms":69.441,"mode":"rpc","name":"rpc-paced-1k","rate":1000,"round trip":{"max":101.422,"p50":0.405,"p90":0.497,"p99":0.629,"p999":6.348},"round trips":10000,"round trips/s":1000,"seconds":10}
+  broker RSS after   30 MiB

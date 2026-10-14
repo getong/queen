@@ -1,0 +1,10 @@
+p0: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7149900 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/73.22/144.38 ms | e2e p50/p99/p999=7.52/71.17/136.19 ms | cpu=86.3%
+p1: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7799900 lag=-577800 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/72.19/144.38 ms | e2e p50/p99/p999=7.14/72.19/148.48 ms | cpu=88.1%
+p2: msgs offered=7222200 achieved=7222200 shed=0 pushed=7222200 popped=7150000 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/72.19/146.43 ms | e2e p50/p99/p999=7.20/72.19/134.14 ms | cpu=86.6%
+p3: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7149900 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.20/75.26/146.43 ms | e2e p50/p99/p999=7.26/70.14/136.19 ms | cpu=87.9%
+p4: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7149500 lag=72600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/75.26/146.43 ms | e2e p50/p99/p999=7.26/71.17/148.48 ms | cpu=87.2%
+p5: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7149700 lag=72400 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/73.22/142.34 ms | e2e p50/p99/p999=7.33/76.29/148.48 ms | cpu=86.7%
+p6: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7149900 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/74.24/148.48 ms | e2e p50/p99/p999=7.01/72.19/150.53 ms | cpu=88.9%
+p7: msgs offered=7222300 achieved=7222300 shed=0 pushed=7222300 popped=7150000 lag=72300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/72.19/144.38 ms | e2e p50/p99/p999=7.52/75.26/138.24 ms | cpu=89.2%
+p8: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7149900 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=7.14/74.24/148.48 ms | e2e p50/p99/p999=7.14/74.24/144.38 ms | cpu=89.3%
+total: 9/9 processes with a final line | msgs offered=64999200 achieved=64999200 shed=0 pushed=64999200 popped=64998700 errors=0 | worst produce p99=75.26 ms | worst e2e p99=76.29 ms

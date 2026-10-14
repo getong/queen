@@ -1,0 +1,59 @@
+Attaching 9 probes...
+
+
+@long_us[
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 7, average 1396, total 9772
+@long_us[
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 3408, average 1613, total 5499420
+
+@mem_us[queen-qlog-next, tracepoint:syscalls:sys_exit_madvise]: count 56, average 6, total 360
+@mem_us[tokio-rt-worker, tracepoint:syscalls:sys_exit_mmap]: count 67, average 7, total 525
+@mem_us[queen-qlog-next, tracepoint:syscalls:sys_exit_munmap]: count 56, average 13, total 771
+@mem_us[tokio-rt-worker, tracepoint:syscalls:sys_exit_munmap]: count 71, average 18, total 1294
+@mem_us[queen-raft-log, tracepoint:syscalls:sys_exit_madvise]: count 2112, average 18, total 38668
+@mem_us[consume-serve, tracepoint:syscalls:sys_exit_madvise]: count 151, average 18, total 2770
+@mem_us[queen-lane-1, tracepoint:syscalls:sys_exit_madvise]: count 25, average 20, total 501
+@mem_us[queen-raft, tracepoint:syscalls:sys_exit_madvise]: count 3030, average 20, total 63384
+@mem_us[queen-lane-3, tracepoint:syscalls:sys_exit_madvise]: count 18, average 21, total 393
+@mem_us[queen-rsm-apply, tracepoint:syscalls:sys_exit_madvise]: count 1499, average 21, total 31482
+@mem_us[queen-qlog-next, tracepoint:syscalls:sys_exit_mmap]: count 56, average 22, total 1270
+@mem_us[queen-raft, tracepoint:syscalls:sys_exit_mmap]: count 1, average 22, total 22
+@mem_us[queen-lane-4, tracepoint:syscalls:sys_exit_madvise]: count 109, average 22, total 2464
+@mem_us[queen-lane-2, tracepoint:syscalls:sys_exit_madvise]: count 135, average 22, total 3008
+@mem_us[queen-lane-0, tracepoint:syscalls:sys_exit_madvise]: count 33, average 22, total 735
+@mem_us[tokio-rt-worker, tracepoint:syscalls:sys_exit_madvise]: count 3287, average 23, total 76154
+@mem_us[queen-lane-6, tracepoint:syscalls:sys_exit_madvise]: count 30, average 24, total 723
+@mem_us[queen-qlog-writ, tracepoint:syscalls:sys_exit_mmap]: count 56, average 30, total 1701
+
+
+@off_us: 
+[2, 4)               123 |@                                                   |
+[4, 8)              1270 |@@@@@@@@@@@@@@@                                     |
+[8, 16)             1399 |@@@@@@@@@@@@@@@@                                    |
+[16, 32)            1567 |@@@@@@@@@@@@@@@@@@                                  |
+[32, 64)            2503 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                      |
+[64, 128)           3274 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@             |
+[128, 256)          4187 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  |
+[256, 512)          4331 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[512, 1K)           3559 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          |
+[1K, 2K)            2343 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@                        |
+[2K, 4K)             956 |@@@@@@@@@@@                                         |
+
+
+

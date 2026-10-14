@@ -1,0 +1,6 @@
+ queue_table_size 
+------------------
+ 52 MB
+(1 row)
+
+./run.sh: line 37: 32471 Terminated: 15          bash sample-metrics.sh "$OUTDIR/metrics.csv" 1 pgmq-postgres pgmq "q_${QUEUE}"

@@ -1,0 +1,12 @@
+== defaults (pipe, 10 s measured)
+  pushed                    50035         5004 /s
+  push calls                50035         5004 /s
+  delivered                 50035         5004 /s
+  pop calls                 46556         4656 /s
+  push call          p50 0.291  p90 0.503  p99 0.763  p99.9 1.275  max 3.788 ms
+  push to delivery   p50 0.360  p90 0.600  p99 0.948  p99.9 1.379  max 11.772 ms
+  broker cores       0.59
+  loader cores       0.36
+  error http_429:rate_limited        5872
+RESULT {"broker cores":0.595,"delivered":50035,"delivered/s":5003.5,"errors":{"http_429:rate_limited":5872},"loader cores":0.3588909,"mode":"pipe","name":"defaults","pop calls":46556,"pop calls/s":4655.6,"push call":{"max":3.788,"p50":0.291,"p90":0.503,"p99":0.763,"p999":1.275},"push calls":50035,"push calls/s":5003.5,"push to delivery":{"max":11.772,"p50":0.36,"p90":0.6,"p99":0.948,"p999":1.379},"pushed":50035,"pushed/s":5003.5,"rate":0,"seconds":10}
+  broker RSS after   31 MiB

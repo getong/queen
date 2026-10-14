@@ -1,0 +1,20 @@
+kvlockload mode=lock-contend tag=contend-1x64-spin url=http://127.0.0.1:6632 workers=64 rate=0 duration=30s warmup=5s names=1 permits=1 hold=0.0ms poll=0 ttl=30s
+[10:17:54 run ] lockOps=   40407/s calls=   39916/s | p50=   0.77 p99=    1.79 ms | errs=0
+[10:18:04 run ] lockOps=   80349/s calls=   79374/s | p50=   0.78 p99=    1.89 ms | errs=0
+[10:18:14 run ] lockOps=   79063/s calls=   78101/s | p50=   0.77 p99=    2.27 ms | errs=0
+
+[final] 30s measured
+[final] wait             971/s  p50=44.70 p90=149.89 p99=298.75 p999=432.90 max=694.8 ms  (n=29122)
+[final] try            79218/s  p50=0.77 p90=1.14 p99=2.03 p999=4.40 max=13.0 ms  (n=2376529)
+[final] release          973/s  p50=0.94 p90=1.26 p99=2.34 p999=4.63 max=12.0 ms  (n=29185)
+[final] lockOps           2405714       80190/s
+[final] acquired            29122         971/s
+[final] tries             2376529       79218/s
+[final] refused           2347345       78245/s
+[final] contended               0           0/s
+[final] released            29185         973/s
+[final] lost                    0           0/s
+[final] twoHolders              0           0/s
+[final] tokenWentBack            0           0/s
+[final] loader cpu 2.08 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"acquired":29122,"contended":0,"lockOps":2405714,"lost":0,"refused":2347345,"released":29185,"tokenWentBack":0,"tries":2376529,"twoHolders":0},"desc":"names=1 permits=1 hold=0.0ms poll=0 ttl=30s","errTotal":0,"errors":{},"loaderCores":2.0779487278894972,"maxLagMs":0,"mode":"lock-contend","opsPerSec":80190.46666666666,"rate":0,"seconds":30,"series":{"release":{"count":29185,"perSec":972.8333333333334,"meanMs":0.9890934726743189,"p50":0.94,"p90":1.265,"p99":2.338,"p999":4.628,"maxMs":12},"try":{"count":2376529,"perSec":79217.63333333333,"meanMs":0.7945986773146888,"p50":0.771,"p90":1.139,"p99":2.031,"p999":4.396,"maxMs":12.986},"wait":{"count":29122,"perSec":970.7333333333333,"meanMs":64.63082047936268,"p50":44.704,"p90":149.888,"p99":298.752,"p999":432.896,"maxMs":694.839}},"tag":"contend-1x64-spin","urls":1,"workers":64}

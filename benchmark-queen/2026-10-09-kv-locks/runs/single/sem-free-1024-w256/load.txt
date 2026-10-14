@@ -1,0 +1,20 @@
+kvlockload mode=sem tag=sem-free-1024-w256 url=http://127.0.0.1:6632 workers=256 rate=0 duration=30s warmup=5s names=1 permits=1024 hold=0.0ms poll=0 ttl=30s
+[10:22:28 run ] lockOps=    5491/s calls=    2747/s | p50=  24.30 p99=   58.59 ms | errs=0
+[10:22:38 run ] lockOps=   11000/s calls=    5499/s | p50=  24.50 p99=   58.98 ms | errs=0
+[10:22:48 run ] lockOps=   10947/s calls=    5477/s | p50=  24.59 p99=   59.04 ms | errs=0
+
+[final] 30s measured
+[final] wait            5487/s  p50=24.53 p90=35.81 p99=58.72 p999=79.94 max=124.0 ms  (n=164598)
+[final] try             5487/s  p50=24.53 p90=35.81 p99=58.72 p999=79.94 max=107.5 ms  (n=164612)
+[final] release         5490/s  p50=20.11 p90=24.08 p99=29.36 p999=35.81 max=54.7 ms  (n=164700)
+[final] lockOps            329312       10977/s
+[final] acquired           164598        5487/s
+[final] tries              164612        5487/s
+[final] refused                 0           0/s
+[final] contended              14           0/s
+[final] released           164700        5490/s
+[final] lost                    0           0/s
+[final] twoHolders              0           0/s
+[final] tokenWentBack            0           0/s
+[final] loader cpu 0.36 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"acquired":164598,"contended":14,"lockOps":329312,"lost":0,"refused":0,"released":164700,"tokenWentBack":0,"tries":164612,"twoHolders":0},"desc":"names=1 permits=1024 hold=0.0ms poll=0 ttl=30s","errTotal":0,"errors":{},"loaderCores":0.36457700005918403,"maxLagMs":0,"mode":"sem","opsPerSec":10977.066666666668,"rate":0,"seconds":30,"series":{"release":{"count":164700,"perSec":5490,"meanMs":20.061440267152395,"p50":20.112,"p90":24.08,"p99":29.36,"p999":35.808,"maxMs":54.739},"try":{"count":164612,"perSec":5487.066666666667,"meanMs":26.566276984666978,"p50":24.528,"p90":35.808,"p99":58.72,"p999":79.936,"maxMs":107.516},"wait":{"count":164598,"perSec":5486.6,"meanMs":26.569346152444137,"p50":24.528,"p90":35.808,"p99":58.72,"p999":79.936,"maxMs":124.043}},"tag":"sem-free-1024-w256","urls":1,"workers":256}

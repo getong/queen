@@ -25,6 +25,7 @@ OUTDIR = sys.argv[1] if len(sys.argv) > 1 else HERE
 W, H = C.W, C.H
 PARTS, TICK = K.PARTS, K.TICK
 PAIR = {"light": ("#2b6cd4", "#d9622b"), "dark": ("#5a96f5", "#f0854a")}  # Queen, Kafka
+HALF = {"light": "#6f9ce6", "dark": "#3a68b8"}  # Queen at 1M msg/s: the lighter step of Queen's blue, dashed
 
 
 def top_rates():
@@ -56,7 +57,7 @@ def top_rates():
     return kbest, qok, qno
 
 
-def render(theme, q, k, tops, inter_b64):
+def render(theme, q, k, tops, inter_b64, q1=None):
     t = C.THEMES[theme]
     c = C.Card(t)
     o = c.o
@@ -71,13 +72,15 @@ def render(theme, q, k, tops, inter_b64):
         o.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="{color or t["bd"]}" '
                  f'stroke-width="{w}"{d}{a}/>')
 
-    def path(pts, color, w):
+    def path(pts, color, w, dash=None):
+        d = f' stroke-dasharray="{dash}"' if dash else ""
         o.append('<path d="' + " ".join(("M" if j == 0 else "L") + f"{a:.1f},{b:.1f}" for j, (a, b) in enumerate(pts))
                  + f'" fill="none" stroke="{color}" stroke-width="{w}" stroke-linejoin="round" '
-                 f'stroke-linecap="round"/>')
+                 f'stroke-linecap="round"{d}/>')
 
-    def dot(x, y, r=7.5):
-        o.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{QC}" stroke="{QC}" stroke-width="3.5"/>')
+    def dot(x, y, r=7.5, color=None):
+        o.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{color or QC}" stroke="{color or QC}" '
+                 f'stroke-width="3.5"/>')
 
     def diamond(x, y, r=9.5, hollow=False):
         o.append(f'<path d="M{x:.1f},{y - r:.1f} L{x + r:.1f},{y:.1f} L{x:.1f},{y + r:.1f} L{x - r:.1f},{y:.1f} Z" '
@@ -106,7 +109,8 @@ def render(theme, q, k, tops, inter_b64):
 
     # ---- latency: p99 end to end, linear, over a log axis of partitions
     c.text(72, A0 - 38, c.ts("Latency", hi, 650)
-           + c.ts("  p99 end to end at 2M msg/s, ms · lower is better", low, 400, 22), 26, raw=True)
+           + c.ts(f"  p99 end to end{'' if q1 else ' at 2M msg/s'}, ms · lower is better", low, 400, 22), 26,
+           raw=True)
     YMAX = 480  # the scale ends near 440 ms; the strip above it holds what is past the scale
     ya = lambda v: A1 - v / YMAX * (A1 - A0)  # noqa: E731
     for v in (0, 100, 200, 300, 400):
@@ -124,6 +128,20 @@ def render(theme, q, k, tops, inter_b64):
         diamond(xs(p), A0 + 16, hollow=True)
         c.text(xs(p) + 22, A0 + 23, f"Kafka fell behind: p99 {k[p]['p99'] / 1000:.0f} s", 20, 500, mid)
 
+    # Queen at half the load, under the rest: a lighter blue, dashed, its first and last value only (the CPU chart's
+    # habit), so it never sits on Kafka's labels in the zone
+    hq = [p for p in PARTS if q1 and p in q1 and q1[p]["carried"]]
+    if hq:
+        HC = HALF[theme]
+        path([(xs(p), ya(q1[p]["p99"])) for p in hq], HC, 4, "12 9")
+        for p in hq:
+            dot(xs(p), ya(q1[p]["p99"]), 6, HC)
+        for p in (hq[0], hq[-1]):  # above its point, or below it where Queen's 2M point sits just above
+            v = q1[p]["p99"]
+            up = not (p in qq and 0 < q[p]["p99"] - v < 48)
+            halo(xs(p), ya(v) + (-18 if up else 36), f"{v:.0f}", 23, 650, HC)
+        mx = (xs(10_000) + xs(100_000)) / 2
+        halo(mx, ya(q1[10_000]["p99"]) - 22, "Queen at 1M msg/s", 23, 650, HC)
     path([(xs(p), ya(k[p]["p99"])) for p in kq], KC, 4.5)
     path([(xs(p), ya(q[p]["p99"])) for p in qq], QC, 4.5)
     for p in kq:
@@ -137,18 +155,26 @@ def render(theme, q, k, tops, inter_b64):
             if v is None:
                 continue
             up = other is None or not 0 < other - v < 48
+            if not up and col == KC and hq and p in hq:
+                # the dashed 1M line runs under it: beside the point, on the side its line leaves more steeply
+                j = kq.index(p)
+                rise = lambda i: k[kq[i]]["p99"] - v if 0 <= i < len(kq) else -1  # noqa: E731
+                side = -1 if rise(j - 1) > rise(j + 1) else 1
+                halo(xs(p) + 20 * side, ya(v) + 6, f"{v:.0f}", 23, 650, col, "end" if side < 0 else "start")
+                continue
             halo(xs(p), ya(v) + (-20 if up else 38), f"{v:.0f}", 23, 650, col)
+    at2 = " 2M" if hq else ""  # with two Queen loads every line names its load
     if kq:  # beside its last carried point: its first one sits at the edge of the band
-        c.text(xs(kq[-1]) + 26, ya(k[kq[-1]]["p99"]) + 9, "Kafka", 30, 650, KC)
+        c.text(xs(kq[-1]) + 26, ya(k[kq[-1]]["p99"]) + 9, "Kafka" + at2, 30, 650, KC)
     if qq:
-        c.text(xs(qq[-1]) + 10, ya(q[qq[-1]]["p99"]) - 56, "Queen", 30, 650, QC, "end")
+        c.text(xs(qq[-1]) + 10, ya(q[qq[-1]]["p99"]) - 56, "Queen" + at2, 30, 650, QC, "end")
 
     # the note of the zone: what is true of these partition counts, and the rate the 2M chart cannot show
     (krate, kparts), qok, qno = tops
     if ahead:
         nx, ny = bx0 + 18, ya(372)
         c.text(nx, ny, "Kafka's zone", 27, 650, KC)
-        c.text(nx, ny + 36, "lower latency, and it", 22, 400, mid)
+        c.text(nx, ny + 36, "lower latency at 2M, and it" if hq else "lower latency, and it", 22, 400, mid)
         c.text(nx, ny + 66, f"carries {krate / 1e6:g}M msg/s", 22, 400, mid)
         if qno:
             c.text(nx, ny + 96, f"(Queen: under {qno / 1e6:g}M)", 22, 400, mid)
@@ -198,13 +224,14 @@ def render(theme, q, k, tops, inter_b64):
 
 
 def main():
-    q, k, tops = K.queen_rows(), K.kafka_rows(), top_rates()
+    q, q1, k, tops = K.queen_rows(), K.queen_rows(1_000_000), K.kafka_rows(), top_rates()
     inter_b64 = base64.b64encode(open(C.INTER, "rb").read()).decode()
     for theme in ("light", "dark"):
-        svg = os.path.join(OUTDIR, f"queen-vs-kafka-2m-linkedin-{theme}.svg")
-        open(svg, "w").write(render(theme, q, k, tops, inter_b64))
-        C.png(svg, svg[:-4] + ".png")
-        print(svg[:-4] + ".png")
+        for name, half in (("2m-linkedin", None), ("2m-linkedin-1m", q1)):  # the second adds Queen at 1M msg/s
+            svg = os.path.join(OUTDIR, f"queen-vs-kafka-{name}-{theme}.svg")
+            open(svg, "w").write(render(theme, q, k, tops, inter_b64, half))
+            C.png(svg, svg[:-4] + ".png")
+            print(svg[:-4] + ".png")
     print(tops)
 
 

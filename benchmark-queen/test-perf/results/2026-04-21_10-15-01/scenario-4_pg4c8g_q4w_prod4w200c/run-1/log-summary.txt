@@ -1,0 +1,23 @@
+=== event_loop_lag events ===
+
+=== errors / warnings ===
+[2026-04-21 10:28:15.655] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 10:28:16.340] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 10:28:16.347] [info] [Worker 3] [libqueen] Reconnection thread started
+[2026-04-21 10:28:16.347] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 10:28:16.349] [info] [Worker 2] [libqueen] Reconnection thread started
+[2026-04-21 10:28:16.452] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:28:16.452] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:28:16.452] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:28:16.452] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:28:16.452] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:28:16.452] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:28:16.452] [warning] [Worker 2] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:28:16.452] [warning] [Worker 2] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:28:16.452] [warning] [Worker 2] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:28:16.452] [warning] [Worker 3] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:28:16.452] [warning] [Worker 3] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:28:16.452] [warning] [Worker 3] Set WEBAPP_ROOT environment variable to override
+
+=== line count ===
+     460 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-1/server.log

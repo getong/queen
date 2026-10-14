@@ -1,0 +1,10 @@
+== g3-leader (pipe, 20 s measured)
+  pushed                 17425500       871275 /s
+  push calls               174255         8713 /s
+  delivered              17433100       871655 /s
+  pop calls                112215         5611 /s
+  push call          p50 21.328  p90 31.696  p99 56.800  p99.9 77.248  max 89.503 ms
+  push to delivery   p50 60.192  p90 270.592  p99 412.928  p99.9 442.112  max 477.204 ms
+  loader cores       2.42
+  error transport                    2441
+RESULT {"delivered":17433100,"delivered/s":871655,"errors":{"transport":2441},"from":1791731142.6185188,"loader cores":2.42368035,"mode":"pipe","name":"g3-leader","pop calls":112215,"pop calls/s":5610.75,"push call":{"max":89.503,"p50":21.328,"p90":31.696,"p99":56.8,"p999":77.248},"push calls":174255,"push calls/s":8712.75,"push to delivery":{"max":477.204,"p50":60.192,"p90":270.592,"p99":412.928,"p999":442.112},"pushed":17425500,"pushed/s":871275,"rate":0,"seconds":20,"to":1791731162.6185188}

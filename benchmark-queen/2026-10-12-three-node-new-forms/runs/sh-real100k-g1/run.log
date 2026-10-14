@@ -1,0 +1,13 @@
+[09:29:32] run sh-real100k-g1: binary p7, groups 1, sync, checkpoint 5 ms, tenants 3, partitions 99999, consumers 33 per process, retention completed 60s, dedup 60s, steps of 200s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=1 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s
+[09:29:56] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 33333 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 33333 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 33333 partitions
+[09:34:00] 2,000,000: last 30 s: offered 1,999,989 pushed 1,999,761 consumed 1,999,877 | run: shed 0 errors 0 | push p50 32.5 p99 78.8 | e2e p50 71.7 p99 135.2 worst 139.3 | cores 10.3 / 6.9 / 6.7 | mem GB 9.9 / 7.8 / 7.7 | loaders 16.1c  OK 
+RUN_DONE

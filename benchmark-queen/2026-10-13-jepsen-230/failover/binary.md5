@@ -1,0 +1,2 @@
+4a3ebe9aa913b0d2f0b03c72f5abe56a  /root/bin/queen-230b2
+1c7136d4a 2.3.0-beta.2 (binary taken from ghcr.io/queen-mq/queen:2.3.0-beta.2@sha256:bec64027); harness = test/jepsen of abccef016, project.clj -Xmx12g -> -Xmx2600m

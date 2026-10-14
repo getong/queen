@@ -1,0 +1,1 @@
+[06:42:03] run rl-p10000-r2000000: binary p5, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 360s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s

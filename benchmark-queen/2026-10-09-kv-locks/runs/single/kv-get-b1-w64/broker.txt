@@ -1,0 +1,34 @@
+interval 30.0 s
+host: busy 12.18 cores (user 7.75 sys 3.59 softirq 0.83) iowait 0.00 steal 0.00 idle 3.39
+disk vda: 9 writes/s, 0.1 MB/s, 1 flushes/s, 0.18 ms per flush
+node :6632 pid 14034: 9.46 cores, rss 2249 MiB
+  threads: tokio-rt-worker 9.45
+  queen_raft_apply_channel_depth: 1/s, mean 4.1
+  queen_raft_apply_entry_seconds: 1/s, mean 1631 us, 0.001 s per s
+  queen_raft_apply_other_seconds: 1/s, mean 1631 us, 0.001 s per s
+  queen_raft_checkpoint_rows: 0/s, mean 12746.0
+  queen_raft_checkpoint_write_seconds: 0/s, mean 12079 us, 0.002 s per s
+  queen_raft_drain_to_propose_seconds: 1/s, mean 788 us, 0.000 s per s
+  queen_raft_durable_dir_fsync_seconds: 0/s, mean 0 us, 0.000 s per s
+  queen_raft_durable_point_seconds: 0/s, mean 226 us, 0.000 s per s
+  queen_raft_durable_seg_fsync_seconds: 0/s, mean 1 us, 0.000 s per s
+  queen_raft_group_bytes: 0/s, mean 80.0
+  queen_raft_group_entries: 0/s, mean 1.2
+  queen_raft_log_fsync_seconds: 0/s, mean 1247 us, 0.000 s per s
+  queen_raft_plan_seconds: 22/s, mean 68 us, 0.001 s per s
+  queen_raft_plan_whole_cpu_seconds: 22/s, mean 57 us, 0.001 s per s
+  queen_raft_plan_whole_wall_seconds: 22/s, mean 68 us, 0.001 s per s
+  queen_raft_propose_roundtrip_seconds: 1/s, mean 11589 us, 0.006 s per s
+  queen_raft_proposed_to_committed_seconds: 1/s, mean 2181 us, 0.001 s per s
+  queen_raft_store_commit_seconds: 0/s, mean 4 us, 0.000 s per s
+  queen_raft_writer_pickup_seconds: 1/s, mean 674 us, 0.000 s per s
+  queen_kv_bytes_total{dir="out"}: 155206/s
+  queen_kv_ops_total{op="get",result="applied"}: 152949/s
+  queen_raft_apply_receives_total: 1/s
+  queen_raft_proposals_total: 1/s
+  queen_raft_store_operations_total{kind="commits"}: 0/s
+  queen_raft_store_operations_total{kind="durable_commits"}: 0/s
+  queen_raft_store_operations_total{kind="logical_bytes"}: 78/s
+  queen_raft_store_operations_total{kind="read_txns"}: 305941/s
+  queen_raft_store_operations_total{kind="rows_deleted"}: 1699/s
+  queen_raft_store_operations_total{kind="rows_put"}: 3/s

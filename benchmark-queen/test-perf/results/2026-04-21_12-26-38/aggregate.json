@@ -1,0 +1,457 @@
+[
+  {
+    "scenario_id": 1,
+    "scenario_name": "pg2c4g_q2w_prod2w100c",
+    "config": {
+      "scenario_id": 1,
+      "scenario_name": "pg2c4g_q2w_prod2w100c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 2,
+        "memory_gb": 4,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 2,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200,
+        "sidecar_micro_batch_wait_ms": 10
+      },
+      "producer": {
+        "workers": 2,
+        "connections": 100,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 1,
+        "connections": 25,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 120
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 500,
+      "start_iso": "2026-04-21T10:26:38Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 5,
+      "host_oversubscribed": false,
+      "measure_start_epoch": 1776767220,
+      "measure_end_epoch": 1776767341,
+      "measure_actual_seconds": 121,
+      "finish_iso": "2026-04-21T10:29:06.756Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 764.53,
+        "push_total": 91743,
+        "push_duration": 120.43,
+        "push_p50": 96,
+        "push_p95": 456,
+        "push_p99": 588,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 7645.299999999999,
+        "pop_rps": 342.25,
+        "pop_total": 41069,
+        "pop_duration": 120.13,
+        "pop_p50": 47,
+        "pop_p95": 275,
+        "pop_p99": 429,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 1084530,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 3,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 121,
+          "xact_commit_delta": 37275,
+          "xact_commit_per_s": 308.05785123966945,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 1258865,
+          "tup_inserted_per_s": 10403.842975206611,
+          "tup_updated_delta": 186949,
+          "tup_updated_per_s": 1545.0330578512396,
+          "tup_deleted_delta": 287460,
+          "tup_fetched_delta": 67789086,
+          "tup_fetched_per_s": 560240.3801652893,
+          "blks_read_delta": 146,
+          "blks_hit_delta": 179406610,
+          "buffer_hit_ratio": 0.9999991862067892,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 928670,
+          "messages_n_tup_ins_per_s": 7674.9586776859505,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 89946,
+          "consumers_n_tup_upd_per_s": 743.3553719008264,
+          "consumers_n_tup_hot_upd_delta": 89653,
+          "messages_final_total": 1093200,
+          "partitions_final_total": 502,
+          "partition_consumers_final_total": 501
+        },
+        "stats_stream": {
+          "samples": 33,
+          "pg_cpu_pct": {
+            "p50": 188.33,
+            "p95": 197.52,
+            "max": 203.39
+          },
+          "pg_mem_pct": {
+            "p50": 25.36,
+            "p95": 32.82,
+            "max": 33.18
+          },
+          "server_cpu_pct": {
+            "p50": 44.5,
+            "p95": 122.2,
+            "max": 135.3
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 5
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 428.85,
+        "push_total": 51461,
+        "push_duration": 120.56,
+        "push_p50": 171,
+        "push_p95": 767,
+        "push_p99": 1141,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 4288.5,
+        "pop_rps": 203.86,
+        "pop_total": 24463,
+        "pop_duration": 120.27,
+        "pop_p50": 77,
+        "pop_p95": 501,
+        "pop_p99": 830,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 670640,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 1,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 122,
+          "xact_commit_delta": 35893,
+          "xact_commit_per_s": 294.2049180327869,
+          "xact_rollback_delta": 1,
+          "tup_inserted_delta": 782043,
+          "tup_inserted_per_s": 6410.188524590164,
+          "tup_updated_delta": 122931,
+          "tup_updated_per_s": 1007.6311475409836,
+          "tup_deleted_delta": 234969,
+          "tup_fetched_delta": 41862874,
+          "tup_fetched_per_s": 343138.31147540984,
+          "blks_read_delta": 140,
+          "blks_hit_delta": 106253849,
+          "buffer_hit_ratio": 0.9999986824024084,
+          "deadlocks_delta": 1,
+          "messages_n_tup_ins_delta": 520890,
+          "messages_n_tup_ins_per_s": 4269.5901639344265,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 56736,
+          "consumers_n_tup_upd_per_s": 465.04918032786884,
+          "consumers_n_tup_hot_upd_delta": 56505,
+          "messages_final_total": 722320,
+          "partitions_final_total": 502,
+          "partition_consumers_final_total": 501
+        },
+        "stats_stream": {
+          "samples": 33,
+          "pg_cpu_pct": {
+            "p50": 192.49,
+            "p95": 203.41,
+            "max": 204.59
+          },
+          "pg_mem_pct": {
+            "p50": 24.53,
+            "p95": 29.67,
+            "max": 29.89
+          },
+          "server_cpu_pct": {
+            "p50": 34.9,
+            "p95": 121.2,
+            "max": 128.3
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 5
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 416.73,
+        "push_total": 50007,
+        "push_duration": 120.56,
+        "push_p50": 154,
+        "push_p95": 939,
+        "push_p99": 1537,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 4167.3,
+        "pop_rps": 194.26,
+        "pop_total": 23311,
+        "pop_duration": 120.44,
+        "pop_p50": 74,
+        "pop_p95": 556,
+        "pop_p99": 912,
+        "pop_errors": 1,
+        "pop_non2xx": 0,
+        "queue_final_total": 655110,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 1,
+          "warnings": 6,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 121,
+          "xact_commit_delta": 35948,
+          "xact_commit_per_s": 297.09090909090907,
+          "xact_rollback_delta": 1,
+          "tup_inserted_delta": 766283,
+          "tup_inserted_per_s": 6332.917355371901,
+          "tup_updated_delta": 119072,
+          "tup_updated_per_s": 984.0661157024794,
+          "tup_deleted_delta": 234879,
+          "tup_fetched_delta": 40955430,
+          "tup_fetched_per_s": 338474.62809917354,
+          "blks_read_delta": 145,
+          "blks_hit_delta": 98330643,
+          "buffer_hit_ratio": 0.9999985253855588,
+          "deadlocks_delta": 1,
+          "messages_n_tup_ins_delta": 506400,
+          "messages_n_tup_ins_per_s": 4185.123966942148,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 53502,
+          "consumers_n_tup_upd_per_s": 442.1652892561983,
+          "consumers_n_tup_hot_upd_delta": 53328,
+          "messages_final_total": 663600,
+          "partitions_final_total": 502,
+          "partition_consumers_final_total": 501
+        },
+        "stats_stream": {
+          "samples": 33,
+          "pg_cpu_pct": {
+            "p50": 194.2,
+            "p95": 203.86,
+            "max": 217.63
+          },
+          "pg_mem_pct": {
+            "p50": 24.73,
+            "p95": 29.83,
+            "max": 30.22
+          },
+          "server_cpu_pct": {
+            "p50": 27.4,
+            "p95": 90.2,
+            "max": 141.6
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 5
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 536.7033333333334,
+        "stddev": 197.3967227016024,
+        "min": 416.73,
+        "max": 764.53
+      },
+      "push_msgs_per_s": {
+        "mean": 5367.033333333333,
+        "stddev": 1973.967227016024,
+        "min": 4167.3,
+        "max": 7645.299999999999
+      },
+      "push_p50": {
+        "mean": 140.33333333333334,
+        "stddev": 39.3234450847498,
+        "min": 96,
+        "max": 171
+      },
+      "push_p95": {
+        "mean": 720.6666666666666,
+        "stddev": 244.8108113081065,
+        "min": 456,
+        "max": 939
+      },
+      "push_p99": {
+        "mean": 1088.6666666666667,
+        "stddev": 476.65955705653624,
+        "min": 588,
+        "max": 1537
+      },
+      "push_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 246.79,
+        "stddev": 82.81001569858564,
+        "min": 194.26,
+        "max": 342.25
+      },
+      "pop_p50": {
+        "mean": 66,
+        "stddev": 16.522711641858304,
+        "min": 47,
+        "max": 77
+      },
+      "pop_p95": {
+        "mean": 444,
+        "stddev": 148.91944130972288,
+        "min": 275,
+        "max": 556
+      },
+      "pop_p99": {
+        "mean": 723.6666666666666,
+        "stddev": 258.46147359584046,
+        "min": 429,
+        "max": 912
+      },
+      "pop_errors": {
+        "mean": 0.3333333333333333,
+        "stddev": 0.5773502691896258,
+        "min": 0,
+        "max": 1
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 299.7845594544551,
+          "stddev": 7.308745023556449,
+          "min": 294.2049180327869,
+          "max": 308.05785123966945,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 7715.649618389559,
+          "stddev": 2328.364308076507,
+          "min": 6332.917355371901,
+          "max": 10403.842975206611,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 1178.9101070315676,
+          "stddev": 317.29062233079856,
+          "min": 984.0661157024794,
+          "max": 1545.0330578512396,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 413951.10657995753,
+          "stddev": 126711.685176433,
+          "min": 338474.62809917354,
+          "max": 560240.3801652893,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 5376.5576028541755,
+          "stddev": 1990.921711218068,
+          "min": 4185.123966942148,
+          "max": 7674.9586776859505,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 550.1899471616312,
+          "stddev": 167.6770082737949,
+          "min": 442.1652892561983,
+          "max": 743.3553719008264,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999987979982521,
+          "stddev": 3.452433546794675e-7,
+          "min": 0.9999985253855588,
+          "max": 0.9999991862067892,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0.6666666666666666,
+          "stddev": 0.5773502691896258,
+          "min": 0,
+          "max": 1,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 0.6666666666666666,
+          "stddev": 0.5773502691896258,
+          "min": 0,
+          "max": 1,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 826373.3333333334,
+          "max": 1093200
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 201.59666666666666,
+        "pg_cpu_pct_max": 217.63,
+        "server_cpu_pct_p95": 111.2,
+        "server_cpu_pct_max": 141.6
+      },
+      "host_oversubscribed": false,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 0.6666666666666666,
+          "max": 1
+        },
+        "warning_lines": {
+          "mean": 3,
+          "max": 6
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  }
+]

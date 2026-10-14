@@ -1,0 +1,17 @@
+=== event_loop_lag events ===
+
+=== errors / warnings ===
+[2026-04-21 12:41:04.062] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 12:41:04.888] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:41:04.888] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:41:04.888] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:41:05.578] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 12:41:44.110] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 12:41:44.110] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 12:41:44.110] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 12:41:44.111] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 12:41:44.111] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 12:41:45.114] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+
+=== line count ===
+     839 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_12-40-56/scenario-0_pg2c4g_q1w_prod2w100c/run-1/server.log

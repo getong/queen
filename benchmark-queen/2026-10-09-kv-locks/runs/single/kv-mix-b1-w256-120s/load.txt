@@ -1,0 +1,21 @@
+kvlockload mode=kv tag=kv-mix-b1-120s url=http://127.0.0.1:6632 workers=256 rate=0 duration=120s warmup=5s ns=100 keys=20000 batch=1 mix incr/get/pia/put/del=60/30/10/0/0 ttl=60s forever=false value=16B
+[09:57:45 run ] ops=   40639/s calls=   40634/s | p50=   3.11 p99=   12.42 ms | errs=0
+[09:57:55 run ] ops=   68728/s calls=   68732/s | p50=   3.32 p99=   19.47 ms | errs=0
+[09:58:05 run ] ops=   55426/s calls=   55424/s | p50=   3.60 p99=   22.16 ms | errs=0
+[09:58:15 run ] ops=   53926/s calls=   53928/s | p50=   3.67 p99=   21.01 ms | errs=0
+[09:58:25 run ] ops=   49076/s calls=   49075/s | p50=   3.82 p99=   21.97 ms | errs=0
+[09:58:35 run ] ops=   45358/s calls=   45356/s | p50=   4.04 p99=   24.08 ms | errs=0
+[09:58:45 run ] ops=   47397/s calls=   47399/s | p50=   3.94 p99=   20.98 ms | errs=0
+[09:58:55 run ] ops=   45299/s calls=   45300/s | p50=   3.99 p99=   32.62 ms | errs=0
+[09:59:05 run ] ops=   46028/s calls=   46028/s | p50=   4.19 p99=   23.73 ms | errs=0
+[09:59:15 run ] ops=   47284/s calls=   47283/s | p50=   4.10 p99=   23.09 ms | errs=0
+[09:59:25 run ] ops=   42670/s calls=   42671/s | p50=   4.17 p99=   29.01 ms | errs=0
+[09:59:35 run ] ops=   46125/s calls=   46125/s | p50=   4.14 p99=   23.38 ms | errs=0
+
+[final] 120s measured
+[final] call           51011/s  p50=3.78 p90=12.39 p99=23.73 p999=45.54 max=132.9 ms  (n=6121375)
+[final] ops               6121375       51011/s
+[final] applied           4216582       35138/s
+[final] notApplied          67737         564/s
+[final] loader cpu 1.03 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"applied":4216582,"notApplied":67737,"ops":6121375},"desc":"ns=100 keys=20000 batch=1 mix incr/get/pia/put/del=60/30/10/0/0 ttl=60s forever=false value=16B","errTotal":0,"errors":{},"loaderCores":1.0347422011828216,"maxLagMs":0,"mode":"kv","opsPerSec":51011.458333333336,"rate":0,"seconds":120,"series":{"call":{"count":6121375,"perSec":51011.458333333336,"meanMs":5.016944553633784,"p50":3.778,"p90":12.392,"p99":23.728,"p999":45.536,"maxMs":132.872}},"tag":"kv-mix-b1-120s","urls":1,"workers":256}

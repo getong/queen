@@ -1,0 +1,50 @@
+=== event_loop_lag events ===
+
+=== errors / warnings ===
+[2026-04-20 17:20:53.709] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-20 17:20:54.293] [info] [Worker 3] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.294] [info] [Worker 5] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.295] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.306] [info] [Worker 6] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.310] [info] [Worker 4] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.314] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.314] [info] [Worker 2] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.314] [info] [Worker 7] [libqueen] Reconnection thread started
+[2026-04-20 17:20:54.417] [warning] [Worker 2] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.417] [warning] [Worker 2] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.417] [warning] [Worker 2] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.417] [warning] [Worker 4] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.417] [warning] [Worker 4] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.417] [warning] [Worker 4] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.417] [warning] [Worker 7] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.417] [warning] [Worker 7] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.417] [warning] [Worker 7] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.417] [warning] [Worker 3] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.417] [warning] [Worker 3] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.417] [warning] [Worker 3] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.417] [warning] [Worker 5] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.417] [warning] [Worker 5] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.417] [warning] [Worker 5] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.418] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.418] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.418] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.418] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.418] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.418] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:20:54.418] [warning] [Worker 6] Webapp directory not found - Static file serving disabled
+[2026-04-20 17:20:54.418] [warning] [Worker 6] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-20 17:20:54.418] [warning] [Worker 6] Set WEBAPP_ROOT environment variable to override
+[2026-04-20 17:22:01.196] [error] [Worker 5] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.196] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.197] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.197] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.197] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.197] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.197] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.198] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.198] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.198] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-20 17:22:01.198] [warning] [Worker 5] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+
+=== line count ===
+    1282 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-20_16-59-25/scenario-6_pg4c8g_q8w_prod8w400c/run-1/server.log

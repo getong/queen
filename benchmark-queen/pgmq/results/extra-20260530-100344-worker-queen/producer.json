@@ -1,0 +1,20 @@
+{
+  "role": "producer",
+  "event": "result",
+  "connections": 20,
+  "processMs": 20,
+  "totalOps": 134961,
+  "totalMessages": 1349610,
+  "msgPerSec": 11247,
+  "opsPerSec": 1125,
+  "latency": {
+    "p50": 16,
+    "p90": 22.6,
+    "p99": 53.8,
+    "avg": 17.78,
+    "max": 233.46
+  },
+  "errors": 0,
+  "lastError": null,
+  "durationSec": 120
+}

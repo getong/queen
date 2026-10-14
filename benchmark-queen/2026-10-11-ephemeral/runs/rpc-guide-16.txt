@@ -1,0 +1,8 @@
+== rpc-guide-16 (rpc, 10 s measured)
+  round trips              153849        15385 /s
+  answered at the deadline           27            3 /s
+  round trip         p50 0.089  p90 0.166  p99 0.319  p99.9 0.434  max 5001.718 ms
+  broker cores       1.19
+  loader cores       1.15
+RESULT {"answered at the deadline":27,"answered at the deadline/s":2.7,"broker cores":1.19,"errors":{},"loader cores":1.1505824,"mode":"rpc","name":"rpc-guide-16","rate":0,"round trip":{"max":5001.718,"p50":0.089,"p90":0.166,"p99":0.319,"p999":0.434},"round trips":153849,"round trips/s":15384.9,"seconds":10}
+  broker RSS after   34 MiB

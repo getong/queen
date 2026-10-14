@@ -1,0 +1,41 @@
+=== event_loop_lag events ===
+[2026-04-21 12:58:35.386] [warning] [Worker 0] [libqueen] Event loop lag is too high: 180ms, expected: 5ms
+[2026-04-21 12:58:35.401] [warning] [Worker 1] [libqueen] Event loop lag is too high: 233ms, expected: 5ms
+[2026-04-21 12:58:35.508] [warning] [Worker 1] [libqueen] Event loop lag is too high: 106ms, expected: 5ms
+[2026-04-21 12:58:35.903] [warning] [Worker 1] [libqueen] Event loop lag is too high: 176ms, expected: 5ms
+[2026-04-21 12:58:36.671] [warning] [Worker 0] [libqueen] Event loop lag is too high: 147ms, expected: 5ms
+[2026-04-21 12:58:36.675] [warning] [Worker 1] [libqueen] Event loop lag is too high: 148ms, expected: 5ms
+[2026-04-21 12:58:37.156] [warning] [Worker 0] [libqueen] Event loop lag is too high: 178ms, expected: 5ms
+[2026-04-21 12:58:37.416] [warning] [Worker 0] [libqueen] Event loop lag is too high: 259ms, expected: 5ms
+[2026-04-21 12:58:37.814] [warning] [Worker 1] [libqueen] Event loop lag is too high: 224ms, expected: 5ms
+[2026-04-21 12:58:39.440] [warning] [Worker 0] [libqueen] Event loop lag is too high: 103ms, expected: 5ms
+[2026-04-21 12:58:44.770] [warning] [Worker 0] [libqueen] Event loop lag is too high: 101ms, expected: 5ms
+[2026-04-21 12:58:47.658] [warning] [Worker 1] [libqueen] Event loop lag is too high: 101ms, expected: 5ms
+[2026-04-21 12:58:47.663] [warning] [Worker 0] [libqueen] Event loop lag is too high: 102ms, expected: 5ms
+
+=== errors / warnings ===
+[2026-04-21 12:58:21.061] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 12:58:21.848] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:58:21.848] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:58:21.848] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:58:21.848] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:58:21.848] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:58:21.848] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:58:21.890] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 12:58:21.892] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 12:58:35.386] [warning] [Worker 0] [libqueen] Event loop lag is too high: 180ms, expected: 5ms
+[2026-04-21 12:58:35.401] [warning] [Worker 1] [libqueen] Event loop lag is too high: 233ms, expected: 5ms
+[2026-04-21 12:58:35.508] [warning] [Worker 1] [libqueen] Event loop lag is too high: 106ms, expected: 5ms
+[2026-04-21 12:58:35.903] [warning] [Worker 1] [libqueen] Event loop lag is too high: 176ms, expected: 5ms
+[2026-04-21 12:58:36.671] [warning] [Worker 0] [libqueen] Event loop lag is too high: 147ms, expected: 5ms
+[2026-04-21 12:58:36.675] [warning] [Worker 1] [libqueen] Event loop lag is too high: 148ms, expected: 5ms
+[2026-04-21 12:58:37.156] [warning] [Worker 0] [libqueen] Event loop lag is too high: 178ms, expected: 5ms
+[2026-04-21 12:58:37.416] [warning] [Worker 0] [libqueen] Event loop lag is too high: 259ms, expected: 5ms
+[2026-04-21 12:58:37.814] [warning] [Worker 1] [libqueen] Event loop lag is too high: 224ms, expected: 5ms
+[2026-04-21 12:58:39.440] [warning] [Worker 0] [libqueen] Event loop lag is too high: 103ms, expected: 5ms
+[2026-04-21 12:58:44.770] [warning] [Worker 0] [libqueen] Event loop lag is too high: 101ms, expected: 5ms
+[2026-04-21 12:58:47.658] [warning] [Worker 1] [libqueen] Event loop lag is too high: 101ms, expected: 5ms
+[2026-04-21 12:58:47.663] [warning] [Worker 0] [libqueen] Event loop lag is too high: 102ms, expected: 5ms
+
+=== line count ===
+     460 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_12-40-56/scenario-3_pg4c8g_q2w_prod4w200c/run-2/server.log

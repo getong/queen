@@ -1,0 +1,8 @@
+[17:28:20] run nd-p10000000-r100000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 100000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[17:28:49] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+FATAL warm drain bench: 0 of 10000000 messages came out
+[17:34:15] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 1485
+[17:36:22]   100,000: last 30 s: offered 99,996 pushed 99,999 consumed 100,009 | run: shed 0 errors 0 | push p50 2.8 p99 4.4 | e2e p50 6.8 p99 73.7 worst 80.9 | cores 1.4 / 1.0 / 0.9 | mem GB 18.2 / 10.1 / 10.5 | loaders 1.3c  OK 
+RUN_DONE

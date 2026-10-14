@@ -1,0 +1,120 @@
+=== event_loop_lag events ===
+[2026-04-21 10:29:57.261] [warning] [Worker 3] [libqueen] Event loop lag is too high: 125ms, expected: 5ms
+[2026-04-21 10:30:45.763] [warning] [Worker 2] [libqueen] Event loop lag is too high: 2459ms, expected: 5ms
+[2026-04-21 10:30:47.546] [warning] [Worker 1] [libqueen] Event loop lag is too high: 134ms, expected: 5ms
+[2026-04-21 10:30:49.073] [warning] [Worker 0] [libqueen] Event loop lag is too high: 1041ms, expected: 5ms
+[2026-04-21 10:30:49.351] [warning] [Worker 0] [libqueen] Event loop lag is too high: 278ms, expected: 5ms
+[2026-04-21 10:30:51.431] [warning] [Worker 2] [libqueen] Event loop lag is too high: 110ms, expected: 5ms
+[2026-04-21 10:30:51.456] [warning] [Worker 0] [libqueen] Event loop lag is too high: 701ms, expected: 5ms
+[2026-04-21 10:30:52.233] [warning] [Worker 1] [libqueen] Event loop lag is too high: 128ms, expected: 5ms
+[2026-04-21 10:30:52.427] [warning] [Worker 3] [libqueen] Event loop lag is too high: 247ms, expected: 5ms
+[2026-04-21 10:30:52.574] [warning] [Worker 1] [libqueen] Event loop lag is too high: 125ms, expected: 5ms
+[2026-04-21 10:30:54.283] [warning] [Worker 1] [libqueen] Event loop lag is too high: 584ms, expected: 5ms
+[2026-04-21 10:30:54.932] [warning] [Worker 0] [libqueen] Event loop lag is too high: 420ms, expected: 5ms
+[2026-04-21 10:30:55.667] [warning] [Worker 2] [libqueen] Event loop lag is too high: 199ms, expected: 5ms
+[2026-04-21 10:30:58.548] [warning] [Worker 3] [libqueen] Event loop lag is too high: 176ms, expected: 5ms
+
+=== errors / warnings ===
+[2026-04-21 10:29:44.094] [warning] [Worker 2] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:29:44.094] [warning] [Worker 2] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:29:44.095] [warning] [Worker 3] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:29:44.095] [warning] [Worker 3] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:29:44.095] [warning] [Worker 3] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:29:44.095] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:29:44.095] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:29:44.095] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:29:44.251] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 10:29:44.263] [info] [Worker 2] [libqueen] Reconnection thread started
+[2026-04-21 10:29:44.269] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 10:29:44.291] [info] [Worker 3] [libqueen] Reconnection thread started
+[2026-04-21 10:29:57.261] [warning] [Worker 3] [libqueen] Event loop lag is too high: 125ms, expected: 5ms
+[2026-04-21 10:30:43.307] [error] [Worker 2] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:43.308] [warning] [Worker 2] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:45.763] [warning] [Worker 2] [libqueen] Event loop lag is too high: 2459ms, expected: 5ms
+[2026-04-21 10:30:47.546] [warning] [Worker 1] [libqueen] Event loop lag is too high: 134ms, expected: 5ms
+[2026-04-21 10:30:48.036] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:48.037] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.073] [warning] [Worker 0] [libqueen] Event loop lag is too high: 1041ms, expected: 5ms
+[2026-04-21 10:30:49.074] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.076] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.077] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.079] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.351] [warning] [Worker 0] [libqueen] Event loop lag is too high: 278ms, expected: 5ms
+[2026-04-21 10:30:49.813] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.814] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.815] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:49.815] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:50.756] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:50.756] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:50.757] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:50.757] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:50.758] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:50.758] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.321] [error] [Worker 2] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.322] [warning] [Worker 2] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.431] [warning] [Worker 2] [libqueen] Event loop lag is too high: 110ms, expected: 5ms
+[2026-04-21 10:30:51.456] [warning] [Worker 0] [libqueen] Event loop lag is too high: 701ms, expected: 5ms
+[2026-04-21 10:30:51.457] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.458] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.459] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.460] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.460] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.461] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.462] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.710] [error] [Worker 1] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.710] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.710] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.711] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.711] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.711] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.712] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:51.712] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.110] [error] [Worker 1] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.110] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.181] [error] [Worker 3] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.182] [warning] [Worker 3] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.233] [warning] [Worker 1] [libqueen] Event loop lag is too high: 128ms, expected: 5ms
+[2026-04-21 10:30:52.427] [warning] [Worker 3] [libqueen] Event loop lag is too high: 247ms, expected: 5ms
+[2026-04-21 10:30:52.454] [error] [Worker 1] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.454] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.455] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:52.574] [warning] [Worker 1] [libqueen] Event loop lag is too high: 125ms, expected: 5ms
+[2026-04-21 10:30:53.704] [error] [Worker 1] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:53.704] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:53.705] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.283] [warning] [Worker 1] [libqueen] Event loop lag is too high: 584ms, expected: 5ms
+[2026-04-21 10:30:54.516] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.577] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.578] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.579] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.580] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.581] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:54.932] [warning] [Worker 0] [libqueen] Event loop lag is too high: 420ms, expected: 5ms
+[2026-04-21 10:30:55.472] [error] [Worker 2] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:55.472] [warning] [Worker 2] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:55.667] [warning] [Worker 2] [libqueen] Event loop lag is too high: 199ms, expected: 5ms
+[2026-04-21 10:30:58.375] [error] [Worker 3] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:58.375] [warning] [Worker 3] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:58.548] [warning] [Worker 3] [libqueen] Event loop lag is too high: 176ms, expected: 5ms
+[2026-04-21 10:30:59.207] [error] [Worker 3] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:59.207] [warning] [Worker 3] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:59.531] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:30:59.531] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.081] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.081] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.089] [error] [Worker 1] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.089] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.089] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.202] [error] [Worker 2] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.205] [warning] [Worker 2] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.315] [error] [Worker 0] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:00.316] [warning] [Worker 0] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:01.038] [error] [Worker 1] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:01.040] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:01.040] [warning] [Worker 1] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:01.737] [error] [Worker 2] [libqueen] Query failed: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:01.740] [warning] [Worker 2] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+[2026-04-21 10:31:01.741] [warning] [Worker 2] PUSH: Database error detected: ERROR:  canceling statement due to statement timeout
+
+=== line count ===
+    3369 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-2/server.log

@@ -1,0 +1,12 @@
+[15:32:51] run grid-p10000000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed, steps of 90s at: 100000 500000 1000000 1500000 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[15:32:58] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+FATAL warm drain bench: 0 of 10000000 messages came out
+[15:38:21] predrain 240s: 9 processes consumed sum(j.get('warm_received' prefill messages, last:/s in the last windows, errors 1782 predrain 240s: 9 processes consumed sum(j.get('warm_received' prefill messages, .0f/s in the last windows, errors 1782 predrain 240s: 9 processes consumed  0) for j in js): prefill messages, last:/s in the last windows, errors 1782 predrain 240s: 9 processes consumed  0) for j in js): prefill messages, .0f/s in the last windows, errors 1782 predrain 240s: 9 processes consumed  prefill messages, last:/s in the last windows, errors 1782 predrain 240s: 9 processes consumed  prefill messages, .0f/s in the last windows, errors 1782
+[15:40:23]   100,000: last 30 s: offered 100,000 pushed 100,000 consumed 99,993 | run: shed 0 errors 0 | push p50 2.8 p99 4.4 | e2e p50 6.8 p99 74.8 | cores 1.4 / 1.0 / 0.9 | mem GB 18.8 / 9.0 / 9.0 | loaders 1.3c  OK 
+[15:42:26]   500,000: last 30 s: offered 500,006 pushed 500,026 consumed 500,153 | run: shed 0 errors 0 | push p50 3.6 p99 65.0 | e2e p50 8.7 p99 91.1 | cores 4.5 / 3.0 / 2.9 | mem GB 20.6 / 10.6 / 10.5 | loaders 4.7c  OK 
+[15:44:28] 1,000,000: last 30 s: offered 1,000,019 pushed 997,846 consumed 1,000,380 | run: shed 0 errors 0 | push p50 6.0 p99 98.3 | e2e p50 14.2 p99 139.3 | cores 6.3 / 3.9 / 3.7 | mem GB 23.3 / 12.8 / 12.9 | loaders 8.3c  OK 
+[15:46:31] 1,500,000: last 30 s: offered 1,499,993 pushed 1,243,680 consumed 1,285,073 | run: shed 5,989,300 errors 1239 | push p50 99.3 p99 7602.2 | e2e p50 188.4 p99 3997.7 | cores 7.5 / 5.0 / 1.4 | mem GB 22.4 / 18.6 / 19.0 | loaders 11.7c  NOT CARRIED 
+[15:46:31] stopping at 1500000
+RUN_DONE

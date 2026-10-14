@@ -1,0 +1,57 @@
+=== event_loop_lag events ===
+[2026-04-21 13:50:52.416] [warning] [Worker 0] [libqueen] Event loop lag is too high: 221ms, expected: 2ms
+[2026-04-21 13:50:52.417] [warning] [Worker 1] [libqueen] Event loop lag is too high: 218ms, expected: 2ms
+[2026-04-21 13:51:11.505] [warning] [Worker 1] [libqueen] Event loop lag is too high: 305ms, expected: 2ms
+[2026-04-21 13:51:11.506] [warning] [Worker 0] [libqueen] Event loop lag is too high: 308ms, expected: 2ms
+[2026-04-21 13:51:25.356] [warning] [Worker 1] [libqueen] Event loop lag is too high: 154ms, expected: 2ms
+[2026-04-21 13:51:25.356] [warning] [Worker 0] [libqueen] Event loop lag is too high: 159ms, expected: 2ms
+
+=== errors / warnings ===
+[2026-04-21 13:48:55.806] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 13:48:56.636] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 13:48:56.636] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 13:48:56.636] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 13:48:56.636] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 13:48:56.636] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 13:48:56.636] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 13:48:57.164] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 13:48:57.171] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 13:50:22.504] [error] [Worker 1] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 13:50:22.504] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.508] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.511] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.511] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.512] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.570] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 13:50:22.570] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.571] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.571] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.571] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.572] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.573] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.573] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.574] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.574] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.574] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.574] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.574] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.575] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.575] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.575] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:22.576] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:23.579] [error] [Worker 1] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 13:50:23.579] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:23.580] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:23.580] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:23.580] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:23.580] [warning] [Worker 1] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 13:50:23.647] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 13:50:52.416] [warning] [Worker 0] [libqueen] Event loop lag is too high: 221ms, expected: 2ms
+[2026-04-21 13:50:52.417] [warning] [Worker 1] [libqueen] Event loop lag is too high: 218ms, expected: 2ms
+[2026-04-21 13:51:11.505] [warning] [Worker 1] [libqueen] Event loop lag is too high: 305ms, expected: 2ms
+[2026-04-21 13:51:11.506] [warning] [Worker 0] [libqueen] Event loop lag is too high: 308ms, expected: 2ms
+[2026-04-21 13:51:25.356] [warning] [Worker 1] [libqueen] Event loop lag is too high: 154ms, expected: 2ms
+[2026-04-21 13:51:25.356] [warning] [Worker 0] [libqueen] Event loop lag is too high: 159ms, expected: 2ms
+
+=== line count ===
+    3684 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_13-48-49/scenario-1_pg2c4g_q2w_prod2w100c/run-1/server.log

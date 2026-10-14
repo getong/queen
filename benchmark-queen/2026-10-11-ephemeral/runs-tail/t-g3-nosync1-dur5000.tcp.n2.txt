@@ -1,0 +1,7 @@
+TcpOutSegs                      7454674            0.0
+TcpRetransSegs                  426                0.0
+TcpExtDelayedACKs               3825               0.0
+TcpExtTCPFastRetrans            411                0.0
+TcpExtTCPTimeouts               0                  0.0
+TcpExtTCPLossProbes             28                 0.0
+steal 198 jiffies_total 35304

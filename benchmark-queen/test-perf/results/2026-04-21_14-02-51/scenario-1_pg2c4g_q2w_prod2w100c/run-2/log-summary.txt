@@ -1,0 +1,20 @@
+=== event_loop_lag events ===
+[2026-04-21 14:07:32.172] [warning] [Worker 0] [libqueen] Event loop lag is too high: 109ms, expected: 2ms
+[2026-04-21 14:07:32.169] [warning] [Worker 1] [libqueen] Event loop lag is too high: 107ms, expected: 2ms
+
+=== errors / warnings ===
+[2026-04-21 14:05:52.981] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 14:05:53.981] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 14:05:53.981] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 14:05:53.981] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 14:05:53.982] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 14:05:53.982] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 14:05:53.982] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 14:05:53.995] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 14:05:53.995] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 14:07:32.172] [warning] [Worker 0] [libqueen] Event loop lag is too high: 109ms, expected: 2ms
+[2026-04-21 14:07:32.169] [warning] [Worker 1] [libqueen] Event loop lag is too high: 107ms, expected: 2ms
+[2026-04-21 14:08:33.868] [error] StatsService run_fast_aggregation error: SELECT query failed: ERROR:  canceling statement due to statement timeout
+
+=== line count ===
+     516 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_14-02-51/scenario-1_pg2c4g_q2w_prod2w100c/run-2/server.log

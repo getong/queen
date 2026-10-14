@@ -1,0 +1,3180 @@
+[
+  {
+    "scenario_id": 1,
+    "scenario_name": "pg2c4g_q2w_prod2w100c",
+    "config": {
+      "scenario_id": 1,
+      "scenario_name": "pg2c4g_q2w_prod2w100c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 2,
+        "memory_gb": 4,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 2,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 2,
+        "connections": 100,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 1,
+        "connections": 25,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 500,
+      "start_iso": "2026-04-21T08:15:01Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 5,
+      "host_oversubscribed": false,
+      "measure_start_epoch": 1776759319,
+      "measure_end_epoch": 1776759379,
+      "measure_actual_seconds": 60,
+      "finish_iso": "2026-04-21T08:16:22.767Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 1038.19,
+        "push_total": 62291,
+        "push_duration": 60.27,
+        "push_p50": 74,
+        "push_p95": 302,
+        "push_p99": 407,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 10381.900000000001,
+        "pop_rps": 926.1,
+        "pop_total": 55565,
+        "pop_duration": 60.15,
+        "pop_p50": 19,
+        "pop_p95": 98,
+        "pop_p99": 129,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 60,
+          "xact_commit_delta": 35417,
+          "xact_commit_per_s": 590.2833333333333,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 955031,
+          "tup_inserted_per_s": 15917.183333333332,
+          "tup_updated_delta": 160537,
+          "tup_updated_per_s": 2675.616666666667,
+          "tup_deleted_delta": 316626,
+          "tup_fetched_delta": 12573548,
+          "tup_fetched_per_s": 209559.13333333333,
+          "blks_read_delta": 110,
+          "blks_hit_delta": 22149189,
+          "buffer_hit_ratio": 0.9999950337028725,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 627940,
+          "messages_n_tup_ins_per_s": 10465.666666666666,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 76506,
+          "consumers_n_tup_upd_per_s": 1275.1,
+          "consumers_n_tup_hot_upd_delta": 76012,
+          "messages_final_total": 787280,
+          "partitions_final_total": 502,
+          "partition_consumers_final_total": 501
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 190.69,
+            "p95": 197.27,
+            "max": 197.27
+          },
+          "pg_mem_pct": {
+            "p50": 25.47,
+            "p95": 30.62,
+            "max": 30.62
+          },
+          "server_cpu_pct": {
+            "p50": 78.4,
+            "p95": 113.2,
+            "max": 113.2
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 5
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 999.87,
+        "push_total": 59992,
+        "push_duration": 60.29,
+        "push_p50": 79,
+        "push_p95": 293,
+        "push_p99": 400,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 9998.7,
+        "pop_rps": 909.59,
+        "pop_total": 54573,
+        "pop_duration": 60.15,
+        "pop_p50": 19,
+        "pop_p95": 99,
+        "pop_p99": 138,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 60,
+          "xact_commit_delta": 32936,
+          "xact_commit_per_s": 548.9333333333333,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 947739,
+          "tup_inserted_per_s": 15795.65,
+          "tup_updated_delta": 160465,
+          "tup_updated_per_s": 2674.4166666666665,
+          "tup_deleted_delta": 325955,
+          "tup_fetched_delta": 11362763,
+          "tup_fetched_per_s": 189379.38333333333,
+          "blks_read_delta": 115,
+          "blks_hit_delta": 22293559,
+          "buffer_hit_ratio": 0.9999948415860033,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 611020,
+          "messages_n_tup_ins_per_s": 10183.666666666666,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 71546,
+          "consumers_n_tup_upd_per_s": 1192.4333333333334,
+          "consumers_n_tup_hot_upd_delta": 71090,
+          "messages_final_total": 737400,
+          "partitions_final_total": 502,
+          "partition_consumers_final_total": 501
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 191.04,
+            "p95": 198.24,
+            "max": 198.24
+          },
+          "pg_mem_pct": {
+            "p50": 23.78,
+            "p95": 29.06,
+            "max": 29.06
+          },
+          "server_cpu_pct": {
+            "p50": 77.4,
+            "p95": 116.2,
+            "max": 116.2
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 5
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 862.07,
+        "push_total": 51724,
+        "push_duration": 60.36,
+        "push_p50": 86,
+        "push_p95": 376,
+        "push_p99": 595,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 8620.7,
+        "pop_rps": 739.62,
+        "pop_total": 44377,
+        "pop_duration": 60.24,
+        "pop_p50": 25,
+        "pop_p95": 112,
+        "pop_p99": 159,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 60,
+          "xact_commit_delta": 36095,
+          "xact_commit_per_s": 601.5833333333334,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 837318,
+          "tup_inserted_per_s": 13955.3,
+          "tup_updated_delta": 145273,
+          "tup_updated_per_s": 2421.2166666666667,
+          "tup_deleted_delta": 292427,
+          "tup_fetched_delta": 11974240,
+          "tup_fetched_per_s": 199570.66666666666,
+          "blks_read_delta": 116,
+          "blks_hit_delta": 19543242,
+          "buffer_hit_ratio": 0.9999940644796048,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 535110,
+          "messages_n_tup_ins_per_s": 8918.5,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 67240,
+          "consumers_n_tup_upd_per_s": 1120.6666666666667,
+          "consumers_n_tup_hot_upd_delta": 66875,
+          "messages_final_total": 803380,
+          "partitions_final_total": 502,
+          "partition_consumers_final_total": 482
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 187.81,
+            "p95": 198.51,
+            "max": 198.51
+          },
+          "pg_mem_pct": {
+            "p50": 25.76,
+            "p95": 30.87,
+            "max": 30.87
+          },
+          "server_cpu_pct": {
+            "p50": 66.6,
+            "p95": 134.9,
+            "max": 134.9
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 5
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 966.71,
+        "stddev": 92.62425600241008,
+        "min": 862.07,
+        "max": 1038.19
+      },
+      "push_msgs_per_s": {
+        "mean": 9667.1,
+        "stddev": 926.2425600241011,
+        "min": 8620.7,
+        "max": 10381.900000000001
+      },
+      "push_p50": {
+        "mean": 79.66666666666667,
+        "stddev": 6.027713773341707,
+        "min": 74,
+        "max": 86
+      },
+      "push_p95": {
+        "mean": 323.6666666666667,
+        "stddev": 45.54484969053399,
+        "min": 293,
+        "max": 376
+      },
+      "push_p99": {
+        "mean": 467.3333333333333,
+        "stddev": 110.61796116966418,
+        "min": 400,
+        "max": 595
+      },
+      "push_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 858.4366666666666,
+        "stddev": 103.22884884243035,
+        "min": 739.62,
+        "max": 926.1
+      },
+      "pop_p50": {
+        "mean": 21,
+        "stddev": 3.4641016151377544,
+        "min": 19,
+        "max": 25
+      },
+      "pop_p95": {
+        "mean": 103,
+        "stddev": 7.810249675906654,
+        "min": 98,
+        "max": 112
+      },
+      "pop_p99": {
+        "mean": 142,
+        "stddev": 15.394804318340652,
+        "min": 129,
+        "max": 159
+      },
+      "pop_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 580.2666666666668,
+          "stddev": 27.71742833188778,
+          "min": 548.9333333333333,
+          "max": 601.5833333333334,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 15222.71111111111,
+          "stddev": 1099.2910357151577,
+          "min": 13955.3,
+          "max": 15917.183333333332,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 2590.4166666666665,
+          "stddev": 146.5327267200061,
+          "min": 2421.2166666666667,
+          "max": 2675.616666666667,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 199503.0611111111,
+          "stddev": 10090.04486605394,
+          "min": 189379.38333333333,
+          "max": 209559.13333333333,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 9855.944444444443,
+          "stddev": 824.0039834945061,
+          "min": 8918.5,
+          "max": 10465.666666666666,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 1196.0666666666666,
+          "stddev": 77.28075080150575,
+          "min": 1120.6666666666667,
+          "max": 1275.1,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999946465894936,
+          "stddev": 5.131921323907588e-7,
+          "min": 0.9999940644796048,
+          "max": 0.9999950337028725,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 776020,
+          "max": 803380
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 198.00666666666666,
+        "pg_cpu_pct_max": 198.51,
+        "server_cpu_pct_p95": 121.43333333333334,
+        "server_cpu_pct_max": 134.9
+      },
+      "host_oversubscribed": false,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 0,
+          "max": 0
+        },
+        "warning_lines": {
+          "mean": 0,
+          "max": 0
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  },
+  {
+    "scenario_id": 2,
+    "scenario_name": "pg2c4g_q4w_prod4w200c",
+    "config": {
+      "scenario_id": 2,
+      "scenario_name": "pg2c4g_q4w_prod4w200c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 2,
+        "memory_gb": 4,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 4,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 4,
+        "connections": 200,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 1,
+        "connections": 50,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 500,
+      "start_iso": "2026-04-21T08:19:25Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 9,
+      "host_oversubscribed": true,
+      "measure_start_epoch": 1776759581,
+      "measure_end_epoch": 1776759642,
+      "measure_actual_seconds": 61,
+      "finish_iso": "2026-04-21T08:20:46.474Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 591.79,
+        "push_total": 35507,
+        "push_duration": 60.46,
+        "push_p50": 157,
+        "push_p95": 1730,
+        "push_p99": 2318,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 5917.9,
+        "pop_rps": 1532.02,
+        "pop_total": 91916,
+        "pop_duration": 60.45,
+        "pop_p50": 14,
+        "pop_p95": 153,
+        "pop_p99": 299,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 61,
+          "xact_commit_delta": 41028,
+          "xact_commit_per_s": 672.5901639344262,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 669398,
+          "tup_inserted_per_s": 10973.737704918032,
+          "tup_updated_delta": 126170,
+          "tup_updated_per_s": 2068.3606557377047,
+          "tup_deleted_delta": 301359,
+          "tup_fetched_delta": 10681533,
+          "tup_fetched_per_s": 175107.09836065574,
+          "blks_read_delta": 110,
+          "blks_hit_delta": 18752913,
+          "buffer_hit_ratio": 0.9999941342790439,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 358780,
+          "messages_n_tup_ins_per_s": 5881.639344262295,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 59096,
+          "consumers_n_tup_upd_per_s": 968.7868852459017,
+          "consumers_n_tup_hot_upd_delta": 53678,
+          "messages_final_total": 493620,
+          "partitions_final_total": 248,
+          "partition_consumers_final_total": 246
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 195.98,
+            "p95": 208.11,
+            "max": 208.11
+          },
+          "pg_mem_pct": {
+            "p50": 27.25,
+            "p95": 33.23,
+            "max": 33.23
+          },
+          "server_cpu_pct": {
+            "p50": 63,
+            "p95": 118.5,
+            "max": 118.5
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 9
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 612.69,
+        "push_total": 36761,
+        "push_duration": 60.41,
+        "push_p50": 162,
+        "push_p95": 1714,
+        "push_p99": 2629,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 6126.900000000001,
+        "pop_rps": 1396.45,
+        "pop_total": 83774,
+        "pop_duration": 60.42,
+        "pop_p50": 17,
+        "pop_p95": 166,
+        "pop_p99": 234,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 60,
+          "xact_commit_delta": 41973,
+          "xact_commit_per_s": 699.55,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 710641,
+          "tup_inserted_per_s": 11844.016666666666,
+          "tup_updated_delta": 130665,
+          "tup_updated_per_s": 2177.75,
+          "tup_deleted_delta": 323622,
+          "tup_fetched_delta": 18523941,
+          "tup_fetched_per_s": 308732.35,
+          "blks_read_delta": 125,
+          "blks_hit_delta": 21106197,
+          "buffer_hit_ratio": 0.9999940776038573,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 377790,
+          "messages_n_tup_ins_per_s": 6296.5,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 59358,
+          "consumers_n_tup_upd_per_s": 989.3,
+          "consumers_n_tup_hot_upd_delta": 54621,
+          "messages_final_total": 570810,
+          "partitions_final_total": 265,
+          "partition_consumers_final_total": 263
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 191.6,
+            "p95": 232.15,
+            "max": 232.15
+          },
+          "pg_mem_pct": {
+            "p50": 29.49,
+            "p95": 34.41,
+            "max": 34.41
+          },
+          "server_cpu_pct": {
+            "p50": 70.2,
+            "p95": 153.3,
+            "max": 153.3
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 9
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 718.05,
+        "push_total": 43083,
+        "push_duration": 60.36,
+        "push_p50": 147,
+        "push_p95": 1246,
+        "push_p99": 1729,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 7180.5,
+        "pop_rps": 1741.95,
+        "pop_total": 104510,
+        "pop_duration": 60.3,
+        "pop_p50": 15,
+        "pop_p95": 125,
+        "pop_p99": 185,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 60,
+          "xact_commit_delta": 46129,
+          "xact_commit_per_s": 768.8166666666667,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 820811,
+          "tup_inserted_per_s": 13680.183333333332,
+          "tup_updated_delta": 164492,
+          "tup_updated_per_s": 2741.5333333333333,
+          "tup_deleted_delta": 373959,
+          "tup_fetched_delta": 18639738,
+          "tup_fetched_per_s": 310662.3,
+          "blks_read_delta": 126,
+          "blks_hit_delta": 23808861,
+          "buffer_hit_ratio": 0.9999947078806839,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 435600,
+          "messages_n_tup_ins_per_s": 7260,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 81592,
+          "consumers_n_tup_upd_per_s": 1359.8666666666666,
+          "consumers_n_tup_hot_upd_delta": 74676,
+          "messages_final_total": 595340,
+          "partitions_final_total": 306,
+          "partition_consumers_final_total": 301
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 193.25,
+            "p95": 200.02,
+            "max": 200.02
+          },
+          "pg_mem_pct": {
+            "p50": 29.51,
+            "p95": 35.35,
+            "max": 35.35
+          },
+          "server_cpu_pct": {
+            "p50": 82.4,
+            "p95": 120.3,
+            "max": 120.3
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 9
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 640.8433333333334,
+        "stddev": 67.67462252080414,
+        "min": 591.79,
+        "max": 718.05
+      },
+      "push_msgs_per_s": {
+        "mean": 6408.433333333333,
+        "stddev": 676.7462252080416,
+        "min": 5917.9,
+        "max": 7180.5
+      },
+      "push_p50": {
+        "mean": 155.33333333333334,
+        "stddev": 7.637626158259733,
+        "min": 147,
+        "max": 162
+      },
+      "push_p95": {
+        "mean": 1563.3333333333333,
+        "stddev": 274.93514386730067,
+        "min": 1246,
+        "max": 1730
+      },
+      "push_p99": {
+        "mean": 2225.3333333333335,
+        "stddev": 457.0999161379636,
+        "min": 1729,
+        "max": 2629
+      },
+      "push_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 1556.8066666666666,
+        "stddev": 174.07856454294807,
+        "min": 1396.45,
+        "max": 1741.95
+      },
+      "pop_p50": {
+        "mean": 15.333333333333334,
+        "stddev": 1.5275252316519468,
+        "min": 14,
+        "max": 17
+      },
+      "pop_p95": {
+        "mean": 148,
+        "stddev": 20.952326839756964,
+        "min": 125,
+        "max": 166
+      },
+      "pop_p99": {
+        "mean": 239.33333333333334,
+        "stddev": 57.18682832028135,
+        "min": 185,
+        "max": 299
+      },
+      "pop_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 713.652276867031,
+          "stddev": 49.63910370509597,
+          "min": 672.5901639344262,
+          "max": 768.8166666666667,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 12165.979234972678,
+          "stddev": 1381.6500665634276,
+          "min": 10973.737704918032,
+          "max": 13680.183333333332,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 2329.214663023679,
+          "stddev": 361.2430228723796,
+          "min": 2068.3606557377047,
+          "max": 2741.5333333333333,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 264833.9161202186,
+          "stddev": 77711.69503809561,
+          "min": 175107.09836065574,
+          "max": 310662.3,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 6479.379781420765,
+          "stddev": 707.1444584812916,
+          "min": 5881.639344262295,
+          "max": 7260,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 1105.9845173041895,
+          "stddev": 220.1074880437103,
+          "min": 968.7868852459017,
+          "max": 1359.8666666666666,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999943065878617,
+          "stddev": 3.4868318865984395e-7,
+          "min": 0.9999940776038573,
+          "max": 0.9999947078806839,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 553256.6666666666,
+          "max": 595340
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 213.42666666666665,
+        "pg_cpu_pct_max": 232.15,
+        "server_cpu_pct_p95": 130.70000000000002,
+        "server_cpu_pct_max": 153.3
+      },
+      "host_oversubscribed": true,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 0,
+          "max": 0
+        },
+        "warning_lines": {
+          "mean": 0,
+          "max": 0
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  },
+  {
+    "scenario_id": 3,
+    "scenario_name": "pg4c8g_q2w_prod4w200c",
+    "config": {
+      "scenario_id": 3,
+      "scenario_name": "pg4c8g_q2w_prod4w200c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 4,
+        "memory_gb": 8,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 2,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 4,
+        "connections": 200,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 1,
+        "connections": 50,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 500,
+      "start_iso": "2026-04-21T08:23:48Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 7,
+      "host_oversubscribed": false,
+      "measure_start_epoch": 1776759844,
+      "measure_end_epoch": 1776759905,
+      "measure_actual_seconds": 61,
+      "finish_iso": "2026-04-21T08:25:08.711Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 1191.1,
+        "push_total": 71466,
+        "push_duration": 60.42,
+        "push_p50": 128,
+        "push_p95": 534,
+        "push_p99": 724,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 11911,
+        "pop_rps": 1030.02,
+        "pop_total": 61799,
+        "pop_duration": 60.36,
+        "pop_p50": 32,
+        "pop_p95": 181,
+        "pop_p99": 248,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 61,
+          "xact_commit_delta": 39361,
+          "xact_commit_per_s": 645.2622950819672,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 1135920,
+          "tup_inserted_per_s": 18621.639344262294,
+          "tup_updated_delta": 169741,
+          "tup_updated_per_s": 2782.6393442622953,
+          "tup_deleted_delta": 391603,
+          "tup_fetched_delta": 18839673,
+          "tup_fetched_per_s": 308847.0983606557,
+          "blks_read_delta": 116,
+          "blks_hit_delta": 29470401,
+          "buffer_hit_ratio": 0.9999960638627412,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 732260,
+          "messages_n_tup_ins_per_s": 12004.262295081968,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 66380,
+          "consumers_n_tup_upd_per_s": 1088.1967213114754,
+          "consumers_n_tup_hot_upd_delta": 65114,
+          "messages_final_total": 988760,
+          "partitions_final_total": 442,
+          "partition_consumers_final_total": 328
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 374.03,
+            "p95": 388.64,
+            "max": 388.64
+          },
+          "pg_mem_pct": {
+            "p50": 16.02,
+            "p95": 19.52,
+            "max": 19.52
+          },
+          "server_cpu_pct": {
+            "p50": 104.9,
+            "p95": 173.4,
+            "max": 173.4
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 7
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 1359.92,
+        "push_total": 81594,
+        "push_duration": 60.61,
+        "push_p50": 113,
+        "push_p95": 459,
+        "push_p99": 552,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 13599.2,
+        "pop_rps": 1085.8,
+        "pop_total": 65145,
+        "pop_duration": 60.5,
+        "pop_p50": 33,
+        "pop_p95": 155,
+        "pop_p99": 211,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 61,
+          "xact_commit_delta": 51555,
+          "xact_commit_per_s": 845.1639344262295,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 1279940,
+          "tup_inserted_per_s": 20982.622950819674,
+          "tup_updated_delta": 191299,
+          "tup_updated_per_s": 3136.0491803278687,
+          "tup_deleted_delta": 425217,
+          "tup_fetched_delta": 21621428,
+          "tup_fetched_per_s": 354449.6393442623,
+          "blks_read_delta": 120,
+          "blks_hit_delta": 32943533,
+          "buffer_hit_ratio": 0.9999963574167079,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 840750,
+          "messages_n_tup_ins_per_s": 13782.786885245901,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 77958,
+          "consumers_n_tup_upd_per_s": 1278,
+          "consumers_n_tup_hot_upd_delta": 76462,
+          "messages_final_total": 1162150,
+          "partitions_final_total": 463,
+          "partition_consumers_final_total": 387
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 364.43,
+            "p95": 394.05,
+            "max": 394.05
+          },
+          "pg_mem_pct": {
+            "p50": 17.01,
+            "p95": 20.87,
+            "max": 20.87
+          },
+          "server_cpu_pct": {
+            "p50": 118.7,
+            "p95": 179.3,
+            "max": 179.3
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 7
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 515.64,
+        "push_total": 30938,
+        "push_duration": 60.54,
+        "push_p50": 167,
+        "push_p95": 2299,
+        "push_p99": 3245,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 5156.4,
+        "pop_rps": 1245.02,
+        "pop_total": 74693,
+        "pop_duration": 60.53,
+        "pop_p50": 20,
+        "pop_p95": 206,
+        "pop_p99": 320,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 61,
+          "xact_commit_delta": 30733,
+          "xact_commit_per_s": 503.8196721311475,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 577915,
+          "tup_inserted_per_s": 9474.016393442624,
+          "tup_updated_delta": 89156,
+          "tup_updated_per_s": 1461.5737704918033,
+          "tup_deleted_delta": 252914,
+          "tup_fetched_delta": 9336497,
+          "tup_fetched_per_s": 153057.32786885247,
+          "blks_read_delta": 125,
+          "blks_hit_delta": 15717528,
+          "buffer_hit_ratio": 0.9999920471586947,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 318960,
+          "messages_n_tup_ins_per_s": 5228.852459016393,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 33382,
+          "consumers_n_tup_upd_per_s": 547.2459016393443,
+          "consumers_n_tup_hot_upd_delta": 30840,
+          "messages_final_total": 432710,
+          "partitions_final_total": 199,
+          "partition_consumers_final_total": 173
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 366.37,
+            "p95": 456.87,
+            "max": 456.87
+          },
+          "pg_mem_pct": {
+            "p50": 12.94,
+            "p95": 15.1,
+            "max": 15.1
+          },
+          "server_cpu_pct": {
+            "p50": 94.2,
+            "p95": 132.9,
+            "max": 132.9
+          }
+        },
+        "host": {
+          "oversubscribed": false,
+          "cpus": 10,
+          "heavy_threads": 7
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 1022.2199999999999,
+        "stddev": 446.7577871733184,
+        "min": 515.64,
+        "max": 1359.92
+      },
+      "push_msgs_per_s": {
+        "mean": 10222.199999999999,
+        "stddev": 4467.577871733184,
+        "min": 5156.4,
+        "max": 13599.2
+      },
+      "push_p50": {
+        "mean": 136,
+        "stddev": 27.874719729532707,
+        "min": 113,
+        "max": 167
+      },
+      "push_p95": {
+        "mean": 1097.3333333333333,
+        "stddev": 1041.3492849823892,
+        "min": 459,
+        "max": 2299
+      },
+      "push_p99": {
+        "mean": 1507,
+        "stddev": 1507.6070442923779,
+        "min": 552,
+        "max": 3245
+      },
+      "push_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 1120.28,
+        "stddev": 111.5701698483963,
+        "min": 1030.02,
+        "max": 1245.02
+      },
+      "pop_p50": {
+        "mean": 28.333333333333332,
+        "stddev": 7.234178138070235,
+        "min": 20,
+        "max": 33
+      },
+      "pop_p95": {
+        "mean": 180.66666666666666,
+        "stddev": 25.501633934580216,
+        "min": 155,
+        "max": 206
+      },
+      "pop_p99": {
+        "mean": 259.6666666666667,
+        "stddev": 55.428632793289545,
+        "min": 211,
+        "max": 320
+      },
+      "pop_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 664.7486338797813,
+          "stddev": 171.5044151042498,
+          "min": 503.8196721311475,
+          "max": 845.1639344262295,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 16359.426229508195,
+          "stddev": 6078.668633471443,
+          "min": 9474.016393442624,
+          "max": 20982.622950819674,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 2460.0874316939894,
+          "stddev": 882.6079405730038,
+          "min": 1461.5737704918033,
+          "max": 3136.0491803278687,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 272118.02185792354,
+          "stddev": 105600.58984641038,
+          "min": 153057.32786885247,
+          "max": 354449.6393442623,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 10338.633879781422,
+          "stddev": 4513.666697425835,
+          "min": 5228.852459016393,
+          "max": 13782.786885245901,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 971.1475409836066,
+          "stddev": 379.1777565064876,
+          "min": 547.2459016393443,
+          "max": 1278,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999948228127146,
+          "stddev": 0.0000024082638791089024,
+          "min": 0.9999920471586947,
+          "max": 0.9999963574167079,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 861206.6666666666,
+          "max": 1162150
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 413.18666666666667,
+        "pg_cpu_pct_max": 456.87,
+        "server_cpu_pct_p95": 161.86666666666667,
+        "server_cpu_pct_max": 179.3
+      },
+      "host_oversubscribed": false,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 0,
+          "max": 0
+        },
+        "warning_lines": {
+          "mean": 0,
+          "max": 0
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  },
+  {
+    "scenario_id": 4,
+    "scenario_name": "pg4c8g_q4w_prod4w200c",
+    "config": {
+      "scenario_id": 4,
+      "scenario_name": "pg4c8g_q4w_prod4w200c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 4,
+        "memory_gb": 8,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 4,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 4,
+        "connections": 200,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 1,
+        "connections": 50,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 500,
+      "start_iso": "2026-04-21T08:28:11Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 9,
+      "host_oversubscribed": true,
+      "measure_start_epoch": 1776760107,
+      "measure_end_epoch": 1776760168,
+      "measure_actual_seconds": 61,
+      "finish_iso": "2026-04-21T08:29:32.105Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 542.35,
+        "push_total": 32541,
+        "push_duration": 60.59,
+        "push_p50": 166,
+        "push_p95": 2185,
+        "push_p99": 2853,
+        "push_errors": 0,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 5423.5,
+        "pop_rps": 1557.09,
+        "pop_total": 93420,
+        "pop_duration": 60.56,
+        "pop_p50": 15,
+        "pop_p95": 156,
+        "pop_p99": 255,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 61,
+          "xact_commit_delta": 53682,
+          "xact_commit_per_s": 880.0327868852459,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 686486,
+          "tup_inserted_per_s": 11253.868852459016,
+          "tup_updated_delta": 127880,
+          "tup_updated_per_s": 2096.3934426229507,
+          "tup_deleted_delta": 341580,
+          "tup_fetched_delta": 11231441,
+          "tup_fetched_per_s": 184121.9836065574,
+          "blks_read_delta": 125,
+          "blks_hit_delta": 19554190,
+          "buffer_hit_ratio": 0.9999936075490243,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 336720,
+          "messages_n_tup_ins_per_s": 5520,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 55588,
+          "consumers_n_tup_upd_per_s": 911.2786885245902,
+          "consumers_n_tup_hot_upd_delta": 51278,
+          "messages_final_total": 455310,
+          "partitions_final_total": 220,
+          "partition_consumers_final_total": 216
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 391.14,
+            "p95": 434.93,
+            "max": 434.93
+          },
+          "pg_mem_pct": {
+            "p50": 14.72,
+            "p95": 17.39,
+            "max": 17.39
+          },
+          "server_cpu_pct": {
+            "p50": 71.9,
+            "p95": 175.7,
+            "max": 175.7
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 9
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 72.66,
+        "push_total": 4359,
+        "push_duration": 61.75,
+        "push_p50": 796,
+        "push_p95": 8896,
+        "push_p99": 9427,
+        "push_errors": 326,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 726.5999999999999,
+        "pop_rps": 437.65,
+        "pop_total": 26259,
+        "pop_duration": 61.84,
+        "pop_p50": 26,
+        "pop_p95": 806,
+        "pop_p99": 1948,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 24,
+          "warnings": 64,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 63,
+          "xact_commit_delta": 26729,
+          "xact_commit_per_s": 424.26984126984127,
+          "xact_rollback_delta": 22,
+          "tup_inserted_delta": 164735,
+          "tup_inserted_per_s": 2614.84126984127,
+          "tup_updated_delta": 31082,
+          "tup_updated_per_s": 493.36507936507934,
+          "tup_deleted_delta": 111550,
+          "tup_fetched_delta": 5831422,
+          "tup_fetched_per_s": 92562.25396825396,
+          "blks_read_delta": 115,
+          "blks_hit_delta": 6509506,
+          "buffer_hit_ratio": 0.9999823338409409,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 49900,
+          "messages_n_tup_ins_per_s": 792.063492063492,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 10986,
+          "consumers_n_tup_upd_per_s": 174.38095238095238,
+          "consumers_n_tup_hot_upd_delta": 9839,
+          "messages_final_total": 158540,
+          "partitions_final_total": 81,
+          "partition_consumers_final_total": 80
+        },
+        "stats_stream": {
+          "samples": 15,
+          "pg_cpu_pct": {
+            "p50": 404.09,
+            "p95": 446.77,
+            "max": 446.77
+          },
+          "pg_mem_pct": {
+            "p50": 12.26,
+            "p95": 15.29,
+            "max": 15.29
+          },
+          "server_cpu_pct": {
+            "p50": 27.2,
+            "p95": 86.8,
+            "max": 86.8
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 9
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 225.55,
+        "push_total": 13533,
+        "push_duration": 61.01,
+        "push_p50": 392,
+        "push_p95": 4810,
+        "push_p99": 5936,
+        "push_errors": 27,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 2255.5,
+        "pop_rps": 1246.69,
+        "pop_total": 74797,
+        "pop_duration": 60.75,
+        "pop_p50": 17,
+        "pop_p95": 193,
+        "pop_p99": 300,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 0,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 61,
+          "xact_commit_delta": 31778,
+          "xact_commit_per_s": 520.9508196721312,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 360529,
+          "tup_inserted_per_s": 5910.311475409836,
+          "tup_updated_delta": 67808,
+          "tup_updated_per_s": 1111.6065573770493,
+          "tup_deleted_delta": 220234,
+          "tup_fetched_delta": 6183349,
+          "tup_fetched_per_s": 101366.37704918033,
+          "blks_read_delta": 110,
+          "blks_hit_delta": 11866047,
+          "buffer_hit_ratio": 0.9999907299389348,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 135870,
+          "messages_n_tup_ins_per_s": 2227.377049180328,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 25810,
+          "consumers_n_tup_upd_per_s": 423.11475409836066,
+          "consumers_n_tup_hot_upd_delta": 22716,
+          "messages_final_total": 197950,
+          "partitions_final_total": 135,
+          "partition_consumers_final_total": 131
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 392.43,
+            "p95": 414.98,
+            "max": 414.98
+          },
+          "pg_mem_pct": {
+            "p50": 11.91,
+            "p95": 13.58,
+            "max": 13.58
+          },
+          "server_cpu_pct": {
+            "p50": 55.8,
+            "p95": 108.2,
+            "max": 108.2
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 9
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 280.18666666666667,
+        "stddev": 239.56428789227607,
+        "min": 72.66,
+        "max": 542.35
+      },
+      "push_msgs_per_s": {
+        "mean": 2801.866666666667,
+        "stddev": 2395.6428789227607,
+        "min": 726.5999999999999,
+        "max": 5423.5
+      },
+      "push_p50": {
+        "mean": 451.3333333333333,
+        "stddev": 319.16348997548783,
+        "min": 166,
+        "max": 796
+      },
+      "push_p95": {
+        "mean": 5297,
+        "stddev": 3381.9013882725794,
+        "min": 2185,
+        "max": 8896
+      },
+      "push_p99": {
+        "mean": 6072,
+        "stddev": 3289.1094539403825,
+        "min": 2853,
+        "max": 9427
+      },
+      "push_errors": {
+        "mean": 117.66666666666667,
+        "stddev": 180.92632017850065,
+        "min": 0,
+        "max": 326
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 1080.4766666666667,
+        "stddev": 577.933069250526,
+        "min": 437.65,
+        "max": 1557.09
+      },
+      "pop_p50": {
+        "mean": 19.333333333333332,
+        "stddev": 5.8594652770823155,
+        "min": 15,
+        "max": 26
+      },
+      "pop_p95": {
+        "mean": 385,
+        "stddev": 365.06574750310386,
+        "min": 156,
+        "max": 806
+      },
+      "pop_p99": {
+        "mean": 834.3333333333334,
+        "stddev": 964.7260405593565,
+        "min": 255,
+        "max": 1948
+      },
+      "pop_errors": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 608.417815942406,
+          "stddev": 240.14125473649,
+          "min": 424.26984126984127,
+          "max": 880.0327868852459,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 6593.0071992367075,
+          "stddev": 4359.7883528683105,
+          "min": 2614.84126984127,
+          "max": 11253.868852459016,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 1233.78835978836,
+          "stddev": 808.4684768020705,
+          "min": 493.36507936507934,
+          "max": 2096.3934426229507,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 126016.87154133055,
+          "stddev": 50512.683376459536,
+          "min": 92562.25396825396,
+          "max": 184121.9836065574,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 2846.480180414607,
+          "stddev": 2424.007512591036,
+          "min": 792.063492063492,
+          "max": 5520,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 502.92479833463443,
+          "stddev": 374.8757137427705,
+          "min": 174.38095238095238,
+          "max": 911.2786885245902,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999888904429666,
+          "stddev": 0.000005857638820373885,
+          "min": 0.9999823338409409,
+          "max": 0.9999936075490243,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 7.333333333333333,
+          "stddev": 12.701705922171767,
+          "min": 0,
+          "max": 22,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 270600,
+          "max": 455310
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 432.2266666666667,
+        "pg_cpu_pct_max": 446.77,
+        "server_cpu_pct_p95": 123.56666666666666,
+        "server_cpu_pct_max": 175.7
+      },
+      "host_oversubscribed": true,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 8,
+          "max": 24
+        },
+        "warning_lines": {
+          "mean": 21.333333333333332,
+          "max": 64
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  },
+  {
+    "scenario_id": 5,
+    "scenario_name": "pg4c8g_q4w_prod8w400c",
+    "config": {
+      "scenario_id": 5,
+      "scenario_name": "pg4c8g_q4w_prod8w400c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 4,
+        "memory_gb": 8,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 4,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 8,
+        "connections": 400,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 2,
+        "connections": 100,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 800,
+      "start_iso": "2026-04-21T08:32:43Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 14,
+      "host_oversubscribed": true,
+      "measure_start_epoch": 1776760380,
+      "measure_end_epoch": 1776760443,
+      "measure_actual_seconds": 63,
+      "finish_iso": "2026-04-21T08:34:06.261Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 149.06,
+        "push_total": 8943,
+        "push_duration": 62.53,
+        "push_p50": 399,
+        "push_p95": 7112,
+        "push_p99": 8673,
+        "push_errors": 1203,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1490.6,
+        "pop_rps": 1493.12,
+        "pop_total": 89574,
+        "pop_duration": 61.69,
+        "pop_p50": 20,
+        "pop_p95": 411,
+        "pop_p99": 829,
+        "pop_errors": 3,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 17,
+          "warnings": 67,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 63,
+          "xact_commit_delta": 25442,
+          "xact_commit_per_s": 403.8412698412698,
+          "xact_rollback_delta": 17,
+          "tup_inserted_delta": 265816,
+          "tup_inserted_per_s": 4219.3015873015875,
+          "tup_updated_delta": 42188,
+          "tup_updated_per_s": 669.6507936507936,
+          "tup_deleted_delta": 166984,
+          "tup_fetched_delta": 6990401,
+          "tup_fetched_per_s": 110958.74603174604,
+          "blks_read_delta": 115,
+          "blks_hit_delta": 9741316,
+          "buffer_hit_ratio": 0.9999881947529065,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 95920,
+          "messages_n_tup_ins_per_s": 1522.5396825396826,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 11672,
+          "consumers_n_tup_upd_per_s": 185.26984126984127,
+          "consumers_n_tup_hot_upd_delta": 10416,
+          "messages_final_total": 146970,
+          "partitions_final_total": 56,
+          "partition_consumers_final_total": 54
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 397.37,
+            "p95": 460.47,
+            "max": 460.47
+          },
+          "pg_mem_pct": {
+            "p50": 14.16,
+            "p95": 16.1,
+            "max": 16.1
+          },
+          "server_cpu_pct": {
+            "p50": 54.9,
+            "p95": 98.2,
+            "max": 98.2
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 14
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 195.8,
+        "push_total": 11748,
+        "push_duration": 63.01,
+        "push_p50": 260,
+        "push_p95": 7175,
+        "push_p99": 8581,
+        "push_errors": 1299,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1958,
+        "pop_rps": 1463.52,
+        "pop_total": 87801,
+        "pop_duration": 61.5,
+        "pop_p50": 20,
+        "pop_p95": 454,
+        "pop_p99": 734,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 76,
+          "warnings": 222,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 65,
+          "xact_commit_delta": 30186,
+          "xact_commit_per_s": 464.4,
+          "xact_rollback_delta": 76,
+          "tup_inserted_delta": 366330,
+          "tup_inserted_per_s": 5635.846153846154,
+          "tup_updated_delta": 58861,
+          "tup_updated_per_s": 905.5538461538462,
+          "tup_deleted_delta": 224535,
+          "tup_fetched_delta": 8569182,
+          "tup_fetched_per_s": 131833.56923076924,
+          "blks_read_delta": 114,
+          "blks_hit_delta": 12751255,
+          "buffer_hit_ratio": 0.9999910597834633,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 135340,
+          "messages_n_tup_ins_per_s": 2082.153846153846,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 16046,
+          "consumers_n_tup_upd_per_s": 246.86153846153846,
+          "consumers_n_tup_hot_upd_delta": 14471,
+          "messages_final_total": 193790,
+          "partitions_final_total": 64,
+          "partition_consumers_final_total": 62
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 383.87,
+            "p95": 407.97,
+            "max": 407.97
+          },
+          "pg_mem_pct": {
+            "p50": 14.33,
+            "p95": 17.3,
+            "max": 17.3
+          },
+          "server_cpu_pct": {
+            "p50": 44,
+            "p95": 135.7,
+            "max": 135.7
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 14
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 138.69,
+        "push_total": 8321,
+        "push_duration": 62.16,
+        "push_p50": 182,
+        "push_p95": 8816,
+        "push_p99": 9682,
+        "push_errors": 775,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1386.9,
+        "pop_rps": 2552.64,
+        "pop_total": 153138,
+        "pop_duration": 61.52,
+        "pop_p50": 17,
+        "pop_p95": 198,
+        "pop_p99": 424,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 1,
+          "warnings": 4,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 63,
+          "xact_commit_delta": 27338,
+          "xact_commit_per_s": 433.93650793650795,
+          "xact_rollback_delta": 1,
+          "tup_inserted_delta": 278889,
+          "tup_inserted_per_s": 4426.809523809524,
+          "tup_updated_delta": 44755,
+          "tup_updated_per_s": 710.3968253968254,
+          "tup_deleted_delta": 186211,
+          "tup_fetched_delta": 7951588,
+          "tup_fetched_per_s": 126215.68253968254,
+          "blks_read_delta": 124,
+          "blks_hit_delta": 10164677,
+          "buffer_hit_ratio": 0.9999878010400793,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 90830,
+          "messages_n_tup_ins_per_s": 1441.7460317460318,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 11802,
+          "consumers_n_tup_upd_per_s": 187.33333333333334,
+          "consumers_n_tup_hot_upd_delta": 10557,
+          "messages_final_total": 150140,
+          "partitions_final_total": 57,
+          "partition_consumers_final_total": 56
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 378.01,
+            "p95": 414.83,
+            "max": 414.83
+          },
+          "pg_mem_pct": {
+            "p50": 14.61,
+            "p95": 15.98,
+            "max": 15.98
+          },
+          "server_cpu_pct": {
+            "p50": 78.6,
+            "p95": 115.3,
+            "max": 115.3
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 14
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 161.18333333333334,
+        "stddev": 30.42399436848051,
+        "min": 138.69,
+        "max": 195.8
+      },
+      "push_msgs_per_s": {
+        "mean": 1611.8333333333333,
+        "stddev": 304.23994368480504,
+        "min": 1386.9,
+        "max": 1958
+      },
+      "push_p50": {
+        "mean": 280.3333333333333,
+        "stddev": 109.9196676365669,
+        "min": 182,
+        "max": 399
+      },
+      "push_p95": {
+        "mean": 7701,
+        "stddev": 966.1319785619354,
+        "min": 7112,
+        "max": 8816
+      },
+      "push_p99": {
+        "mean": 8978.666666666666,
+        "stddev": 610.839040446281,
+        "min": 8581,
+        "max": 9682
+      },
+      "push_errors": {
+        "mean": 1092.3333333333333,
+        "stddev": 278.97909121174894,
+        "min": 775,
+        "max": 1299
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 1836.4266666666665,
+        "stddev": 620.4354874870821,
+        "min": 1463.52,
+        "max": 2552.64
+      },
+      "pop_p50": {
+        "mean": 19,
+        "stddev": 1.7320508075688772,
+        "min": 17,
+        "max": 20
+      },
+      "pop_p95": {
+        "mean": 354.3333333333333,
+        "stddev": 137.0851317004632,
+        "min": 198,
+        "max": 454
+      },
+      "pop_p99": {
+        "mean": 662.3333333333334,
+        "stddev": 211.7978596051748,
+        "min": 424,
+        "max": 829
+      },
+      "pop_errors": {
+        "mean": 1,
+        "stddev": 1.7320508075688772,
+        "min": 0,
+        "max": 3
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 434.05925925925925,
+          "stddev": 30.279551689628782,
+          "min": 403.8412698412698,
+          "max": 464.4,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 4760.652421652422,
+          "stddev": 765.0084558891107,
+          "min": 4219.3015873015875,
+          "max": 5635.846153846154,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 761.8671550671551,
+          "stddev": 126.09305560713406,
+          "min": 669.6507936507936,
+          "max": 905.5538461538462,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 123002.66593406594,
+          "stddev": 10801.952030933824,
+          "min": 110958.74603174604,
+          "max": 131833.56923076924,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 1682.14652014652,
+          "stddev": 348.76395907087357,
+          "min": 1441.7460317460318,
+          "max": 2082.153846153846,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 206.48823768823772,
+          "stddev": 34.97952345834031,
+          "min": 185.26984126984127,
+          "max": 246.86153846153846,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.999989018525483,
+          "stddev": 0.0000017787082543163605,
+          "min": 0.9999878010400793,
+          "max": 0.9999910597834633,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 31.333333333333332,
+          "stddev": 39.50105483823607,
+          "min": 1,
+          "max": 76,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 163633.33333333334,
+          "max": 193790
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 427.75666666666666,
+        "pg_cpu_pct_max": 460.47,
+        "server_cpu_pct_p95": 116.39999999999999,
+        "server_cpu_pct_max": 135.7
+      },
+      "host_oversubscribed": true,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 31.333333333333332,
+          "max": 76
+        },
+        "warning_lines": {
+          "mean": 97.66666666666667,
+          "max": 222
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  },
+  {
+    "scenario_id": 6,
+    "scenario_name": "pg4c8g_q8w_prod8w400c",
+    "config": {
+      "scenario_id": 6,
+      "scenario_name": "pg4c8g_q8w_prod8w400c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 4,
+        "memory_gb": 8,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 8,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 8,
+        "connections": 400,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 2,
+        "connections": 100,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 800,
+      "start_iso": "2026-04-21T08:37:13Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 18,
+      "host_oversubscribed": true,
+      "measure_start_epoch": 1776760653,
+      "measure_end_epoch": 1776760717,
+      "measure_actual_seconds": 64,
+      "finish_iso": "2026-04-21T08:38:40.705Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 154.37,
+        "push_total": 9262,
+        "push_duration": 62.59,
+        "push_p50": 305,
+        "push_p95": 7485,
+        "push_p99": 8788,
+        "push_errors": 1314,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1543.7,
+        "pop_rps": 1696.69,
+        "pop_total": 101791,
+        "pop_duration": 62.19,
+        "pop_p50": 14,
+        "pop_p95": 373,
+        "pop_p99": 929,
+        "pop_errors": 15,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 6,
+          "warnings": 22,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 64,
+          "xact_commit_delta": 27800,
+          "xact_commit_per_s": 434.375,
+          "xact_rollback_delta": 4,
+          "tup_inserted_delta": 335201,
+          "tup_inserted_per_s": 5237.515625,
+          "tup_updated_delta": 54680,
+          "tup_updated_per_s": 854.375,
+          "tup_deleted_delta": 222296,
+          "tup_fetched_delta": 5816389,
+          "tup_fetched_per_s": 90881.078125,
+          "blks_read_delta": 125,
+          "blks_hit_delta": 12041734,
+          "buffer_hit_ratio": 0.9999896195429626,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 110560,
+          "messages_n_tup_ins_per_s": 1727.5,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 14464,
+          "consumers_n_tup_upd_per_s": 226,
+          "consumers_n_tup_hot_upd_delta": 12878,
+          "messages_final_total": 140820,
+          "partitions_final_total": 70,
+          "partition_consumers_final_total": 65
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 391.6,
+            "p95": 406.57,
+            "max": 406.57
+          },
+          "pg_mem_pct": {
+            "p50": 14.25,
+            "p95": 16.25,
+            "max": 16.25
+          },
+          "server_cpu_pct": {
+            "p50": 57.4,
+            "p95": 141.9,
+            "max": 141.9
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 18
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 161.17,
+        "push_total": 9670,
+        "push_duration": 61.65,
+        "push_p50": 282,
+        "push_p95": 7008,
+        "push_p99": 8283,
+        "push_errors": 1263,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1611.6999999999998,
+        "pop_rps": 1679.37,
+        "pop_total": 100757,
+        "pop_duration": 61.68,
+        "pop_p50": 15,
+        "pop_p95": 361,
+        "pop_p99": 896,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 87,
+          "warnings": 315,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 63,
+          "xact_commit_delta": 24949,
+          "xact_commit_per_s": 396.015873015873,
+          "xact_rollback_delta": 85,
+          "tup_inserted_delta": 322781,
+          "tup_inserted_per_s": 5123.507936507936,
+          "tup_updated_delta": 51991,
+          "tup_updated_per_s": 825.2539682539683,
+          "tup_deleted_delta": 202057,
+          "tup_fetched_delta": 6891569,
+          "tup_fetched_per_s": 109389.98412698413,
+          "blks_read_delta": 114,
+          "blks_hit_delta": 11862026,
+          "buffer_hit_ratio": 0.9999903895924345,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 114720,
+          "messages_n_tup_ins_per_s": 1820.952380952381,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 14020,
+          "consumers_n_tup_upd_per_s": 222.53968253968253,
+          "consumers_n_tup_hot_upd_delta": 12762,
+          "messages_final_total": 151010,
+          "partitions_final_total": 72,
+          "partition_consumers_final_total": 70
+        },
+        "stats_stream": {
+          "samples": 16,
+          "pg_cpu_pct": {
+            "p50": 398.62,
+            "p95": 422.51,
+            "max": 422.51
+          },
+          "pg_mem_pct": {
+            "p50": 13.93,
+            "p95": 16.39,
+            "max": 16.39
+          },
+          "server_cpu_pct": {
+            "p50": 62.5,
+            "p95": 116,
+            "max": 116
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 18
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 136.27,
+        "push_total": 8176,
+        "push_duration": 62.38,
+        "push_p50": 245,
+        "push_p95": 8360,
+        "push_p99": 9358,
+        "push_errors": 1299,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1362.7,
+        "pop_rps": 1898.67,
+        "pop_total": 113908,
+        "pop_duration": 61.95,
+        "pop_p50": 14,
+        "pop_p95": 336,
+        "pop_p99": 813,
+        "pop_errors": 0,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 1,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 64,
+          "xact_commit_delta": 27785,
+          "xact_commit_per_s": 434.140625,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 318449,
+          "tup_inserted_per_s": 4975.765625,
+          "tup_updated_delta": 56199,
+          "tup_updated_per_s": 878.109375,
+          "tup_deleted_delta": 214989,
+          "tup_fetched_delta": 6280241,
+          "tup_fetched_per_s": 98128.765625,
+          "blks_read_delta": 111,
+          "blks_hit_delta": 11715685,
+          "buffer_hit_ratio": 0.9999905256117467,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 101160,
+          "messages_n_tup_ins_per_s": 1580.625,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 17276,
+          "consumers_n_tup_upd_per_s": 269.9375,
+          "consumers_n_tup_hot_upd_delta": 15406,
+          "messages_final_total": 129530,
+          "partitions_final_total": 61,
+          "partition_consumers_final_total": 59
+        },
+        "stats_stream": {
+          "samples": 17,
+          "pg_cpu_pct": {
+            "p50": 382.61,
+            "p95": 411.32,
+            "max": 411.32
+          },
+          "pg_mem_pct": {
+            "p50": 13.67,
+            "p95": 15.98,
+            "max": 15.98
+          },
+          "server_cpu_pct": {
+            "p50": 67.5,
+            "p95": 123.3,
+            "max": 123.3
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 18
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 150.60333333333332,
+        "stddev": 12.870249932823102,
+        "min": 136.27,
+        "max": 161.17
+      },
+      "push_msgs_per_s": {
+        "mean": 1506.033333333333,
+        "stddev": 128.70249932823103,
+        "min": 1362.7,
+        "max": 1611.6999999999998
+      },
+      "push_p50": {
+        "mean": 277.3333333333333,
+        "stddev": 30.2709982216202,
+        "min": 245,
+        "max": 305
+      },
+      "push_p95": {
+        "mean": 7617.666666666667,
+        "stddev": 685.6940522808502,
+        "min": 7008,
+        "max": 8360
+      },
+      "push_p99": {
+        "mean": 8809.666666666666,
+        "stddev": 537.8274196555373,
+        "min": 8283,
+        "max": 9358
+      },
+      "push_errors": {
+        "mean": 1292,
+        "stddev": 26.210684844162312,
+        "min": 1263,
+        "max": 1314
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 1758.243333333333,
+        "stddev": 121.92100776048953,
+        "min": 1679.37,
+        "max": 1898.67
+      },
+      "pop_p50": {
+        "mean": 14.333333333333334,
+        "stddev": 0.5773502691896257,
+        "min": 14,
+        "max": 15
+      },
+      "pop_p95": {
+        "mean": 356.6666666666667,
+        "stddev": 18.876793513023692,
+        "min": 336,
+        "max": 373
+      },
+      "pop_p99": {
+        "mean": 879.3333333333334,
+        "stddev": 59.76899976855337,
+        "min": 813,
+        "max": 929
+      },
+      "pop_errors": {
+        "mean": 5,
+        "stddev": 8.660254037844387,
+        "min": 0,
+        "max": 15
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 421.51049933862436,
+          "stddev": 22.07930504822785,
+          "min": 396.015873015873,
+          "max": 434.375,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 5112.263062169312,
+          "stddev": 131.2368127629157,
+          "min": 4975.765625,
+          "max": 5237.515625,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 852.5794477513227,
+          "stddev": 26.473411406171483,
+          "min": 825.2539682539683,
+          "max": 878.109375,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 99466.60929232805,
+          "stddev": 9326.69660738615,
+          "min": 90881.078125,
+          "max": 109389.98412698413,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 1709.6924603174602,
+          "stddev": 121.14926273410263,
+          "min": 1580.625,
+          "max": 1820.952380952381,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 239.49239417989418,
+          "stddev": 26.42294080017638,
+          "min": 222.53968253968253,
+          "max": 269.9375,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999901782490479,
+          "stddev": 4.886099473596695e-7,
+          "min": 0.9999896195429626,
+          "max": 0.9999905256117467,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 29.666666666666668,
+          "stddev": 47.9617903474561,
+          "min": 0,
+          "max": 85,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 140453.33333333334,
+          "max": 151010
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 413.46666666666664,
+        "pg_cpu_pct_max": 422.51,
+        "server_cpu_pct_p95": 127.06666666666666,
+        "server_cpu_pct_max": 141.9
+      },
+      "host_oversubscribed": true,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 31,
+          "max": 87
+        },
+        "warning_lines": {
+          "mean": 112.66666666666667,
+          "max": 315
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  },
+  {
+    "scenario_id": 7,
+    "scenario_name": "pg4c8g_q8w_prod16w800c",
+    "config": {
+      "scenario_id": 7,
+      "scenario_name": "pg4c8g_q8w_prod16w800c",
+      "run_index": 1,
+      "pg": {
+        "cpus": 4,
+        "memory_gb": 8,
+        "max_connections": 300
+      },
+      "queen": {
+        "num_workers": 8,
+        "db_pool_size": 20,
+        "sidecar_pool_size": 200
+      },
+      "producer": {
+        "workers": 16,
+        "connections": 800,
+        "push_batch": 10
+      },
+      "consumer": {
+        "workers": 4,
+        "connections": 200,
+        "pop_batch": 100
+      },
+      "timing": {
+        "warmup_seconds": 10,
+        "measure_seconds": 60
+      },
+      "queue_name": "perf-test",
+      "max_partitions": 1600,
+      "start_iso": "2026-04-21T08:41:50Z",
+      "host_cpus": 10,
+      "heavy_host_threads": 28,
+      "host_oversubscribed": true,
+      "measure_start_epoch": 1776760934,
+      "measure_end_epoch": 1776761010,
+      "measure_actual_seconds": 76,
+      "finish_iso": "2026-04-21T08:43:32.747Z"
+    },
+    "per_run": [
+      {
+        "run": 1,
+        "push_rps": 157.84,
+        "push_total": 9470,
+        "push_duration": 69.98,
+        "push_p50": 1317,
+        "push_p95": 9710,
+        "push_p99": 9943,
+        "push_errors": 2096,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1578.4,
+        "pop_rps": 1606.24,
+        "pop_total": 96369,
+        "pop_duration": 64.81,
+        "pop_p50": 18,
+        "pop_p95": 1097,
+        "pop_p99": 2097,
+        "pop_errors": 158,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 0,
+          "warnings": 4,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 76,
+          "xact_commit_delta": 16907,
+          "xact_commit_per_s": 222.46052631578948,
+          "xact_rollback_delta": 0,
+          "tup_inserted_delta": 294051,
+          "tup_inserted_per_s": 3869.092105263158,
+          "tup_updated_delta": 34269,
+          "tup_updated_per_s": 450.9078947368421,
+          "tup_deleted_delta": 166282,
+          "tup_fetched_delta": 4347088,
+          "tup_fetched_per_s": 57198.52631578947,
+          "blks_read_delta": 142,
+          "blks_hit_delta": 10307670,
+          "buffer_hit_ratio": 0.9999862240405626,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 127170,
+          "messages_n_tup_ins_per_s": 1673.2894736842106,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 4800,
+          "consumers_n_tup_upd_per_s": 63.1578947368421,
+          "consumers_n_tup_hot_upd_delta": 4540,
+          "messages_final_total": 157160,
+          "partitions_final_total": 50,
+          "partition_consumers_final_total": 12
+        },
+        "stats_stream": {
+          "samples": 19,
+          "pg_cpu_pct": {
+            "p50": 341.66,
+            "p95": 402.23,
+            "max": 402.23
+          },
+          "pg_mem_pct": {
+            "p50": 14.28,
+            "p95": 16.19,
+            "max": 16.19
+          },
+          "server_cpu_pct": {
+            "p50": 32.4,
+            "p95": 121.8,
+            "max": 121.8
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 28
+        }
+      },
+      {
+        "run": 2,
+        "push_rps": 192.89,
+        "push_total": 11573,
+        "push_duration": 73.74,
+        "push_p50": 318,
+        "push_p95": 8804,
+        "push_p99": 9557,
+        "push_errors": 3099,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1928.8999999999999,
+        "pop_rps": 1258.04,
+        "pop_total": 75476,
+        "pop_duration": 66.62,
+        "pop_p50": 19,
+        "pop_p95": 1073,
+        "pop_p99": 2368,
+        "pop_errors": 299,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 7,
+          "warnings": 46,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 84,
+          "xact_commit_delta": 18967,
+          "xact_commit_per_s": 225.79761904761904,
+          "xact_rollback_delta": 8,
+          "tup_inserted_delta": 324534,
+          "tup_inserted_per_s": 3863.5,
+          "tup_updated_delta": 38432,
+          "tup_updated_per_s": 457.5238095238095,
+          "tup_deleted_delta": 168450,
+          "tup_fetched_delta": 3530087,
+          "tup_fetched_per_s": 42024.84523809524,
+          "blks_read_delta": 155,
+          "blks_hit_delta": 10454596,
+          "buffer_hit_ratio": 0.9999851742045315,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 154930,
+          "messages_n_tup_ins_per_s": 1844.404761904762,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 6884,
+          "consumers_n_tup_upd_per_s": 81.95238095238095,
+          "consumers_n_tup_hot_upd_delta": 6422,
+          "messages_final_total": 183050,
+          "partitions_final_total": 47,
+          "partition_consumers_final_total": 19
+        },
+        "stats_stream": {
+          "samples": 20,
+          "pg_cpu_pct": {
+            "p50": 371.39,
+            "p95": 437.16,
+            "max": 437.16
+          },
+          "pg_mem_pct": {
+            "p50": 14.98,
+            "p95": 17.24,
+            "max": 17.24
+          },
+          "server_cpu_pct": {
+            "p50": 35.7,
+            "p95": 110.1,
+            "max": 110.1
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 28
+        }
+      },
+      {
+        "run": 3,
+        "push_rps": 158.52,
+        "push_total": 9511,
+        "push_duration": 74.14,
+        "push_p50": 782,
+        "push_p95": 9131,
+        "push_p99": 9804,
+        "push_errors": 3176,
+        "push_non2xx": 0,
+        "push_msgs_per_s": 1585.2,
+        "pop_rps": 606.1,
+        "pop_total": 36364,
+        "pop_duration": 66.75,
+        "pop_p50": 25,
+        "pop_p95": 3003,
+        "pop_p99": 4994,
+        "pop_errors": 293,
+        "pop_non2xx": 0,
+        "queue_final_total": 0,
+        "log": {
+          "lag_events": 0,
+          "lag_max_ms": 0,
+          "errors": 140,
+          "warnings": 828,
+          "queue_full": 0
+        },
+        "pg_stats": {
+          "measure_seconds": 84,
+          "xact_commit_delta": 12498,
+          "xact_commit_per_s": 148.78571428571428,
+          "xact_rollback_delta": 138,
+          "tup_inserted_delta": 274300,
+          "tup_inserted_per_s": 3265.4761904761904,
+          "tup_updated_delta": 32291,
+          "tup_updated_per_s": 384.4166666666667,
+          "tup_deleted_delta": 125760,
+          "tup_fetched_delta": 3013572,
+          "tup_fetched_per_s": 35875.857142857145,
+          "blks_read_delta": 144,
+          "blks_hit_delta": 9065443,
+          "buffer_hit_ratio": 0.999984115755549,
+          "deadlocks_delta": 0,
+          "messages_n_tup_ins_delta": 143240,
+          "messages_n_tup_ins_per_s": 1705.2380952380952,
+          "messages_n_tup_del_delta": 0,
+          "consumers_n_tup_upd_delta": 8584,
+          "consumers_n_tup_upd_per_s": 102.19047619047619,
+          "consumers_n_tup_hot_upd_delta": 7943,
+          "messages_final_total": 166290,
+          "partitions_final_total": 34,
+          "partition_consumers_final_total": 27
+        },
+        "stats_stream": {
+          "samples": 21,
+          "pg_cpu_pct": {
+            "p50": 378.14,
+            "p95": 440.21,
+            "max": 491.97
+          },
+          "pg_mem_pct": {
+            "p50": 14.4,
+            "p95": 16.68,
+            "max": 16.78
+          },
+          "server_cpu_pct": {
+            "p50": 23.6,
+            "p95": 60.9,
+            "max": 68.6
+          }
+        },
+        "host": {
+          "oversubscribed": true,
+          "cpus": 10,
+          "heavy_threads": 28
+        }
+      }
+    ],
+    "aggregate": {
+      "push_rps": {
+        "mean": 169.75,
+        "stddev": 20.042711892356273,
+        "min": 157.84,
+        "max": 192.89
+      },
+      "push_msgs_per_s": {
+        "mean": 1697.5,
+        "stddev": 200.42711892356272,
+        "min": 1578.4,
+        "max": 1928.8999999999999
+      },
+      "push_p50": {
+        "mean": 805.6666666666666,
+        "stddev": 499.92032698554414,
+        "min": 318,
+        "max": 1317
+      },
+      "push_p95": {
+        "mean": 9215,
+        "stddev": 458.8038796697343,
+        "min": 8804,
+        "max": 9710
+      },
+      "push_p99": {
+        "mean": 9768,
+        "stddev": 195.5019181491578,
+        "min": 9557,
+        "max": 9943
+      },
+      "push_errors": {
+        "mean": 2790.3333333333335,
+        "stddev": 602.5415614987346,
+        "min": 2096,
+        "max": 3176
+      },
+      "push_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pop_rps": {
+        "mean": 1156.7933333333333,
+        "stddev": 507.6988975104568,
+        "min": 606.1,
+        "max": 1606.24
+      },
+      "pop_p50": {
+        "mean": 20.666666666666668,
+        "stddev": 3.7859388972001824,
+        "min": 18,
+        "max": 25
+      },
+      "pop_p95": {
+        "mean": 1724.3333333333333,
+        "stddev": 1107.422834031037,
+        "min": 1073,
+        "max": 3003
+      },
+      "pop_p99": {
+        "mean": 3153,
+        "stddev": 1600.1003093556353,
+        "min": 2097,
+        "max": 4994
+      },
+      "pop_errors": {
+        "mean": 250,
+        "stddev": 79.73079706111058,
+        "min": 158,
+        "max": 299
+      },
+      "pop_non2xx": {
+        "mean": 0,
+        "stddev": 0,
+        "min": 0,
+        "max": 0
+      },
+      "pg": {
+        "xact_commit_per_s": {
+          "mean": 199.01461988304095,
+          "stddev": 43.53149739101645,
+          "min": 148.78571428571428,
+          "max": 225.79761904761904,
+          "n": 3
+        },
+        "tup_inserted_per_s": {
+          "mean": 3666.0227652464496,
+          "stddev": 346.8947777503412,
+          "min": 3265.4761904761904,
+          "max": 3869.092105263158,
+          "n": 3
+        },
+        "tup_updated_per_s": {
+          "mean": 430.94945697577276,
+          "stddev": 40.43411941146402,
+          "min": 384.4166666666667,
+          "max": 457.5238095238095,
+          "n": 3
+        },
+        "tup_fetched_per_s": {
+          "mean": 45033.07623224729,
+          "stddev": 10975.023710690215,
+          "min": 35875.857142857145,
+          "max": 57198.52631578947,
+          "n": 3
+        },
+        "messages_n_tup_ins_per_s": {
+          "mean": 1740.9774436090227,
+          "stddev": 90.98398887817828,
+          "min": 1673.2894736842106,
+          "max": 1844.404761904762,
+          "n": 3
+        },
+        "consumers_n_tup_upd_per_s": {
+          "mean": 82.43358395989975,
+          "stddev": 19.520739509159963,
+          "min": 63.1578947368421,
+          "max": 102.19047619047619,
+          "n": 3
+        },
+        "buffer_hit_ratio": {
+          "mean": 0.9999851713335478,
+          "stddev": 0.0000010541454389792667,
+          "min": 0.999984115755549,
+          "max": 0.9999862240405626,
+          "n": 3
+        },
+        "deadlocks_delta": {
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "max": 0,
+          "n": 3
+        },
+        "xact_rollback_delta": {
+          "mean": 48.666666666666664,
+          "stddev": 77.46827307571361,
+          "min": 0,
+          "max": 138,
+          "n": 3
+        },
+        "messages_final_total": {
+          "mean": 168833.33333333334,
+          "max": 183050
+        }
+      },
+      "resources": {
+        "pg_cpu_pct_p95": 426.53333333333336,
+        "pg_cpu_pct_max": 491.97,
+        "server_cpu_pct_p95": 97.59999999999998,
+        "server_cpu_pct_max": 121.8
+      },
+      "host_oversubscribed": true,
+      "log": {
+        "lag_events": {
+          "mean": 0,
+          "max": 0
+        },
+        "lag_max_ms": {
+          "mean": 0,
+          "max": 0
+        },
+        "errors_lines": {
+          "mean": 49,
+          "max": 140
+        },
+        "warning_lines": {
+          "mean": 292.6666666666667,
+          "max": 828
+        },
+        "queue_full_hits": {
+          "mean": 0,
+          "max": 0
+        }
+      }
+    }
+  }
+]

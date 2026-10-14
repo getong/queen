@@ -1,0 +1,1 @@
+bash: /root/qr/thr.sh: No such file or directory

@@ -1,0 +1,9 @@
+[21:56:53] run t23-p3-single-real-noeager-p1000: binary p3, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 90s at: 50000 75000 100000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_CONSUME_CHECKPOINT_EAGER=0 | QEXTRA=-push-wire bin -ack-counts -pop-frames -tail 30s
+[21:57:04] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 1000 partitions
+[21:59:13]    50,000: last 30 s: offered 49,995 pushed 49,994 consumed 49,989 | run: shed 0 errors 0 | push p50 4.5 p99 16.6 | e2e p50 12.7 p99 35.3 worst 106.5 | cores 8.2 / 5.8 / 5.4 | mem GB 2.1 / 2.1 / 1.9 | loaders 8.8c  OK 
+[22:01:21]    75,000: last 30 s: offered 74,996 pushed 74,987 consumed 74,969 | run: shed 0 errors 1 | push p50 7.9 p99 22.5 | e2e p50 29.7 p99 60.9 worst 65.0 | cores 9.7 / 7.2 / 6.9 | mem GB 3.1 / 2.8 / 2.8 | loaders 11.6c  NOT CARRIED 
+[22:01:21] stopping at 75000
+RUN_DONE

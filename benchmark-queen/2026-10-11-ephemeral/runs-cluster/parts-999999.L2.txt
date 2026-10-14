@@ -1,0 +1,10 @@
+== 333333 partitions in one queue, 64 connections
+  filled in                  7.3 s (45911 partitions/s)
+  broker RSS                 -1 MiB before, -1 MiB after: 0 bytes a partition
+  broker cores, nobody calling 0.00
+  push + pop by name         24787 /s
+  push call                  p50 1.119  p99 3.566  p99.9 16.088  max 165.958 ms
+  pop call                   p50 1.117  p99 3.302  p99.9 15.640  max 166.011 ms
+  pop with no partition      p50 158.592  p99 160.128  p99.9 160.128  max 177.367 ms
+  broker RSS at the end      -1 MiB
+RESULT {"by_name/s":24787.2,"fill_from":1791729956.834616,"fill_s":7.260396388,"fill_to":1791729964.0950124,"idle_from":1791729966.0988762,"idle_to":1791729971.102967,"parts":333333,"run_from":1791729971.102967,"run_to":1791729981.102967}

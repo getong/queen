@@ -24,7 +24,8 @@ if [ "$TEN" != 0 ]; then
   [ "$G" -gt 1 ] && EXTRA="$EXTRA QUEEN_TENANT_GROUPS=${T[0]}=0,${T[1]}=1,${T[2]}=2"
 fi
 [ -n "${EXTRA_ENV:-}" ] && EXTRA="$EXTRA $EXTRA_ENV"
-WRAP=""; DBB=0; [ "$SYNC" = nosync ] && { WRAP=eatmydata; DBB=67108864; }
+# DBB (bytes, 2026-10-14): the brokers' vm.dirty_background_bytes for a sync run too (0 = dirty_background_ratio 5, as before)
+WRAP=""; DBB=${DBB:-0}; [ "$SYNC" = nosync ] && { WRAP=eatmydata; DBB=67108864; }
 RUN=$HERE/../runs/$TAG; rm -rf "$RUN"; mkdir -p "$RUN"; LOG=$RUN/run.log
 log() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$LOG"; }
 role() { $SSH root@${BP[$1]} "curl -s -m 2 http://${BV[$1]}:6632/health" 2>/dev/null | sed -n 's/.*"status":"\([a-z]*\)".*"role":"\([a-z+]*\)".*/\1 \2/p'; }
@@ -67,7 +68,7 @@ if [ -n "${PREDRAIN:-}" ]; then
   START=$($SSH root@${LP[0]} 'echo $(( $(date +%s%3N) + 8000 ))')
   for l in 0 1 2; do
     TE=""; [ "$TEN" != 0 ] && TE="TENANT=${T[$l]}"
-    $SSH root@${LP[$l]} "URLS=$URLS BATCH=100 POPW=64 POPB=6400 RATE=0 PARTS=$PP CONS=$CONS QEXTRA='$QEXTRA' $TE nohup /root/p3/ld.sh $ST $START $((l*3)) $PREDRAIN > /root/p3/runs/ld-$ST.log 2>&1 </dev/null &" &
+    $SSH root@${LP[$l]} "URLS=$URLS BATCH=100 POPW=64 POPB=6400 RATE=0 PARTS=$PP CONS=$CONS QEXTRA='$QEXTRA' PAYLOAD=${PAYLOAD:-256} $TE nohup /root/p3/ld.sh $ST $START $((l*3)) $PREDRAIN > /root/p3/runs/ld-$ST.log 2>&1 </dev/null &" &
   done; wait
   sleep $((PREDRAIN + 8 + 12))
   for t in $(seq 1 40); do n=0; for l in 0 1 2; do $SSH root@${LP[$l]} "test -f /root/p3/runs/$ST/done-$((l*3))" 2>/dev/null && n=$((n+1)); done; [ $n = 3 ] && break; sleep 3; done
@@ -82,7 +83,7 @@ for TOTAL in "$@"; do
   START=$($SSH root@${LP[0]} 'echo $(( $(date +%s%3N) + 12000 ))')
   for l in 0 1 2; do
     TE=""; [ "$TEN" != 0 ] && TE="TENANT=${T[$l]}"
-    $SSH root@${LP[$l]} "URLS=$URLS BATCH=${BATCH:-100} POPW=${POPW:-10} POPB=${POPB:-1000} RATE=$RATE PARTS=$PP CONS=$CONS QEXTRA='$QEXTRA' $TE nohup /root/p3/ld.sh $ST $START $((l*3)) $DUR > /root/p3/runs/ld-$ST.log 2>&1 </dev/null &" &
+    $SSH root@${LP[$l]} "URLS=$URLS BATCH=${BATCH:-100} POPW=${POPW:-10} POPB=${POPB:-1000} RATE=$RATE PARTS=$PP CONS=$CONS QEXTRA='$QEXTRA' PAYLOAD=${PAYLOAD:-256} $TE nohup /root/p3/ld.sh $ST $START $((l*3)) $DUR > /root/p3/runs/ld-$ST.log 2>&1 </dev/null &" &
   done; wait
   # PROBE=1: on the leader, the apply thread before and after the 70th second of this step (lateprobe.sh).
   [ -n "${PROBE:-}" ] && $SSH root@${BP[0]} "mkdir -p /root/p3/runs/$ST; nohup env ${PROBE_ENV:-} /root/p3/${PROBE_SH:-lateprobe.sh} $START /root/p3/runs/$ST/probe > /root/p3/runs/$ST/probe.log 2>&1 </dev/null &"

@@ -1,0 +1,10 @@
+p0: msgs offered=21666200 achieved=21666200 shed=0 pushed=21666200 popped=21448300 lag=217900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.79/64.26/173.06 ms | e2e p50/p99/p999=5.86/66.05/187.39 ms | cpu=105.1%
+p1: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=21449900 lag=216700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.79/64.77/191.49 ms | e2e p50/p99/p999=6.05/63.23/175.10 ms | cpu=106.8%
+p2: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=21449200 lag=217300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.79/64.26/187.39 ms | e2e p50/p99/p999=5.66/66.05/175.10 ms | cpu=106.5%
+p3: msgs offered=21666800 achieved=21666800 shed=0 pushed=21666800 popped=21255600 lag=411200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/67.07/191.49 ms | e2e p50/p99/p999=5.02/64.26/173.06 ms | cpu=104.4%
+p4: msgs offered=21666400 achieved=21666400 shed=0 pushed=21666400 popped=23187400 lag=-1521000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/66.05/177.15 ms | e2e p50/p99/p999=5.28/64.77/168.96 ms | cpu=108.2%
+p5: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=21255300 lag=411200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.79/64.77/168.96 ms | e2e p50/p99/p999=5.92/66.05/166.91 ms | cpu=106.4%
+p6: msgs offered=21666200 achieved=21666200 shed=0 pushed=21666200 popped=21256000 lag=410200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/65.28/181.25 ms | e2e p50/p99/p999=6.05/64.26/175.10 ms | cpu=109.0%
+p7: msgs offered=21665700 achieved=21665700 shed=0 pushed=21665700 popped=21254300 lag=411400 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.79/64.26/177.15 ms | e2e p50/p99/p999=5.92/66.05/185.34 ms | cpu=108.1%
+p8: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=21256000 lag=410500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=5.86/64.77/177.15 ms | e2e p50/p99/p999=5.86/67.07/175.10 ms | cpu=108.6%
+total: 9/9 processes with a final line | msgs offered=194997400 achieved=194997400 shed=0 pushed=194997400 popped=193812000 errors=0 | worst produce p99=67.07 ms | worst e2e p99=67.07 ms

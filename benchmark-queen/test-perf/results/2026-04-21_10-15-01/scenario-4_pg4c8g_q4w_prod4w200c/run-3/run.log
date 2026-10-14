@@ -1,0 +1,64 @@
+==========================================================
+  Scenario 4 (pg4c8g_q4w_prod4w200c), run 3
+  PG: 4c/8g  Queen: 4w  Prod: 4w/200c  Cons: 1w/50c
+  Out: /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-3
+==========================================================
+[run-once] WARNING: 9 heavy host threads (prod=4 + cons=1 + queen=4) on 10 CPUs.
+[run-once]          Host is over-subscribed; results may reflect OS scheduler contention rather than queen/PG.
+[pg-up] tearing down any previous container/volume...
+[pg-up] starting fresh PG: cpus=4 (cpuset=0-3) mem=8g port=5434 shared_buffers=2048MB
+[pg-up] waiting for PG to accept real connections (SELECT 1)...
+[pg-up] ready after 3s (stable)
+[server-up] launching queen-server: workers=4 sidecar=200 dbpool=20 port=6632 pg=5434
+[server-up] pid=28076 log=/Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-3/server.log
+[server-up] healthy after 2s
+[run-once] producer warm-up: 10s (discarded)
+[collect-pg-stats] label=pre wrote /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-3/pg-stats-pre.json
+[run-once] stats-stream pid=28184
+[run-once] measurement: 60s
+[consumer] 74797 req in 60.75s, p50=17ms p99=300ms, errors=0, non2xx=0
+
+┌─────────┬──────┬───────┬────────┬────────┬──────────┬───────────┬─────────┐
+│ Stat    │ 2.5% │ 50%   │ 97.5%  │ 99%    │ Avg      │ Stdev     │ Max     │
+├─────────┼──────┼───────┼────────┼────────┼──────────┼───────────┼─────────┤
+│ Latency │ 5 ms │ 17 ms │ 193 ms │ 300 ms │ 39.86 ms │ 111.18 ms │ 6598 ms │
+└─────────┴──────┴───────┴────────┴────────┴──────────┴───────────┴─────────┘
+┌───────────┬────────┬────────┬────────┬─────────┬──────────┬────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%    │ 97.5%   │ Avg      │ Stdev  │ Min    │
+├───────────┼────────┼────────┼────────┼─────────┼──────────┼────────┼────────┤
+│ Req/Sec   │ 37     │ 51     │ 1,061  │ 3,531   │ 1,246.69 │ 868.62 │ 37     │
+├───────────┼────────┼────────┼────────┼─────────┼──────────┼────────┼────────┤
+│ Bytes/Sec │ 312 kB │ 325 kB │ 984 kB │ 4.12 MB │ 1.25 MB  │ 848 kB │ 312 kB │
+└───────────┴────────┴────────┴────────┴─────────┴──────────┴────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 60
+
+75k requests in 60.75s, 74.8 MB read
+[producer] 13533 req in 61.01s, p50=392ms p99=5936ms, errors=27, non2xx=0
+
+┌─────────┬───────┬────────┬─────────┬─────────┬───────────┬────────────┬─────────┐
+│ Stat    │ 2.5%  │ 50%    │ 97.5%   │ 99%     │ Avg       │ Stdev      │ Max     │
+├─────────┼───────┼────────┼─────────┼─────────┼───────────┼────────────┼─────────┤
+│ Latency │ 57 ms │ 392 ms │ 4810 ms │ 5936 ms │ 848.07 ms │ 1185.98 ms │ 9598 ms │
+└─────────┴───────┴────────┴─────────┴─────────┴───────────┴────────────┴─────────┘
+┌───────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%    │ 97.5%  │ Avg    │ Stdev  │ Min    │
+├───────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ Req/Sec   │ 47     │ 98     │ 213    │ 395    │ 225.55 │ 82.26  │ 47     │
+├───────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ Bytes/Sec │ 111 kB │ 232 kB │ 505 kB │ 936 kB │ 534 kB │ 195 kB │ 111 kB │
+└───────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 240
+
+14k requests in 61.01s, 32.1 MB read
+27 errors (27 timeouts)
+[collect-pg-stats] label=post wrote /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-3/pg-stats-post.json
+[collect] artifacts written to /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-4_pg4c8g_q4w_prod4w200c/run-3
+[run-once] scenario 4 run 3 done.
+[run-once] cleanup (exit=0)
+[server-down] sending SIGTERM to 28076...
+[server-down] exited cleanly after 1s
+[pg-down] container and volume removed

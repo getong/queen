@@ -1,0 +1,20 @@
+{
+  "role": "consumer",
+  "event": "result",
+  "mode": "plain",
+  "connections": 100,
+  "totalOps": 2206140,
+  "totalMessages": 12513653,
+  "msgPerSec": 6952,
+  "opsPerSec": 1226,
+  "latency": {
+    "p50": 83.5,
+    "p90": 106.7,
+    "p99": 279.4,
+    "avg": 77.49,
+    "max": 1506.8
+  },
+  "errors": 0,
+  "lastError": null,
+  "durationSec": 1800
+}

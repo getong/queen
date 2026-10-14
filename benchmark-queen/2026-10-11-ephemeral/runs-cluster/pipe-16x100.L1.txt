@@ -1,0 +1,10 @@
+== pipe-16x100 (pipe, 10 s measured)
+  pushed                 13821800      1382180 /s
+  push calls               138218        13822 /s
+  delivered              13821600      1382160 /s
+  pop calls                138216        13822 /s
+  push call          p50 0.669  p90 1.335  p99 1.857  p99.9 2.938  max 8.846 ms
+  push to delivery   p50 1.655  p90 5.428  p99 83.008  p99.9 89.408  max 95.912 ms
+  loader cores       1.97
+  error http_429:queue_full          30883
+RESULT {"delivered":13821600,"delivered/s":1382160,"errors":{"http_429:queue_full":30883},"from":1791727456.8340867,"loader cores":1.9697345,"mode":"pipe","name":"pipe-16x100","pop calls":138216,"pop calls/s":13821.6,"push call":{"max":8.846,"p50":0.669,"p90":1.335,"p99":1.857,"p999":2.938},"push calls":138218,"push calls/s":13821.8,"push to delivery":{"max":95.912,"p50":1.655,"p90":5.428,"p99":83.008,"p999":89.408},"pushed":13821800,"pushed/s":1382180,"rate":0,"seconds":10,"to":1791727466.8340867}

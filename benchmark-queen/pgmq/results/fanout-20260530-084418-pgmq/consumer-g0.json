@@ -1,0 +1,20 @@
+{
+  "role": "consumer",
+  "event": "result",
+  "mode": "fifo",
+  "connections": 10,
+  "totalOps": 6485,
+  "totalMessages": 484107,
+  "msgPerSec": 4034,
+  "opsPerSec": 54,
+  "latency": {
+    "p50": 205.7,
+    "p90": 299.6,
+    "p99": 427.1,
+    "avg": 183.26,
+    "max": 1008.83
+  },
+  "errors": 0,
+  "lastError": null,
+  "durationSec": 120
+}

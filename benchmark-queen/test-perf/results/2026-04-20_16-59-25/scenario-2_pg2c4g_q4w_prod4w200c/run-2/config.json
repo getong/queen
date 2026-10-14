@@ -1,0 +1,33 @@
+{
+  "scenario_id": 2,
+  "scenario_name": "pg2c4g_q4w_prod4w200c",
+  "run_index": 2,
+  "pg": {
+    "cpus": 2,
+    "memory_gb": 4,
+    "max_connections": 300
+  },
+  "queen": {
+    "num_workers": 4,
+    "db_pool_size": 20,
+    "sidecar_pool_size": 200
+  },
+  "producer": {
+    "workers": 4,
+    "connections": 200,
+    "push_batch": 10
+  },
+  "consumer": {
+    "workers": 1,
+    "connections": 50,
+    "pop_batch": 100
+  },
+  "timing": {
+    "warmup_seconds": 10,
+    "measure_seconds": 60
+  },
+  "queue_name": "perf-test",
+  "max_partitions": 500,
+  "start_iso": "2026-04-20T15:05:08Z",
+  "finish_iso": "2026-04-20T15:06:26.851Z"
+}

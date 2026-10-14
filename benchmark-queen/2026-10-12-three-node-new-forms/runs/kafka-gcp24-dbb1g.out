@@ -1,0 +1,18 @@
+[10:43:23] start 1x100-3000k-gcp24-dbb1g (brokers' vm.dirty_background_bytes: 1073741824 1073741824 1073741824)
+[10:46:26] KAFKA_POINT 1x100-3000k-gcp24-dbb1g DONE | 1x100-3000k-gcp24-dbb1g  kafka  1x100 e=0 batch b=100 rr c=11x9 default  3000000   3000k   3000k      0k        6       61         61        57       15.7       13.9          6.6               431              471/451     0       9.6
+[10:46:26]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:46:31] start 1x1000-3000k-gcp24-dbb1g (brokers' vm.dirty_background_bytes: 1073741824 1073741824 1073741824)
+[10:49:30] KAFKA_POINT 1x1000-3000k-gcp24-dbb1g DONE | 1x1000-3000k-gcp24-dbb1g  kafka  1x1000 e=0 batch b=100 rr c=33x9 default  3000000   3000k   3000k      0k        6      104        105       104       19.9       19.6          6.6               448              471/451     0      10.1
+[10:49:30]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:49:30] KAFKA_DBB1G_DONE
+[11:11:42] start 1x10-3000k-gcp24-dbb1g (brokers' vm.dirty_background_bytes: 1073741824 1073741824 1073741824)
+[11:14:53] KAFKA_POINT 1x10-3000k-gcp24-dbb1g DONE | 1x10-3000k-gcp24-dbb1g  kafka  1x10 e=0 batch b=100 rr c=1x9 default  3000000   3002k   3002k      0k        6      514        514       469       12.8       10.1          6.5               430              466/448     0       7.8
+[11:14:53]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[11:14:55] start 1x10000-3000k-gcp24-dbb1g (brokers' vm.dirty_background_bytes: 1073741824 1073741824 1073741824)
+[11:18:16] KAFKA_POINT 1x10000-3000k-gcp24-dbb1g DONE | 1x10000-3000k-gcp24-dbb1g  kafka  1x10000 e=0 batch b=100 rr c=33x9 default  3000000   3000k   3000k      0k        9      110        120        93       46.8       46.4          6.8               496              468/448     0      11.0
+[11:18:16]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[11:18:18] start 1x100000-3000k-gcp24-dbb1g (brokers' vm.dirty_background_bytes: 1073741824 1073741824 1073741824)
+[11:26:42] KAFKA_POINT 1x100000-3000k-gcp24-dbb1g DONE | 1x100000-3000k-gcp24-dbb1g  kafka  1x100000 e=0 batch b=100 rr c=33x9 default  3000000    200k     78k   2800k    47972    50594      50594     46399       58.8       55.3         11.5                65                29/25     0       3.2
+[11:26:42]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[11:26:42] 100000 partitions at 3M: not carried
+[11:26:42] KAFKA_DBB1G_REST_DONE

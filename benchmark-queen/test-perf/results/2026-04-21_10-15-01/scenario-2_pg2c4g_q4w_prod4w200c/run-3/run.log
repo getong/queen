@@ -1,0 +1,63 @@
+==========================================================
+  Scenario 2 (pg2c4g_q4w_prod4w200c), run 3
+  PG: 2c/4g  Queen: 4w  Prod: 4w/200c  Cons: 1w/50c
+  Out: /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-2_pg2c4g_q4w_prod4w200c/run-3
+==========================================================
+[run-once] WARNING: 9 heavy host threads (prod=4 + cons=1 + queen=4) on 10 CPUs.
+[run-once]          Host is over-subscribed; results may reflect OS scheduler contention rather than queen/PG.
+[pg-up] tearing down any previous container/volume...
+[pg-up] starting fresh PG: cpus=2 (cpuset=0-1) mem=4g port=5434 shared_buffers=1024MB
+[pg-up] waiting for PG to accept real connections (SELECT 1)...
+[pg-up] ready after 4s (stable)
+[server-up] launching queen-server: workers=4 sidecar=200 dbpool=20 port=6632 pg=5434
+[server-up] pid=21124 log=/Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-2_pg2c4g_q4w_prod4w200c/run-3/server.log
+[server-up] healthy after 2s
+[run-once] producer warm-up: 10s (discarded)
+[collect-pg-stats] label=pre wrote /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-2_pg2c4g_q4w_prod4w200c/run-3/pg-stats-pre.json
+[run-once] stats-stream pid=21245
+[run-once] measurement: 60s
+[consumer] 104510 req in 60.3s, p50=15ms p99=185ms, errors=0, non2xx=0
+
+┌─────────┬──────┬───────┬────────┬────────┬──────────┬──────────┬────────┐
+│ Stat    │ 2.5% │ 50%   │ 97.5%  │ 99%    │ Avg      │ Stdev    │ Max    │
+├─────────┼──────┼───────┼────────┼────────┼──────────┼──────────┼────────┤
+│ Latency │ 3 ms │ 15 ms │ 125 ms │ 185 ms │ 28.25 ms │ 39.09 ms │ 792 ms │
+└─────────┴──────┴───────┴────────┴────────┴──────────┴──────────┴────────┘
+┌───────────┬────────┬────────┬─────────┬────────┬──────────┬──────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%     │ 97.5%  │ Avg      │ Stdev    │ Min    │
+├───────────┼────────┼────────┼─────────┼────────┼──────────┼──────────┼────────┤
+│ Req/Sec   │ 207    │ 423    │ 1,518   │ 5,371  │ 1,741.95 │ 1,241.11 │ 207    │
+├───────────┼────────┼────────┼─────────┼────────┼──────────┼──────────┼────────┤
+│ Bytes/Sec │ 623 kB │ 799 kB │ 2.27 MB │ 8.8 MB │ 3.21 MB  │ 2.28 MB  │ 623 kB │
+└───────────┴────────┴────────┴─────────┴────────┴──────────┴──────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 60
+
+105k requests in 60.3s, 193 MB read
+[producer] 43083 req in 60.36s, p50=147ms p99=1729ms, errors=0, non2xx=0
+
+┌─────────┬───────┬────────┬─────────┬─────────┬───────────┬───────────┬─────────┐
+│ Stat    │ 2.5%  │ 50%    │ 97.5%   │ 99%     │ Avg       │ Stdev     │ Max     │
+├─────────┼───────┼────────┼─────────┼─────────┼───────────┼───────────┼─────────┤
+│ Latency │ 26 ms │ 147 ms │ 1246 ms │ 1729 ms │ 276.69 ms │ 353.48 ms │ 3466 ms │
+└─────────┴───────┴────────┴─────────┴─────────┴───────────┴───────────┴─────────┘
+┌───────────┬────────┬────────┬────────┬─────────┬────────┬────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%    │ 97.5%   │ Avg    │ Stdev  │ Min    │
+├───────────┼────────┼────────┼────────┼─────────┼────────┼────────┼────────┤
+│ Req/Sec   │ 203    │ 296    │ 719    │ 1,165   │ 718.05 │ 200.76 │ 203    │
+├───────────┼────────┼────────┼────────┼─────────┼────────┼────────┼────────┤
+│ Bytes/Sec │ 482 kB │ 702 kB │ 1.7 MB │ 2.76 MB │ 1.7 MB │ 476 kB │ 481 kB │
+└───────────┴────────┴────────┴────────┴─────────┴────────┴────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 240
+
+43k requests in 60.36s, 102 MB read
+[collect-pg-stats] label=post wrote /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-2_pg2c4g_q4w_prod4w200c/run-3/pg-stats-post.json
+[collect] artifacts written to /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-2_pg2c4g_q4w_prod4w200c/run-3
+[run-once] scenario 2 run 3 done.
+[run-once] cleanup (exit=0)
+[server-down] sending SIGTERM to 21124...
+[server-down] exited cleanly after 2s
+[pg-down] container and volume removed

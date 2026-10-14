@@ -1,0 +1,40 @@
+
+🚀 Multi-process load test starting
+   Workers: 2
+   Connections per worker: 50
+   Total connections: 100
+   Duration: 120s
+
+Creating queue...
+✅ Queue created
+Worker 2 ready (1/2)
+Worker 1 ready (2/2)
+
+⏱️  All workers ready, starting benchmark...
+
+Worker 2 finished (1/2)
+Worker 1 finished (2/2)
+
+==================================================
+       AGGREGATED BENCHMARK RESULTS
+==================================================
+Workers:           2
+Connections:       100
+Duration:          120s
+──────────────────────────────────────────────────
+Total Requests:    212,735
+Throughput:        1,773 req/s
+Data transferred:  548.66 MB
+──────────────────────────────────────────────────
+Latency avg:       55.96ms
+Latency p50:       44.00ms
+Latency p90:       92.00ms
+Latency p99:       259.00ms
+Latency max:       1487.00ms
+──────────────────────────────────────────────────
+Errors:            0
+Non-2xx:           0
+Timeouts:          0
+==================================================
+
+✅ Queue total messages: 0

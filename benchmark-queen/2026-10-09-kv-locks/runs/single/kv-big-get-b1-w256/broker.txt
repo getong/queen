@@ -1,0 +1,34 @@
+interval 30.0 s
+host: busy 11.76 cores (user 7.25 sys 3.70 softirq 0.81) iowait 0.00 steal 0.00 idle 3.81
+disk vda: 330 writes/s, 1.7 MB/s, 4 flushes/s, 0.09 ms per flush
+node :6632 pid 16939: 9.19 cores, rss 6497 MiB
+  threads: tokio-rt-worker 9.16  queen-rsm-ckpt 0.02  queen-rsm-apply 0.01
+  queen_raft_apply_channel_depth: 3/s, mean 5.4
+  queen_raft_apply_entry_seconds: 3/s, mean 3799 us, 0.012 s per s
+  queen_raft_apply_other_seconds: 3/s, mean 3799 us, 0.012 s per s
+  queen_raft_checkpoint_rows: 0/s, mean 38206.0
+  queen_raft_checkpoint_write_seconds: 0/s, mean 55449 us, 0.026 s per s
+  queen_raft_drain_to_propose_seconds: 3/s, mean 1398 us, 0.004 s per s
+  queen_raft_durable_dir_fsync_seconds: 0/s, mean 0 us, 0.000 s per s
+  queen_raft_durable_point_seconds: 0/s, mean 178 us, 0.000 s per s
+  queen_raft_durable_seg_fsync_seconds: 0/s, mean 1 us, 0.000 s per s
+  queen_raft_group_bytes: 3/s, mean 3470.7
+  queen_raft_group_entries: 3/s, mean 1.0
+  queen_raft_log_fsync_seconds: 3/s, mean 353 us, 0.001 s per s
+  queen_raft_plan_seconds: 24/s, mean 226 us, 0.005 s per s
+  queen_raft_plan_whole_cpu_seconds: 24/s, mean 184 us, 0.004 s per s
+  queen_raft_plan_whole_wall_seconds: 24/s, mean 226 us, 0.005 s per s
+  queen_raft_propose_roundtrip_seconds: 3/s, mean 27128 us, 0.087 s per s
+  queen_raft_proposed_to_committed_seconds: 3/s, mean 628 us, 0.002 s per s
+  queen_raft_store_commit_seconds: 2/s, mean 47 us, 0.000 s per s
+  queen_raft_writer_pickup_seconds: 3/s, mean 72 us, 0.000 s per s
+  queen_kv_bytes_total{dir="out"}: 120521/s
+  queen_kv_ops_total{op="get",result="applied"}: 142665/s
+  queen_raft_apply_receives_total: 3/s
+  queen_raft_proposals_total: 3/s
+  queen_raft_store_operations_total{kind="commits"}: 3/s
+  queen_raft_store_operations_total{kind="durable_commits"}: 0/s
+  queen_raft_store_operations_total{kind="logical_bytes"}: 504/s
+  queen_raft_store_operations_total{kind="read_txns"}: 285372/s
+  queen_raft_store_operations_total{kind="rows_deleted"}: 17833/s
+  queen_raft_store_operations_total{kind="rows_put"}: 21/s

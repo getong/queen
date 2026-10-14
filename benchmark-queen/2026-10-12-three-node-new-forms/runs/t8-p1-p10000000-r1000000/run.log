@@ -1,0 +1,8 @@
+[20:05:15] run t8-p1-p10000000-r1000000: binary p1, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[20:05:40] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+FATAL warm drain bench: 0 of 10000000 messages came out
+[20:11:04] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 1485
+[20:13:12] 1,000,000: last 30 s: offered 1,000,008 pushed 1,000,011 consumed 999,947 | run: shed 0 errors 0 | push p50 5.4 p99 8.4 | e2e p50 11.1 p99 17.2 worst 17.7 | cores 6.4 / 4.0 / 3.8 | mem GB 21.5 / 13.0 / 13.1 | loaders 8.3c  OK 
+RUN_DONE

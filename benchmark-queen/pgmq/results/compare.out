@@ -1,0 +1,286 @@
+##############################################################
+# COMPARE  duration=120s  conns/role=100  msgs/push=10
+#          popBatch=100  partitions=1000
+##############################################################
+
+### Tearing down any prior stacks…
+
+### [1/2] pgmq run…
+>> run: cmp-20260529-152032-pgmq
+>> mode=fifo conns(prod/cons)=100/100 msgsPerPush=10 readQty=100 partitions=1000 duration=120s
+>> bringing up stack (postgres+pgmq + pgbouncer)…
+ Network pgmq-bench_default  Creating
+ Network pgmq-bench_default  Created
+ Container pgmq-postgres  Creating
+ Container pgmq-postgres  Created
+ Container pgmq-pgbouncer  Creating
+ Container pgmq-pgbouncer  Created
+ Container pgmq-postgres  Starting
+ Container pgmq-postgres  Started
+ Container pgmq-postgres  Waiting
+ Container pgmq-postgres  Healthy
+ Container pgmq-pgbouncer  Starting
+ Container pgmq-pgbouncer  Started
+>> waiting for Postgres… ready
+>> waiting for PgBouncer… ready
+>> resetting queue 'bench'…
+   fifo index created
+>> starting metrics sampler…
+>> starting consumer (100 conns)…
+>> starting producer (100 conns)…
+>> running for 120s…
+
+==================== SUMMARY (cmp-20260529-152032-pgmq) ====================
+PRODUCER:  msg/s=9496  p50=103.7ms  p99=283.9ms  errors=0
+CONSUMER:  msg/s=8349  p50=112.7ms  p99=288.3ms  errors=0
+PG BACKENDS: avg_active=57.2  peak_active=65  peak_total=66
+PG CHURN:    peak_dead_tuples=176467  autovacuum_runs=12
+pgmq version: 1.11.1
+queue table:  52MB
+artifacts:    results/cmp-20260529-152032-pgmq/
+============================================================
+
+Compare against Queen's hi-part-1000 / bp-10 (≈25–39k msg/s, ~2.5 active PG conns).
+Tear down with:  docker compose down -v
+### tearing down pgmq stack…
+
+### [2/2] Queen run…
+>> run: cmp-20260529-152032-queen (QUEEN)
+>> conns(per role)=100 (=2x50) msgsPerPush=10 popBatch=100 partitions=1000 duration=120s
+>> bringing up Queen stack (broker + postgres)…
+ postgres Pulling 
+ cda3d70ae7d7 Pulling fs layer 
+ 770063390593 Pulling fs layer 
+ 98119cbd52ab Pulling fs layer 
+ f692142e93b8 Pulling fs layer 
+ a46a31aaee66 Pulling fs layer 
+ 15f4024b6601 Pulling fs layer 
+ dad7c05595d2 Pulling fs layer 
+ fe81baa404a7 Pulling fs layer 
+ f692142e93b8 Waiting 
+ ca325bef87f7 Pulling fs layer 
+ 7351e4143fba Pulling fs layer 
+ e203252aafba Pulling fs layer 
+ d1a53784066c Pulling fs layer 
+ dad7c05595d2 Waiting 
+ fe81baa404a7 Waiting 
+ ca325bef87f7 Waiting 
+ 30cefffac1f1 Pulling fs layer 
+ 7351e4143fba Waiting 
+ e203252aafba Waiting 
+ d1a53784066c Waiting 
+ eef662d74035 Pulling fs layer 
+ 30cefffac1f1 Waiting 
+ eef662d74035 Waiting 
+ a46a31aaee66 Waiting 
+ 15f4024b6601 Waiting 
+ 770063390593 Downloading [==================================================>]  1.165kB/1.165kB
+ 770063390593 Verifying Checksum 
+ 770063390593 Download complete 
+ 98119cbd52ab Downloading [>                                                  ]  65.54kB/6.235MB
+ cda3d70ae7d7 Downloading [>                                                  ]  310.6kB/30.14MB
+ 98119cbd52ab Downloading [====>                                              ]  524.3kB/6.235MB
+ cda3d70ae7d7 Downloading [====>                                              ]   2.49MB/30.14MB
+ 98119cbd52ab Downloading [================>                                  ]   2.03MB/6.235MB
+ cda3d70ae7d7 Downloading [==========>                                        ]  6.225MB/30.14MB
+ 98119cbd52ab Downloading [==============================================>    ]  5.748MB/6.235MB
+ 98119cbd52ab Verifying Checksum 
+ 98119cbd52ab Download complete 
+ cda3d70ae7d7 Downloading [======================>                            ]   13.7MB/30.14MB
+ cda3d70ae7d7 Downloading [=================================>                 ]  19.92MB/30.14MB
+ f692142e93b8 Downloading [>                                                  ]  15.75kB/1.21MB
+ cda3d70ae7d7 Downloading [==============================================>    ]  28.02MB/30.14MB
+ cda3d70ae7d7 Verifying Checksum 
+ cda3d70ae7d7 Download complete 
+ f692142e93b8 Downloading [=========>                                         ]  228.7kB/1.21MB
+ cda3d70ae7d7 Extracting [>                                                  ]  327.7kB/30.14MB
+ f692142e93b8 Downloading [==================================================>]   1.21MB/1.21MB
+ f692142e93b8 Verifying Checksum 
+ f692142e93b8 Download complete 
+ cda3d70ae7d7 Extracting [=========>                                         ]  5.898MB/30.14MB
+ a46a31aaee66 Downloading [>                                                  ]  97.64kB/8.204MB
+ cda3d70ae7d7 Extracting [================>                                  ]  10.16MB/30.14MB
+ a46a31aaee66 Downloading [====>                                              ]  785.8kB/8.204MB
+ cda3d70ae7d7 Extracting [====================>                              ]  12.45MB/30.14MB
+ a46a31aaee66 Downloading [==========================>                        ]  4.325MB/8.204MB
+ cda3d70ae7d7 Extracting [====================================>              ]  21.95MB/30.14MB
+ 15f4024b6601 Downloading [>                                                  ]  15.72kB/1.221MB
+ a46a31aaee66 Verifying Checksum 
+ a46a31aaee66 Download complete 
+ 15f4024b6601 Downloading [======>                                            ]  146.8kB/1.221MB
+ dad7c05595d2 Downloading [==================================================>]     116B/116B
+ dad7c05595d2 Verifying Checksum 
+ dad7c05595d2 Download complete 
+ cda3d70ae7d7 Extracting [==========================================>        ]  25.89MB/30.14MB
+ 15f4024b6601 Downloading [==================================>                ]  834.9kB/1.221MB
+ 15f4024b6601 Verifying Checksum 
+ 15f4024b6601 Download complete 
+ cda3d70ae7d7 Extracting [===========================================>       ]  26.21MB/30.14MB
+ fe81baa404a7 Downloading [==================================================>]  3.141kB/3.141kB
+ fe81baa404a7 Verifying Checksum 
+ fe81baa404a7 Download complete 
+ cda3d70ae7d7 Extracting [===============================================>   ]  28.84MB/30.14MB
+ ca325bef87f7 Downloading [>                                                  ]    539kB/112.8MB
+ 7351e4143fba Downloading [================>                                  ]  3.479kB/10.39kB
+ 7351e4143fba Downloading [==================================================>]  10.39kB/10.39kB
+ 7351e4143fba Verifying Checksum 
+ 7351e4143fba Download complete 
+ ca325bef87f7 Downloading [==>                                                ]  4.798MB/112.8MB
+ cda3d70ae7d7 Extracting [================================================>  ]  29.49MB/30.14MB
+ ca325bef87f7 Downloading [=====>                                             ]  11.72MB/112.8MB
+ cda3d70ae7d7 Extracting [==================================================>]  30.14MB/30.14MB
+ cda3d70ae7d7 Extracting [==================================================>]  30.14MB/30.14MB
+ e203252aafba Downloading [==================================================>]     128B/128B
+ e203252aafba Verifying Checksum 
+ e203252aafba Download complete 
+ cda3d70ae7d7 Pull complete 
+ 770063390593 Extracting [==================================================>]  1.165kB/1.165kB
+ 770063390593 Extracting [==================================================>]  1.165kB/1.165kB
+ ca325bef87f7 Downloading [=========>                                         ]  21.83MB/112.8MB
+ 770063390593 Pull complete 
+ 98119cbd52ab Extracting [>                                                  ]  65.54kB/6.235MB
+ ca325bef87f7 Downloading [=============>                                     ]  29.83MB/112.8MB
+ 98119cbd52ab Extracting [=================================================> ]  6.226MB/6.235MB
+ 98119cbd52ab Extracting [==================================================>]  6.235MB/6.235MB
+ 98119cbd52ab Pull complete 
+ f692142e93b8 Extracting [=>                                                 ]  32.77kB/1.21MB
+ ca325bef87f7 Downloading [================>                                  ]   36.2MB/112.8MB
+ d1a53784066c Downloading [==================================================>]     168B/168B
+ d1a53784066c Verifying Checksum 
+ d1a53784066c Download complete 
+ f692142e93b8 Extracting [==================================================>]   1.21MB/1.21MB
+ f692142e93b8 Extracting [==================================================>]   1.21MB/1.21MB
+ f692142e93b8 Pull complete 
+ a46a31aaee66 Extracting [>                                                  ]   98.3kB/8.204MB
+ ca325bef87f7 Downloading [===================>                               ]  43.67MB/112.8MB
+ a46a31aaee66 Extracting [====================>                              ]  3.342MB/8.204MB
+ ca325bef87f7 Downloading [=====================>                             ]  49.02MB/112.8MB
+ a46a31aaee66 Extracting [=============================>                     ]  4.915MB/8.204MB
+ 30cefffac1f1 Downloading [============================>                      ]   3.48kB/6.098kB
+ 30cefffac1f1 Download complete 
+ ca325bef87f7 Downloading [=========================>                         ]     57MB/112.8MB
+ a46a31aaee66 Extracting [=====================================>             ]  6.095MB/8.204MB
+ ca325bef87f7 Downloading [============================>                      ]  64.47MB/112.8MB
+ a46a31aaee66 Extracting [==============================================>    ]  7.569MB/8.204MB
+ a46a31aaee66 Extracting [==================================================>]  8.204MB/8.204MB
+ a46a31aaee66 Pull complete 
+ 15f4024b6601 Extracting [=>                                                 ]  32.77kB/1.221MB
+ ca325bef87f7 Downloading [================================>                  ]  73.02MB/112.8MB
+ 15f4024b6601 Extracting [==================================================>]  1.221MB/1.221MB
+ 15f4024b6601 Pull complete 
+ dad7c05595d2 Extracting [==================================================>]     116B/116B
+ dad7c05595d2 Extracting [==================================================>]     116B/116B
+ dad7c05595d2 Pull complete 
+ ca325bef87f7 Downloading [===================================>               ]   80.5MB/112.8MB
+ fe81baa404a7 Extracting [==================================================>]  3.141kB/3.141kB
+ fe81baa404a7 Extracting [==================================================>]  3.141kB/3.141kB
+ eef662d74035 Downloading [==================================================>]     185B/185B
+ eef662d74035 Verifying Checksum 
+ eef662d74035 Download complete 
+ fe81baa404a7 Pull complete 
+ ca325bef87f7 Downloading [======================================>            ]  87.98MB/112.8MB
+ ca325bef87f7 Downloading [==========================================>        ]  95.47MB/112.8MB
+ ca325bef87f7 Downloading [==============================================>    ]    104MB/112.8MB
+ ca325bef87f7 Downloading [================================================>  ]  109.9MB/112.8MB
+ ca325bef87f7 Verifying Checksum 
+ ca325bef87f7 Download complete 
+ ca325bef87f7 Extracting [>                                                  ]  557.1kB/112.8MB
+ ca325bef87f7 Extracting [===>                                               ]  8.356MB/112.8MB
+ ca325bef87f7 Extracting [=========>                                         ]  22.28MB/112.8MB
+ ca325bef87f7 Extracting [===============>                                   ]  34.54MB/112.8MB
+ ca325bef87f7 Extracting [==================>                                ]  41.78MB/112.8MB
+ ca325bef87f7 Extracting [========================>                          ]  56.26MB/112.8MB
+ ca325bef87f7 Extracting [===============================>                   ]  70.75MB/112.8MB
+ ca325bef87f7 Extracting [================================>                  ]  74.09MB/112.8MB
+ ca325bef87f7 Extracting [==================================>                ]  77.43MB/112.8MB
+ ca325bef87f7 Extracting [====================================>              ]  81.89MB/112.8MB
+ ca325bef87f7 Extracting [=====================================>             ]  85.23MB/112.8MB
+ ca325bef87f7 Extracting [======================================>            ]   86.9MB/112.8MB
+ ca325bef87f7 Extracting [=======================================>           ]  90.24MB/112.8MB
+ ca325bef87f7 Extracting [=========================================>         ]  93.59MB/112.8MB
+ ca325bef87f7 Extracting [==========================================>        ]  95.26MB/112.8MB
+ ca325bef87f7 Extracting [===========================================>       ]  97.48MB/112.8MB
+ ca325bef87f7 Extracting [===========================================>       ]   98.6MB/112.8MB
+ ca325bef87f7 Extracting [============================================>      ]  101.4MB/112.8MB
+ ca325bef87f7 Extracting [=============================================>     ]  103.6MB/112.8MB
+ ca325bef87f7 Extracting [===============================================>   ]  106.4MB/112.8MB
+ ca325bef87f7 Extracting [===============================================>   ]    107MB/112.8MB
+ ca325bef87f7 Extracting [===============================================>   ]  107.5MB/112.8MB
+ ca325bef87f7 Extracting [================================================>  ]  109.2MB/112.8MB
+ ca325bef87f7 Extracting [=================================================> ]  111.4MB/112.8MB
+ ca325bef87f7 Extracting [=================================================> ]  112.5MB/112.8MB
+ ca325bef87f7 Extracting [==================================================>]  112.8MB/112.8MB
+ ca325bef87f7 Pull complete 
+ 7351e4143fba Extracting [==================================================>]  10.39kB/10.39kB
+ 7351e4143fba Extracting [==================================================>]  10.39kB/10.39kB
+ 7351e4143fba Pull complete 
+ e203252aafba Extracting [==================================================>]     128B/128B
+ e203252aafba Extracting [==================================================>]     128B/128B
+ e203252aafba Pull complete 
+ d1a53784066c Extracting [==================================================>]     168B/168B
+ d1a53784066c Extracting [==================================================>]     168B/168B
+ d1a53784066c Pull complete 
+ 30cefffac1f1 Extracting [==================================================>]  6.098kB/6.098kB
+ 30cefffac1f1 Extracting [==================================================>]  6.098kB/6.098kB
+ 30cefffac1f1 Pull complete 
+ eef662d74035 Extracting [==================================================>]     185B/185B
+ eef662d74035 Extracting [==================================================>]     185B/185B
+ eef662d74035 Pull complete 
+ postgres Pulled 
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ queen The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested 
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint queen-broker (ab2a7796c7f6355319bc72c3d13d742eb0dffa5932ec744b5792068163ed34fb): Bind for 0.0.0.0:6632 failed: port is already allocated
+>> waiting for Queen broker… ready
+>> starting metrics sampler…
+>> starting producer (100 conns)…
+>> starting consumer (100 conns, batch=100)…
+>> running for 120s…
+
+==================== SUMMARY (cmp-20260529-152032-queen / QUEEN) ====================
+./run-queen.sh: line 96: 39124 Terminated: 15          bash sample-metrics.sh "$OUTDIR/metrics.csv" 1 queen-pg queen messages
+PRODUCER:  push msg/s(server)=18936   push msg/s(client≈req/s*10)=19630   p50=50ms  p99=99ms
+CONSUMER:  pop  msg/s(server)=0    p50=50ms  p99=99ms
+PG BACKENDS: avg_active=1.0  peak_active=1  peak_total=1
+PG CHURN:    peak_dead=0  upd=0  del=0  autovacuum_runs=0
+artifacts:   results/cmp-20260529-152032-queen/
+====================================================================
+Tear down with:  docker compose -f queen-compose.yml down -v
+### tearing down Queen stack…
+
+### Combined result:
+
+========================================================================
+  QUEEN vs pgmq — Mac, 120s, equal Docker budget (6 vCPU / 5 GiB per stack)
+========================================================================
+metric                    QUEEN                 pgmq
+------------------------------------------------------------------------
+push msg/s                18936                 9496
+pop msg/s                 n/a                   8349
+push p50 / p99 (ms)       50 / 99               103.7 / 283.9
+pop p50 / p99 (ms)        50 / 99               112.7 / 288.3
+------------------------------------------------------------------------
+PG active backends (avg)  1.0                   57.2
+PG backends (peak total)  1                     66
+------------------------------------------------------------------------
+hot-table UPDATEs         0                     1001835
+hot-table DELETEs         0                     1001835
+peak dead tuples          0                     176467
+autovacuum runs           0                     12
+------------------------------------------------------------------------
+push errors               0                     
+========================================================================
+Notes: Queen push msg/s from server totals; pop msg/s from server consumed.
+       Both PG instances: identical config, 3 CPU / 3 GiB. Client runs on host (both).
+       "hot table" = pgmq.q_bench vs queen.messages (append-only).
+
+Saved: results/cmp-20260529-152032.txt

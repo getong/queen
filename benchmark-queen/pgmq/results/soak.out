@@ -1,0 +1,32 @@
+##### SOAK 1800s each | prod=50 cons=100 msgs/push=10 popBatch=100 parts=1000
+
+### pgmq soak (read+delete churn)…
+ Network pgmq-bench_default  Creating
+ Network pgmq-bench_default  Created
+ Container pgmq-postgres  Creating
+ Container pgmq-postgres  Created
+ Container pgmq-pgbouncer  Creating
+ Container pgmq-pgbouncer  Created
+ Container pgmq-postgres  Starting
+ Container pgmq-postgres  Started
+ Container pgmq-postgres  Waiting
+ Container pgmq-postgres  Healthy
+ Container pgmq-pgbouncer  Starting
+ Container pgmq-pgbouncer  Started
+   running 1800s… (started 11:19:34)
+./run-soak.sh: line 42: 28287 Terminated: 15          bash sample-soak.sh "$PGMQ_DIR/soak.csv" 5 pgmq-postgres pgmq q_bench
+
+### Queen soak (append-only messages, retention 600s)…
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+   running 1800s… (started 11:49:43)

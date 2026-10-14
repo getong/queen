@@ -1,0 +1,12 @@
+kvlockload mode=lock-renew tag=lock-renew-w1024 url=http://127.0.0.1:6632 workers=1024 rate=0 duration=30s warmup=5s held=20480 locks per call=1 ttl=600s
+[10:13:20 run ] renewOps=   27561/s calls=   27559/s | p50=  17.94 p99=   31.57 ms | errs=0
+[10:13:30 run ] renewOps=   54630/s calls=   54633/s | p50=  18.19 p99=   32.34 ms | errs=0
+[10:13:40 run ] renewOps=   54633/s calls=   54633/s | p50=  18.06 p99=   33.50 ms | errs=0
+
+[final] 30s measured
+[final] call           54807/s  p50=18.06 p90=25.07 p99=32.59 p999=42.59 max=69.2 ms  (n=1644197)
+[final] renewOps          1644197       54807/s
+[final] renewed           1644197       54807/s
+[final] lost                    0           0/s
+[final] loader cpu 1.55 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"lost":0,"renewOps":1644197,"renewed":1644197},"desc":"held=20480 locks per call=1 ttl=600s","errTotal":0,"errors":{},"loaderCores":1.5462165205860676,"maxLagMs":0,"mode":"lock-renew","opsPerSec":54806.566666666666,"rate":0,"seconds":30,"series":{"call":{"count":1644197,"perSec":54806.566666666666,"meanMs":18.681800324413683,"p50":18.064,"p90":25.072,"p99":32.592,"p999":42.592,"maxMs":69.16}},"tag":"lock-renew-w1024","urls":1,"workers":1024}

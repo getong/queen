@@ -1,0 +1,8 @@
+== rpc-fresh-16 (rpc, 10 s measured)
+  round trips              312501        31250 /s
+  answered at the deadline          121           12 /s
+  round trip         p50 0.433  p90 0.746  p99 1.014  p99.9 8.776  max 115.317 ms
+  broker cores       2.65
+  loader cores       2.54
+RESULT {"answered at the deadline":121,"answered at the deadline/s":12.1,"broker cores":2.652,"errors":{},"loader cores":2.5421071,"mode":"rpc","name":"rpc-fresh-16","rate":0,"round trip":{"max":115.317,"p50":0.433,"p90":0.746,"p99":1.014,"p999":8.776},"round trips":312501,"round trips/s":31250.1,"seconds":10}
+  broker RSS after   1086 MiB

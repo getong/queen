@@ -1,0 +1,9 @@
+== g1-spread-b500 (pipe, 20 s measured)
+  pushed                 18153000       907650 /s
+  push calls                36306         1815 /s
+  delivered              18236500       911825 /s
+  pop calls                 21876         1094 /s
+  push call          p50 108.224  p90 129.216  p99 153.984  p99.9 165.504  max 178.931 ms
+  push to delivery   p50 298.240  p90 443.136  p99 492.288  p99.9 539.136  max 561.896 ms
+  loader cores       1.37
+RESULT {"delivered":18236500,"delivered/s":911825,"errors":{},"from":1791731398.7197309,"loader cores":1.37441235,"mode":"pipe","name":"g1-spread-b500","pop calls":21876,"pop calls/s":1093.8,"push call":{"max":178.931,"p50":108.224,"p90":129.216,"p99":153.984,"p999":165.504},"push calls":36306,"push calls/s":1815.3,"push to delivery":{"max":561.896,"p50":298.24,"p90":443.136,"p99":492.288,"p999":539.136},"pushed":18153000,"pushed/s":907650,"rate":0,"seconds":20,"to":1791731418.7197309}

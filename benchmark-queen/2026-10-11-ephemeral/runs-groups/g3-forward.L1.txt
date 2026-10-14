@@ -1,0 +1,9 @@
+== g3-forward (pipe, 20 s measured)
+  pushed                 16492200       824610 /s
+  push calls               164922         8246 /s
+  delivered              16459400       822970 /s
+  pop calls                 81511         4076 /s
+  push call          p50 22.992  p90 34.208  p99 48.992  p99.9 65.984  max 80.731 ms
+  push to delivery   p50 74.432  p90 306.944  p99 385.792  p99.9 402.688  max 431.330 ms
+  loader cores       1.70
+RESULT {"delivered":16459400,"delivered/s":822970,"errors":{},"from":1791731247.4295075,"loader cores":1.7034522500000002,"mode":"pipe","name":"g3-forward","pop calls":81511,"pop calls/s":4075.55,"push call":{"max":80.731,"p50":22.992,"p90":34.208,"p99":48.992,"p999":65.984},"push calls":164922,"push calls/s":8246.1,"push to delivery":{"max":431.33,"p50":74.432,"p90":306.944,"p99":385.792,"p999":402.688},"pushed":16492200,"pushed/s":824610,"rate":0,"seconds":20,"to":1791731267.4295075}

@@ -1,0 +1,1 @@
+{"role":"producer","event":"start","mode":"fifo","connections":100,"duration":120,"msgsPerPush":10,"readQty":100,"numPartitions":1000,"target":"localhost:6432","timestamp":"2026-05-29T13:20:38.760Z"}

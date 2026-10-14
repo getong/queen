@@ -1,0 +1,5 @@
+ queue_table_size 
+------------------
+ 174 MB
+(1 row)
+

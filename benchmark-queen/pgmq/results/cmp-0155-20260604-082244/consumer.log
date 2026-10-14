@@ -1,0 +1,12 @@
+
+🚀 Multi-process load test starting
+   Workers: 2
+   Connections per worker: 50
+   Total connections: 100
+   Duration: 60s
+
+Worker 1 ready (1/2)
+Worker 2 ready (2/2)
+
+⏱️  All workers ready, starting benchmark...
+

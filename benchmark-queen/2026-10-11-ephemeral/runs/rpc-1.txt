@@ -1,0 +1,8 @@
+== rpc-1 (rpc, 10 s measured)
+  round trips              150868        15087 /s
+  answered at the deadline            5            0 /s
+  round trip         p50 0.060  p90 0.075  p99 0.093  p99.9 0.137  max 102.636 ms
+  broker cores       1.20
+  loader cores       0.89
+RESULT {"answered at the deadline":5,"answered at the deadline/s":0.5,"broker cores":1.1960000000000002,"errors":{},"loader cores":0.8875679,"mode":"rpc","name":"rpc-1","rate":0,"round trip":{"max":102.636,"p50":0.06,"p90":0.075,"p99":0.093,"p999":0.137},"round trips":150868,"round trips/s":15086.8,"seconds":10}
+  broker RSS after   26 MiB

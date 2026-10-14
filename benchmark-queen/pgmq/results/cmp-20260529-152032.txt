@@ -1,0 +1,25 @@
+
+========================================================================
+  QUEEN vs pgmq — Mac, 120s, equal Docker budget (6 vCPU / 5 GiB per stack)
+========================================================================
+metric                    QUEEN                 pgmq
+------------------------------------------------------------------------
+push msg/s                18936                 9496
+pop msg/s                 n/a                   8349
+push p50 / p99 (ms)       50 / 99               103.7 / 283.9
+pop p50 / p99 (ms)        50 / 99               112.7 / 288.3
+------------------------------------------------------------------------
+PG active backends (avg)  1.0                   57.2
+PG backends (peak total)  1                     66
+------------------------------------------------------------------------
+hot-table UPDATEs         0                     1001835
+hot-table DELETEs         0                     1001835
+peak dead tuples          0                     176467
+autovacuum runs           0                     12
+------------------------------------------------------------------------
+push errors               0                     
+========================================================================
+Notes: Queen push msg/s from server totals; pop msg/s from server consumed.
+       Both PG instances: identical config, 3 CPU / 3 GiB. Client runs on host (both).
+       "hot table" = pgmq.q_bench vs queen.messages (append-only).
+

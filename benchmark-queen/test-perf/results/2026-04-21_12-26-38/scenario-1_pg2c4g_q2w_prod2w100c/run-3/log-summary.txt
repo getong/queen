@@ -1,0 +1,28 @@
+=== event_loop_lag events ===
+[2026-04-21 12:32:36.978] [warning] [Worker 1] [libqueen] Event loop lag is too high: 102ms, expected: 10ms
+[2026-04-21 12:32:37.304] [warning] [Worker 1] [libqueen] Event loop lag is too high: 325ms, expected: 10ms
+[2026-04-21 12:32:37.518] [warning] [Worker 1] [libqueen] Event loop lag is too high: 214ms, expected: 10ms
+[2026-04-21 12:32:37.521] [warning] [Worker 0] [libqueen] Event loop lag is too high: 109ms, expected: 10ms
+[2026-04-21 12:33:42.727] [warning] [Worker 1] [libqueen] Event loop lag is too high: 187ms, expected: 10ms
+[2026-04-21 12:33:42.729] [warning] [Worker 0] [libqueen] Event loop lag is too high: 284ms, expected: 10ms
+
+=== errors / warnings ===
+[2026-04-21 12:31:54.572] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 12:31:55.328] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:31:55.328] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:31:55.328] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:31:55.328] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:31:55.328] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:31:55.328] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:31:55.384] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 12:31:55.389] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 12:32:36.978] [warning] [Worker 1] [libqueen] Event loop lag is too high: 102ms, expected: 10ms
+[2026-04-21 12:32:37.304] [warning] [Worker 1] [libqueen] Event loop lag is too high: 325ms, expected: 10ms
+[2026-04-21 12:32:37.518] [warning] [Worker 1] [libqueen] Event loop lag is too high: 214ms, expected: 10ms
+[2026-04-21 12:32:37.521] [warning] [Worker 0] [libqueen] Event loop lag is too high: 109ms, expected: 10ms
+[2026-04-21 12:33:00.030] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 12:33:42.727] [warning] [Worker 1] [libqueen] Event loop lag is too high: 187ms, expected: 10ms
+[2026-04-21 12:33:42.729] [warning] [Worker 0] [libqueen] Event loop lag is too high: 284ms, expected: 10ms
+
+=== line count ===
+     466 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_12-26-38/scenario-1_pg2c4g_q2w_prod2w100c/run-3/server.log

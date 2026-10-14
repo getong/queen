@@ -1,0 +1,17 @@
+[10:12:01] start 1x10-3000k-gcp24
+[10:14:56] KAFKA_POINT 1x10-3000k-gcp24 DONE | 1x10-3000k-gcp24  kafka  1x10 e=0 batch b=100 rr c=1x9 default  3000000   3000k   3000k      0k        7     1401       1401       823       11.8        9.8          6.5               450              464/448     0       8.4
+[10:14:56]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:14:56] start 1x100-3000k-gcp24
+[10:18:13] KAFKA_POINT 1x100-3000k-gcp24 DONE | 1x100-3000k-gcp24  kafka  1x100 e=0 batch b=100 rr c=11x9 default  3000000   2993k   2993k      0k        6      103        105       100       15.3       13.8          6.6               466              471/450     0       8.9
+[10:18:13]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:18:13] start 1x1000-3000k-gcp24
+[10:21:21] KAFKA_POINT 1x1000-3000k-gcp24 DONE | 1x1000-3000k-gcp24  kafka  1x1000 e=0 batch b=100 rr c=33x9 default  3000000   3000k   3000k      0k        6      148        151       146       20.4       19.3          6.6               459              471/451     0       9.0
+[10:21:21]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:21:21] start 1x10000-3000k-gcp24
+[10:24:39] KAFKA_POINT 1x10000-3000k-gcp24 DONE | 1x10000-3000k-gcp24  kafka  1x10000 e=0 batch b=100 rr c=33x9 default  3000000   2999k   2999k      0k        9      138        134       116       47.1       46.8          6.7               448              468/447     0      10.8
+[10:24:39]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:24:39] start 1x100000-3000k-gcp24
+[10:33:42] KAFKA_POINT 1x100000-3000k-gcp24 DONE | 1x100000-3000k-gcp24  kafka  1x100000 e=0 batch b=100 rr c=33x9 default  3000000    165k    185k   2835k    34341    45875      45875     47972       56.6       53.1         11.5                88                28/24     0       3.1
+[10:33:42]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:33:42] 100000 partitions at 3M: not carried, the ladder stops here
+[10:33:42] KAFKA_GCP24_DONE

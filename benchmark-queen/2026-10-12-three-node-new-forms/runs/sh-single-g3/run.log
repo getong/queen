@@ -1,0 +1,16 @@
+[09:24:21] run sh-single-g3: binary p7, groups 3, sync, checkpoint 5 ms, tenants 3, partitions 3000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 60s at: 50000 100000 150000 200000 300000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=3 QUEEN_TENANT_GROUPS=00000000-0000-4000-8000-000000000000=0,00000001-0000-4000-8000-000000000000=1,00000002-0000-4000-8000-000000000000=2 | QEXTRA=-push-wire bin -ack-counts -pop-frames -tail 30s
+[09:24:28] roles: n1 healthy leader | n2 healthy follower+leader | n3 healthy follower+leader
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 1000 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 1000 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 1000 partitions
+[09:26:11]    50,000: last 30 s: offered 49,995 pushed 49,996 consumed 49,994 | run: shed 0 errors 0 | push p50 5.0 p99 10.6 | e2e p50 10.4 p99 21.5 worst 24.3 | cores 8.8 / 10.5 / 10.4 | mem GB 1.9 / 1.9 / 1.9 | loaders 9.8c  OK 
+[09:27:48]   100,000: last 30 s: offered 99,998 pushed 99,992 consumed 100,020 | run: shed 0 errors 0 | push p50 11.4 p99 29.4 | e2e p50 43.0 p99 200.7 worst 548.9 | cores 10.6 / 12.4 / 12.3 | mem GB 3.5 / 3.7 / 3.5 | loaders 14.2c  OK 
+[09:29:26]   150,000: last 30 s: offered 149,992 pushed 147,785 consumed 148,193 | run: shed 205,086 errors 0 | push p50 32.5 p99 393.2 | e2e p50 165.9 p99 1146.9 worst 1654.8 | cores 11.5 / 13.6 / 13.5 | mem GB 5.9 / 6.0 / 5.9 | loaders 19.4c  NOT CARRIED 
+[09:29:26] stopping at 150000
+RUN_DONE

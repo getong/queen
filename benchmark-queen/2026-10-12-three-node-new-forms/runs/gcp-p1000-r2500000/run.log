@@ -1,0 +1,7 @@
+[09:10:00] run gcp-p1000-r2500000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 2500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[09:10:25] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[09:12:13] 2,500,000: last 30 s: offered 2,499,978 pushed 1,911,386 consumed 1,959,160 | run: shed 17,204,300 errors 1782 | push p50 178.2 p99 13893.6 | e2e p50 335.9 p99 3735.6 worst 3997.7 | cores 8.7 / 5.3 / 0.6 | mem GB 10.2 / 10.0 / 10.7 | loaders 14.5c  NOT CARRIED 
+RUN_DONE

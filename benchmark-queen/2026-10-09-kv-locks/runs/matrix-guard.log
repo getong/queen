@@ -1,0 +1,126 @@
+=== 10:24:05 single kvput-w64: -mode guard -guard=false -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           49438/s  p50=1.12 p90=1.84 p99=3.79 p999=20.02 max=48.4 ms  (n=1483140)
+    [final] writes            1483140       49438/s
+    [final] applied           1483140       49438/s
+    [final] refusedByGuard            0           0/s
+    [final] loader cpu 1.10 cores, errors 0, max schedule lag 0.0 ms
+=== 10:24:40 single kvput-guard-w64: -mode guard -guard=true -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           48055/s  p50=1.17 p90=1.86 p99=3.57 p999=25.90 max=46.9 ms  (n=1441653)
+    [final] writes            1441653       48055/s
+    [final] applied           1441653       48055/s
+    [final] refusedByGuard            0           0/s
+    [final] loader cpu 1.07 cores, errors 0, max schedule lag 0.0 ms
+=== 10:25:16 single txn-push-w64: -mode txn -guard=false -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           44309/s  p50=1.26 p90=2.07 p99=4.12 p999=18.10 max=35.5 ms  (n=1329263)
+    [final] txns              1329263       44309/s
+    [final] committed         1329263       44309/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.92 cores, errors 0, max schedule lag 0.0 ms
+=== 10:25:51 single txn-push-kv-w64: -mode txn -guard=false -kvput -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           38431/s  p50=1.41 p90=2.46 p99=4.96 p999=22.86 max=43.5 ms  (n=1152938)
+    [final] txns              1152938       38431/s
+    [final] committed         1152938       38431/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.88 cores, errors 0, max schedule lag 0.0 ms
+=== 10:26:27 single txn-push-guard-w64: -mode txn -guard=true -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           44677/s  p50=1.21 p90=2.23 p99=4.19 p999=19.18 max=33.9 ms  (n=1340316)
+    [final] txns              1340316       44677/s
+    [final] committed         1340316       44677/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 1.03 cores, errors 0, max schedule lag 0.0 ms
+=== 10:27:02 single txn-push-kv-guard-w64: -mode txn -guard=true -kvput -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           36723/s  p50=1.48 p90=2.54 p99=5.01 p999=24.59 max=48.1 ms  (n=1101698)
+    [final] txns              1101698       36723/s
+    [final] committed         1101698       36723/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.85 cores, errors 0, max schedule lag 0.0 ms
+=== 10:27:38 single kvput-w256: -mode guard -guard=false -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           65927/s  p50=3.47 p90=5.14 p99=14.49 p999=41.31 max=67.4 ms  (n=1977823)
+    [final] writes            1977823       65927/s
+    [final] applied           1977823       65927/s
+    [final] refusedByGuard            0           0/s
+    [final] loader cpu 1.28 cores, errors 0, max schedule lag 0.0 ms
+=== 10:28:13 single kvput-guard-w256: -mode guard -guard=true -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           61962/s  p50=3.70 p90=5.46 p99=15.64 p999=38.05 max=70.8 ms  (n=1858875)
+    [final] writes            1858875       61962/s
+    [final] applied           1858875       61962/s
+    [final] refusedByGuard            0           0/s
+    [final] loader cpu 1.21 cores, errors 0, max schedule lag 0.0 ms
+=== 10:28:49 single txn-push-w256: -mode txn -guard=false -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           70695/s  p50=3.23 p90=4.96 p99=9.66 p999=34.46 max=43.8 ms  (n=2120837)
+    [final] txns              2120837       70695/s
+    [final] committed         2120837       70695/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 1.16 cores, errors 0, max schedule lag 0.0 ms
+=== 10:29:24 single txn-push-kv-w256: -mode txn -guard=false -kvput -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           34120/s  p50=7.16 p90=9.27 p99=18.29 p999=57.18 max=84.8 ms  (n=1023596)
+    [final] txns              1023596       34120/s
+    [final] committed         1023596       34120/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.69 cores, errors 0, max schedule lag 0.0 ms
+=== 10:30:00 single txn-push-guard-w256: -mode txn -guard=true -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           55601/s  p50=4.23 p90=6.19 p99=10.30 p999=32.43 max=68.8 ms  (n=1668023)
+    [final] txns              1668023       55601/s
+    [final] committed         1668023       55601/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 1.13 cores, errors 0, max schedule lag 0.0 ms
+=== 10:30:36 single txn-push-kv-guard-w256: -mode txn -guard=true -kvput -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           32752/s  p50=7.43 p90=9.66 p99=21.55 p999=51.55 max=80.8 ms  (n=982570)
+    [final] txns               982570       32752/s
+    [final] committed          982570       32752/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.68 cores, errors 0, max schedule lag 0.0 ms
+=== 10:31:11 single kvput-w1024: -mode guard -guard=false -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           64783/s  p50=14.92 p90=21.23 p99=35.62 p999=103.62 max=135.3 ms  (n=1943493)
+    [final] writes            1943493       64783/s
+    [final] applied           1943493       64783/s
+    [final] refusedByGuard            0           0/s
+    [final] loader cpu 1.23 cores, errors 0, max schedule lag 0.0 ms
+=== 10:31:47 single kvput-guard-w1024: -mode guard -guard=true -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           60248/s  p50=16.14 p90=22.96 p99=35.17 p999=118.46 max=145.8 ms  (n=1807428)
+    [final] writes            1807428       60248/s
+    [final] applied           1807428       60248/s
+    [final] refusedByGuard            0           0/s
+    [final] loader cpu 1.13 cores, errors 0, max schedule lag 0.0 ms
+=== 10:32:23 single txn-push-w1024: -mode txn -guard=false -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           87284/s  p50=10.98 p90=14.22 p99=37.22 p999=53.47 max=62.9 ms  (n=2618519)
+    [final] txns              2618519       87284/s
+    [final] committed         2618519       87284/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 1.45 cores, errors 0, max schedule lag 0.0 ms
+=== 10:32:58 single txn-push-kv-w1024: -mode txn -guard=false -kvput -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           25855/s  p50=37.86 p90=43.87 p99=59.87 p999=73.15 max=82.1 ms  (n=775636)
+    [final] txns               775636       25855/s
+    [final] committed          775636       25855/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.56 cores, errors 0, max schedule lag 0.0 ms
+=== 10:33:34 single txn-push-guard-w1024: -mode txn -guard=true -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           36691/s  p50=28.62 p90=30.80 p99=44.00 p999=60.64 max=78.3 ms  (n=1100731)
+    [final] txns              1100731       36691/s
+    [final] committed         1100731       36691/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.79 cores, errors 0, max schedule lag 0.0 ms
+=== 10:34:10 single txn-push-kv-guard-w1024: -mode txn -guard=true -kvput -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           25051/s  p50=41.38 p90=44.70 p99=63.46 p999=76.48 max=90.2 ms  (n=751536)
+    [final] txns               751536       25051/s
+    [final] committed          751536       25051/s
+    [final] rolledBack              0           0/s
+    [final] loader cpu 0.55 cores, errors 0, max schedule lag 0.0 ms

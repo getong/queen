@@ -1,0 +1,20 @@
+{
+  "role": "producer",
+  "event": "result",
+  "mode": "fifo",
+  "connections": 25,
+  "totalOps": 493282,
+  "totalMessages": 4932820,
+  "msgPerSec": 82214,
+  "opsPerSec": 8221,
+  "latency": {
+    "p50": 2.5,
+    "p90": 5.3,
+    "p99": 9.1,
+    "avg": 3.04,
+    "max": 137.29
+  },
+  "errors": 0,
+  "lastError": null,
+  "durationSec": 60
+}

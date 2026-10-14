@@ -1,0 +1,45 @@
+##### EXTRA TEST: #5 single-message latency @ concurrency=1 (pgmq direct-to-PG, sync_commit=on both)
+
+### pgmq side…
+ Network pgmq-bench_default  Creating
+ Network pgmq-bench_default  Created
+ Container pgmq-postgres  Creating
+ Container pgmq-postgres  Created
+ Container pgmq-pgbouncer  Creating
+ Container pgmq-pgbouncer  Created
+ Container pgmq-postgres  Starting
+ Container pgmq-postgres  Started
+ Container pgmq-postgres  Waiting
+ Container pgmq-postgres  Healthy
+ Container pgmq-pgbouncer  Starting
+ Container pgmq-pgbouncer  Started
+   running 45s…
+./compare-extra.sh: line 50:  6880 Terminated: 15          bash sample-metrics.sh "$PGMQ_DIR/metrics.csv" 1 pgmq-postgres pgmq q_bench
+
+### Queen side…
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+   running 45s…
+./compare-extra.sh: line 67:  8626 Terminated: 15          bash sample-metrics.sh "$QUEEN_DIR/metrics.csv" 1 queen-pg queen messages
+
+### Result (latency):
+================================================================
+metric                    QUEEN             pgmq
+----------------------------------------------------------------
+push  p50/p99 (ms)        1.5 / 4.4         1.4 / 5.6
+pop   p50/p99 (ms)        2.1 / 5.5         1.4 / 5.9
+----------------------------------------------------------------
+Note: concurrency=1; pgmq via DIRECT libpq (no pooler) = its best case.
+Queen carries an HTTP/JSON hop -> expected to lose here. That is the point.
+================================================================
+artifacts: results/extra-20260530-103933-latency-pgmq/ , results/extra-20260530-103933-latency-queen/

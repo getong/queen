@@ -1,0 +1,12 @@
+kvlockload mode=guard tag=kvput-w256 url=http://127.0.0.1:6632 workers=256 rate=0 duration=30s warmup=5s guard=false value=16B ttl=60s
+[10:27:48 run ] writes=   32263/s calls=   32262/s | p50=   3.49 p99=   12.28 ms | errs=0
+[10:27:58 run ] writes=   67870/s calls=   67870/s | p50=   3.44 p99=   13.05 ms | errs=0
+[10:28:08 run ] writes=   66186/s calls=   66187/s | p50=   3.46 p99=   15.66 ms | errs=0
+
+[final] 30s measured
+[final] call           65927/s  p50=3.47 p90=5.14 p99=14.49 p999=41.31 max=67.4 ms  (n=1977823)
+[final] writes            1977823       65927/s
+[final] applied           1977823       65927/s
+[final] refusedByGuard            0           0/s
+[final] loader cpu 1.28 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"applied":1977823,"refusedByGuard":0,"writes":1977823},"desc":"guard=false value=16B ttl=60s","errTotal":0,"errors":{},"loaderCores":1.2784245158447363,"maxLagMs":0,"mode":"guard","opsPerSec":65927.43333333333,"rate":0,"seconds":30,"series":{"call":{"count":1977823,"perSec":65927.43333333333,"meanMs":3.8817049564091426,"p50":3.474,"p90":5.14,"p99":14.488,"p999":41.312,"maxMs":67.373}},"tag":"kvput-w256","urls":1,"workers":256}

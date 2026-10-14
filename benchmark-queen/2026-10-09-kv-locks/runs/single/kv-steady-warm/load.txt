@@ -1,0 +1,21 @@
+kvlockload mode=kv tag=kv-steady-warm url=http://127.0.0.1:6632 workers=256 rate=0 duration=120s warmup=0s ns=100 keys=20000 batch=1 mix incr/get/pia/put/del=60/30/10/0/0 ttl=60s forever=false value=16B
+[10:39:37 run ] ops=   79093/s calls=   79086/s | p50=   3.14 p99=   11.34 ms | errs=0
+[10:39:47 run ] ops=   65837/s calls=   65844/s | p50=   3.39 p99=   20.43 ms | errs=0
+[10:39:57 run ] ops=   57168/s calls=   57167/s | p50=   3.58 p99=   20.08 ms | errs=0
+[10:40:07 run ] ops=   50952/s calls=   50954/s | p50=   3.77 p99=   22.13 ms | errs=0
+[10:40:17 run ] ops=   51955/s calls=   51952/s | p50=   3.79 p99=   19.82 ms | errs=0
+[10:40:27 run ] ops=   49337/s calls=   49339/s | p50=   3.91 p99=   19.66 ms | errs=0
+[10:40:37 run ] ops=   46703/s calls=   46702/s | p50=   4.02 p99=   22.86 ms | errs=0
+[10:40:47 run ] ops=   48258/s calls=   48259/s | p50=   4.00 p99=   26.00 ms | errs=0
+[10:40:57 run ] ops=   43658/s calls=   43658/s | p50=   4.17 p99=   29.94 ms | errs=0
+[10:41:07 run ] ops=   45921/s calls=   45921/s | p50=   4.19 p99=   22.06 ms | errs=0
+[10:41:17 run ] ops=   42767/s calls=   42767/s | p50=   4.24 p99=   25.62 ms | errs=0
+[10:41:27 run ] ops=   45816/s calls=   45816/s | p50=   4.23 p99=   22.80 ms | errs=0
+
+[final] 120s measured
+[final] call           52291/s  p50=3.74 p90=12.04 p99=21.81 p999=46.50 max=125.4 ms  (n=6274891)
+[final] ops               6274891       52291/s
+[final] applied           4326851       36057/s
+[final] notApplied          65164         543/s
+[final] loader cpu 1.08 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"applied":4326851,"notApplied":65164,"ops":6274891},"desc":"ns=100 keys=20000 batch=1 mix incr/get/pia/put/del=60/30/10/0/0 ttl=60s forever=false value=16B","errTotal":0,"errors":{},"loaderCores":1.0753910725569098,"maxLagMs":0,"mode":"kv","opsPerSec":52290.75833333333,"rate":0,"seconds":120,"series":{"call":{"count":6274891,"perSec":52290.75833333333,"meanMs":4.894622024031971,"p50":3.742,"p90":12.04,"p99":21.808,"p999":46.496,"maxMs":125.38}},"tag":"kv-steady-warm","urls":1,"workers":256}

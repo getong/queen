@@ -1,0 +1,41 @@
+interval 60.8 s
+host: busy 0.04 cores (user 0.03 sys 0.02 softirq 0.00) iowait 0.02 steal 0.00 idle 15.92
+disk vda: 199 writes/s, 0.5 MB/s, 96 flushes/s, 0.07 ms per flush
+node :6632 pid 24151: 0.04 cores, rss 36 MiB
+  threads: tokio-rt-worker 0.02
+  queen_raft_apply_channel_depth: 93/s, mean 1.0
+  queen_raft_apply_entry_seconds: 93/s, mean 11 us, 0.001 s per s
+  queen_raft_apply_other_seconds: 93/s, mean 11 us, 0.001 s per s
+  queen_raft_arrival_to_proposed_seconds: 93/s, mean 54 us, 0.005 s per s
+  queen_raft_checkpoint_rows: 1/s, mean 245.5
+  queen_raft_checkpoint_write_seconds: 1/s, mean 3659 us, 0.004 s per s
+  queen_raft_drain_commands: 102/s, mean 1.0
+  queen_raft_drain_messages: 102/s, mean 1.0
+  queen_raft_drain_to_propose_seconds: 93/s, mean 45 us, 0.004 s per s
+  queen_raft_durable_dir_fsync_seconds: 1/s, mean 0 us, 0.000 s per s
+  queen_raft_durable_point_seconds: 1/s, mean 34 us, 0.000 s per s
+  queen_raft_durable_seg_fsync_seconds: 1/s, mean 0 us, 0.000 s per s
+  queen_raft_group_bytes: 93/s, mean 64.0
+  queen_raft_group_entries: 93/s, mean 1.0
+  queen_raft_log_fsync_seconds: 93/s, mean 190 us, 0.018 s per s
+  queen_raft_plan_seconds: 123/s, mean 16 us, 0.002 s per s
+  queen_raft_plan_whole_cpu_seconds: 123/s, mean 16 us, 0.002 s per s
+  queen_raft_plan_whole_wall_seconds: 123/s, mean 16 us, 0.002 s per s
+  queen_raft_planner_plan_seconds{kind="kv"}: 102/s, mean 0 us, 0.000 s per s
+  queen_raft_propose_roundtrip_seconds: 93/s, mean 279 us, 0.026 s per s
+  queen_raft_proposed_to_committed_seconds: 93/s, mean 245 us, 0.023 s per s
+  queen_raft_queue_wait_seconds: 102/s, mean 9 us, 0.001 s per s
+  queen_raft_store_commit_seconds: 93/s, mean 1 us, 0.000 s per s
+  queen_raft_writer_pickup_seconds: 93/s, mean 10 us, 0.001 s per s
+  queen_locks_ops_total{op="acquire",result="applied"}: 47/s
+  queen_locks_ops_total{op="acquire",result="rejected"}: 9/s
+  queen_locks_ops_total{op="release",result="applied"}: 47/s
+  queen_raft_apply_receives_total: 93/s
+  queen_raft_planner_commands_total{kind="kv"}: 102/s
+  queen_raft_proposals_total: 93/s
+  queen_raft_store_operations_total{kind="commits"}: 94/s
+  queen_raft_store_operations_total{kind="durable_commits"}: 1/s
+  queen_raft_store_operations_total{kind="logical_bytes"}: 26013/s
+  queen_raft_store_operations_total{kind="read_txns"}: 452/s
+  queen_raft_store_operations_total{kind="rows_deleted"}: 93/s
+  queen_raft_store_operations_total{kind="rows_put"}: 704/s

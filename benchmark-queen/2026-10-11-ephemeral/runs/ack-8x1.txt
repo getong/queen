@@ -1,0 +1,12 @@
+== ack-8x1 (pipe, 10 s measured)
+  pushed                   743893        74389 /s
+  push calls               743893        74389 /s
+  delivered                743889        74389 /s
+  pop calls                369435        36944 /s
+  push call          p50 0.102  p90 0.158  p99 0.220  p99.9 0.297  max 0.845 ms
+  push to delivery   p50 0.215  p90 0.335  p99 0.446  p99.9 0.548  max 1.258 ms
+  ack call           p50 0.102  p90 0.159  p99 0.223  p99.9 0.307  max 0.879 ms
+  broker cores       3.38
+  loader cores       3.12
+RESULT {"ack call":{"max":0.879,"p50":0.102,"p90":0.159,"p99":0.223,"p999":0.307},"broker cores":3.3810000000000002,"delivered":743889,"delivered/s":74388.9,"errors":{},"loader cores":3.1214051,"mode":"pipe","name":"ack-8x1","pop calls":369435,"pop calls/s":36943.5,"push call":{"max":0.845,"p50":0.102,"p90":0.158,"p99":0.22,"p999":0.297},"push calls":743893,"push calls/s":74389.3,"push to delivery":{"max":1.258,"p50":0.215,"p90":0.335,"p99":0.446,"p999":0.548},"pushed":743893,"pushed/s":74389.3,"rate":0,"seconds":10}
+  broker RSS after   33 MiB

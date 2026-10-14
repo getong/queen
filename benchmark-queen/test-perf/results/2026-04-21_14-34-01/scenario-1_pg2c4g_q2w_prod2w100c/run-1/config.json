@@ -1,0 +1,40 @@
+{
+  "scenario_id": 1,
+  "scenario_name": "pg2c4g_q2w_prod2w100c",
+  "run_index": 1,
+  "pg": {
+    "cpus": 2,
+    "memory_gb": 4,
+    "max_connections": 300
+  },
+  "queen": {
+    "num_workers": 2,
+    "db_pool_size": 20,
+    "sidecar_pool_size": 200,
+    "sidecar_micro_batch_wait_ms": 20
+  },
+  "producer": {
+    "workers": 2,
+    "connections": 100,
+    "push_batch": 10
+  },
+  "consumer": {
+    "workers": 1,
+    "connections": 25,
+    "pop_batch": 100
+  },
+  "timing": {
+    "warmup_seconds": 10,
+    "measure_seconds": 150
+  },
+  "queue_name": "perf-test",
+  "max_partitions": 500,
+  "start_iso": "2026-04-21T12:34:01Z",
+  "host_cpus": 10,
+  "heavy_host_threads": 5,
+  "host_oversubscribed": false,
+  "measure_start_epoch": 1776774858,
+  "measure_end_epoch": 1776775008,
+  "measure_actual_seconds": 150,
+  "finish_iso": "2026-04-21T12:36:51.818Z"
+}

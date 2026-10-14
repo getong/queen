@@ -1,0 +1,12 @@
+kvlockload mode=txn tag=txn-push-kv-guard-w64 url=http://127.0.0.1:6632 workers=64 rate=0 duration=30s warmup=5s push=1 kvput=true guard=true payload pad=16B queue=kvl-txn
+[10:27:13 run ] txns=   18746/s calls=   18744/s | p50=   1.48 p99=    4.66 ms | errs=0
+[10:27:23 run ] txns=   37000/s calls=   37001/s | p50=   1.47 p99=    5.58 ms | errs=0
+[10:27:33 run ] txns=   37160/s calls=   37159/s | p50=   1.48 p99=    4.59 ms | errs=0
+
+[final] 30s measured
+[final] call           36723/s  p50=1.48 p90=2.54 p99=5.01 p999=24.59 max=48.1 ms  (n=1101698)
+[final] txns              1101698       36723/s
+[final] committed         1101698       36723/s
+[final] rolledBack              0           0/s
+[final] loader cpu 0.85 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"committed":1101698,"rolledBack":0,"txns":1101698},"desc":"push=1 kvput=true guard=true payload pad=16B queue=kvl-txn","errTotal":0,"errors":{},"loaderCores":0.8520738204065287,"maxLagMs":0,"mode":"txn","opsPerSec":36723.26666666667,"rate":0,"seconds":30,"series":{"call":{"count":1101698,"perSec":36723.26666666667,"meanMs":1.7414385194490685,"p50":1.483,"p90":2.538,"p99":5.012,"p999":24.592,"maxMs":48.122}},"tag":"txn-push-kv-guard-w64","urls":1,"workers":64}

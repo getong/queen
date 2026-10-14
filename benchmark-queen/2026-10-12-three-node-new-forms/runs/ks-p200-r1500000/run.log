@@ -1,0 +1,7 @@
+[09:51:59] run ks-p200-r1500000: binary b1, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 22 per process, retention completed 1800s, dedup 0s, steps of 70s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[09:52:10] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 200 partitions
+[09:53:59] 1,500,000: last 30 s: offered 1,499,983 pushed 1,499,820 consumed 1,500,476 | run: shed 0 errors 0 | push p50 7.0 p99 14.6 | e2e p50 16.6 p99 37.4 worst 38.9 | cores 7.2 / 4.7 / 4.7 | mem GB 5.1 / 4.8 / 4.8 | loaders 12.3c  OK 
+RUN_DONE

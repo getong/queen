@@ -1,0 +1,7 @@
+[10:34:45] start 1x100-2000k-gcp24
+[10:37:59] KAFKA_POINT 1x100-2000k-gcp24 DONE | 1x100-2000k-gcp24  kafka  1x100 e=0 batch b=100 rr c=11x9 default  2000000   2000k   2000k      0k        6       74         76        75       11.3       10.6          6.5               301              316/302     0       6.7
+[10:37:59]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:37:59] start 1x1000-2000k-gcp24
+[10:40:57] KAFKA_POINT 1x1000-2000k-gcp24 DONE | 1x1000-2000k-gcp24  kafka  1x1000 e=0 batch b=100 rr c=33x9 default  2000000   2000k   2000k      0k        6       71         83        73       15.8       15.0          6.5               275              315/302     0       7.0
+[10:40:57]   load processes' exit codes: 0 0 0 0 0 0 0 0 0 
+[10:40:57] KAFKA_GCP24_2M_DONE

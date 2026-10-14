@@ -1,0 +1,6 @@
+[01:04:33] run rl-p10-r1000000: binary p3, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10, consumers 1 per process, retention completed 60s, dedup 60s, steps of 360s at: 1000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s
+[01:09:20] start 1: the cluster did not become healthy, starting it again
+[01:14:07] start 2: the cluster did not become healthy, starting it again
+[01:18:54] start 3: the cluster did not become healthy, starting it again
+[01:23:41] start 4: the cluster did not become healthy, starting it again
+[01:23:41] FAILED: the cluster did not become healthy in four starts

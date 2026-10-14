@@ -1,0 +1,12 @@
+== pipe-8x100 (pipe, 10 s measured)
+  pushed                 41208900      4120890 /s
+  push calls               412089        41209 /s
+  delivered              41210000      4121000 /s
+  pop calls                412100        41210 /s
+  push call          p50 0.120  p90 0.199  p99 0.318  p99.9 0.563  max 3.701 ms
+  push to delivery   p50 1.889  p90 5.388  p99 8.872  p99.9 10.968  max 12.728 ms
+  broker cores       5.16
+  loader cores       2.64
+  error http_429:queue_full          21552
+RESULT {"broker cores":5.159999999999999,"delivered":41210000,"delivered/s":4121000,"errors":{"http_429:queue_full":21552},"loader cores":2.638872,"mode":"pipe","name":"pipe-8x100","pop calls":412100,"pop calls/s":41210,"push call":{"max":3.701,"p50":0.12,"p90":0.199,"p99":0.318,"p999":0.563},"push calls":412089,"push calls/s":41208.9,"push to delivery":{"max":12.728,"p50":1.889,"p90":5.388,"p99":8.872,"p999":10.968},"pushed":41208900,"pushed/s":4120890,"rate":0,"seconds":10}
+  broker RSS after   50 MiB

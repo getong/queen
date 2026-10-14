@@ -1,0 +1,6 @@
+== rpc-256 (rpc, 10 s measured)
+  round trips              209075        20908 /s
+  answered at the deadline            0            0 /s
+  round trip         p50 11.976  p90 17.520  p99 22.224  p99.9 26.224  max 32.308 ms
+  loader cores       2.12
+RESULT {"answered at the deadline":0,"answered at the deadline/s":0,"errors":{},"from":1791727396.2954745,"loader cores":2.1176046000000004,"mode":"rpc","name":"rpc-256","rate":0,"round trip":{"max":32.308,"p50":11.976,"p90":17.52,"p99":22.224,"p999":26.224},"round trips":209075,"round trips/s":20907.5,"seconds":10,"to":1791727406.2954745}

@@ -1,0 +1,4 @@
+[2026-10-14T11:39:04Z] cluster: stop all 3
+  n1 [2026-10-14T11:39:11Z] kc.sh n1: stopped pid 92360 in 5.8s
+  n2 [2026-10-14T11:39:06Z] kc.sh n2: stopped pid 86121 in 0.7s
+  n3 [2026-10-14T11:39:06Z] kc.sh n3: stopped pid 85940 in 0.9s

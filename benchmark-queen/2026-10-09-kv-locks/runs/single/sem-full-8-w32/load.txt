@@ -1,0 +1,20 @@
+kvlockload mode=sem tag=sem-full-8-w32 url=http://127.0.0.1:6632 workers=32 rate=0 duration=30s warmup=5s names=1 permits=8 hold=2.0ms poll=5 ttl=30s
+[10:23:04 run ] lockOps=    4724/s calls=    3511/s | p50=   0.50 p99=    2.91 ms | errs=0
+[10:23:14 run ] lockOps=    9457/s calls=    7033/s | p50=   0.51 p99=    2.45 ms | errs=0
+[10:23:24 run ] lockOps=    9107/s calls=    6809/s | p50=   0.52 p99=    4.42 ms | errs=0
+
+[final] 30s measured
+[final] wait            2382/s  p50=0.84 p90=35.23 p99=88.90 p999=145.79 max=302.5 ms  (n=71468)
+[final] try             6959/s  p50=0.51 p90=1.30 p99=3.21 p999=8.00 max=17.2 ms  (n=208765)
+[final] release         2383/s  p50=0.48 p90=0.69 p99=2.35 p999=6.28 max=16.4 ms  (n=71500)
+[final] lockOps            280265        9342/s
+[final] acquired            71468        2382/s
+[final] tries              208765        6959/s
+[final] refused            132797        4427/s
+[final] contended            4476         149/s
+[final] released            71500        2383/s
+[final] lost                    0           0/s
+[final] twoHolders              0           0/s
+[final] tokenWentBack            0           0/s
+[final] loader cpu 0.39 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"acquired":71468,"contended":4476,"lockOps":280265,"lost":0,"refused":132797,"released":71500,"tokenWentBack":0,"tries":208765,"twoHolders":0},"desc":"names=1 permits=8 hold=2.0ms poll=5 ttl=30s","errTotal":0,"errors":{},"loaderCores":0.38571760746026734,"maxLagMs":0,"mode":"sem","opsPerSec":9342.166666666666,"rate":0,"seconds":30,"series":{"release":{"count":71500,"perSec":2383.3333333333335,"meanMs":0.5605428531468531,"p50":0.483,"p90":0.688,"p99":2.346,"p999":6.284,"maxMs":16.407},"try":{"count":208765,"perSec":6958.833333333333,"meanMs":0.6595104255981606,"p50":0.512,"p90":1.305,"p99":3.206,"p999":7.996,"maxMs":17.216},"wait":{"count":71468,"perSec":2382.266666666667,"meanMs":10.696955210723681,"p50":0.842,"p90":35.232,"p99":88.896,"p999":145.792,"maxMs":302.485}},"tag":"sem-full-8-w32","urls":1,"workers":32}

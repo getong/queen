@@ -1,0 +1,1 @@
+{"role":"consumer","event":"start","mode":"plain","connections":1,"duration":60,"msgsPerPush":10,"readQty":1,"numPartitions":null,"target":"localhost:55432","timestamp":"2026-05-30T08:00:19.945Z"}

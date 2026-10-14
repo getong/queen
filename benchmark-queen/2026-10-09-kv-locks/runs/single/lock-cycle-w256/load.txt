@@ -1,0 +1,16 @@
+kvlockload mode=lock-cycle tag=lock-cycle-w256 url=http://127.0.0.1:6632 workers=256 rate=0 duration=30s warmup=5s locks per call=1 ttl=30s
+[10:09:47 run ] lockOps=   38207/s calls=   19097/s | p50=   6.39 p99=   13.82 ms | errs=0
+[10:09:57 run ] lockOps=   73354/s calls=   36677/s | p50=   6.64 p99=   14.20 ms | errs=0
+[10:10:07 run ] lockOps=   74532/s calls=   37266/s | p50=   6.59 p99=   12.74 ms | errs=0
+
+[final] 30s measured
+[final] cycle          37185/s  p50=6.60 p90=8.79 p99=13.45 p999=22.64 max=56.6 ms  (n=1115561)
+[final] acquire        37185/s  p50=3.23 p90=4.72 p99=7.38 p999=16.56 max=53.1 ms  (n=1115561)
+[final] release        37185/s  p50=3.22 p90=4.72 p99=7.35 p999=16.53 max=53.1 ms  (n=1115561)
+[final] lockOps           2231122       74371/s
+[final] acquired          1115561       37185/s
+[final] refused                 0           0/s
+[final] released          1115561       37185/s
+[final] lost                    0           0/s
+[final] loader cpu 1.82 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"acquired":1115561,"lockOps":2231122,"lost":0,"refused":0,"released":1115561},"desc":"locks per call=1 ttl=30s","errTotal":0,"errors":{},"loaderCores":1.8178622603663581,"maxLagMs":0,"mode":"lock-cycle","opsPerSec":74370.73333333334,"rate":0,"seconds":30,"series":{"acquire":{"count":1115561,"perSec":37185.36666666667,"meanMs":3.4447209959831873,"p50":3.226,"p90":4.724,"p99":7.38,"p999":16.56,"maxMs":53.136},"cycle":{"count":1115561,"perSec":37185.36666666667,"meanMs":6.882882650074715,"p50":6.596,"p90":8.792,"p99":13.448,"p999":22.64,"maxMs":56.596},"release":{"count":1115561,"perSec":37185.36666666667,"meanMs":3.4376625554317517,"p50":3.222,"p90":4.716,"p99":7.348,"p999":16.528,"maxMs":53.132}},"tag":"lock-cycle-w256","urls":1,"workers":256}

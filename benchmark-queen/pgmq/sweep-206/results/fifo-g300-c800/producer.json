@@ -1,0 +1,20 @@
+{
+  "role": "producer",
+  "event": "result",
+  "mode": "fifo",
+  "connections": 800,
+  "totalOps": 22326,
+  "totalMessages": 223260,
+  "msgPerSec": 3721,
+  "opsPerSec": 372,
+  "latency": {
+    "p50": 29.3,
+    "p90": 1536.2,
+    "p99": 3558.9,
+    "avg": 447.47,
+    "max": 8058.91
+  },
+  "errors": 47835,
+  "lastError": "the database system is not yet accepting connections",
+  "durationSec": 60
+}

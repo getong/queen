@@ -1,0 +1,44 @@
+interval 60.0 s
+host: busy 3.32 cores (user 2.17 sys 0.92 softirq 0.24) iowait 0.93 steal 0.01 idle 11.39
+disk vda: 28820 writes/s, 144.5 MB/s, 4616 flushes/s, 0.05 ms per flush
+node :6632 pid 35853: 2.87 cores, rss 3624 MiB
+  threads: tokio-rt-worker 1.85  queen-planner 0.25  queen-rsm-apply 0.25  queen-rsm-ckpt 0.23  queen-rsm-sync 0.10  queen-qlog-writ 0.09  queen-rsm-log 0.07  queen-rsm-drop 0.03
+  queen_raft_apply_channel_depth: 8345/s, mean 1.7
+  queen_raft_apply_entry_seconds: 8345/s, mean 28 us, 0.237 s per s
+  queen_raft_apply_other_seconds: 8345/s, mean 28 us, 0.237 s per s
+  queen_raft_arrival_to_proposed_seconds: 14222/s, mean 133 us, 1.886 s per s
+  queen_raft_checkpoint_rows: 1/s, mean 131151.9
+  queen_raft_checkpoint_write_seconds: 1/s, mean 509516 us, 0.510 s per s
+  queen_raft_drain_commands: 8455/s, mean 1.7
+  queen_raft_drain_messages: 8455/s, mean 1.7
+  queen_raft_drain_to_propose_seconds: 8345/s, mean 48 us, 0.404 s per s
+  queen_raft_durable_dir_fsync_seconds: 1/s, mean 0 us, 0.000 s per s
+  queen_raft_durable_point_seconds: 1/s, mean 269 us, 0.000 s per s
+  queen_raft_durable_seg_fsync_seconds: 1/s, mean 1 us, 0.000 s per s
+  queen_raft_group_bytes: 4515/s, mean 206.2
+  queen_raft_group_entries: 4515/s, mean 1.8
+  queen_raft_log_fsync_seconds: 4515/s, mean 203 us, 0.916 s per s
+  queen_raft_plan_seconds: 8475/s, mean 24 us, 0.203 s per s
+  queen_raft_plan_whole_cpu_seconds: 8475/s, mean 24 us, 0.201 s per s
+  queen_raft_plan_whole_wall_seconds: 8475/s, mean 24 us, 0.203 s per s
+  queen_raft_planner_plan_seconds{kind="kv"}: 14343/s, mean 0 us, 0.000 s per s
+  queen_raft_propose_roundtrip_seconds: 8345/s, mean 741 us, 6.185 s per s
+  queen_raft_proposed_to_committed_seconds: 8345/s, mean 647 us, 5.396 s per s
+  queen_raft_queue_wait_seconds: 14343/s, mean 78 us, 1.125 s per s
+  queen_raft_store_commit_seconds: 223/s, mean 2 us, 0.000 s per s
+  queen_raft_writer_pickup_seconds: 8345/s, mean 173 us, 1.441 s per s
+  queen_kv_bytes_total{dir="in"}: 15092/s
+  queen_kv_bytes_total{dir="out"}: 29427/s
+  queen_kv_ops_total{op="get",result="applied"}: 6143/s
+  queen_kv_ops_total{op="incr",result="applied"}: 12297/s
+  queen_kv_ops_total{op="put",result="applied"}: 1728/s
+  queen_kv_ops_total{op="put",result="rejected"}: 318/s
+  queen_raft_apply_receives_total: 8345/s
+  queen_raft_planner_commands_total{kind="kv"}: 14343/s
+  queen_raft_proposals_total: 8345/s
+  queen_raft_store_operations_total{kind="commits"}: 224/s
+  queen_raft_store_operations_total{kind="durable_commits"}: 1/s
+  queen_raft_store_operations_total{kind="logical_bytes"}: 4266962/s
+  queen_raft_store_operations_total{kind="read_txns"}: 57926/s
+  queen_raft_store_operations_total{kind="rows_deleted"}: 74808/s
+  queen_raft_store_operations_total{kind="rows_put"}: 89720/s

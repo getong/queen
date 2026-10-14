@@ -1,0 +1,27 @@
+{
+  "stamp": "2026-04-20_16-59-25",
+  "scenarios": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "runs_per_scenario": 3,
+  "warmup_seconds": 10,
+  "measure_seconds": 60,
+  "git": {
+    "sha": "fce1833",
+    "branch": "master",
+    "dirty_files": 1
+  },
+  "host": {
+    "kernel": "Darwin 24.5.0",
+    "arch": "arm64",
+    "cpus": "10"
+  },
+  "start_iso": "2026-04-20T14:59:25Z",
+  "finish_iso": "2026-04-20T15:29:35.264Z"
+}

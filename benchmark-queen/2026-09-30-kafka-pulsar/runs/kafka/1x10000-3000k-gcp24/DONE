@@ -1,0 +1,11 @@
+2026-10-14T10:24:39Z
+p0: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=21683700 lag=-17100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1036.29/2007.04 ms | e2e p50/p99/p999=8.77/1138.69/2244.61 ms | cpu=122.0%
+p1: msgs offered=21666600 achieved=21666600 shed=0 pushed=21666600 popped=21742100 lag=-75500 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1056.77/2056.19 ms | e2e p50/p99/p999=8.77/1138.69/2244.61 ms | cpu=123.6%
+p2: msgs offered=21666400 achieved=21666400 shed=0 pushed=21666400 popped=21684000 lag=-17600 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.77/1056.77/2039.81 ms | e2e p50/p99/p999=8.77/1138.69/2277.38 ms | cpu=121.7%
+p3: msgs offered=21666700 achieved=21666700 shed=0 pushed=21666700 popped=21645000 lag=21700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1028.10/2023.42 ms | e2e p50/p99/p999=8.77/1155.07/2277.38 ms | cpu=117.4%
+p4: msgs offered=21666800 achieved=21666800 shed=0 pushed=21666800 popped=21684000 lag=-17200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1056.77/2056.19 ms | e2e p50/p99/p999=8.77/1155.07/2277.38 ms | cpu=116.5%
+p5: msgs offered=21666300 achieved=21666300 shed=0 pushed=21666300 popped=21586200 lag=80100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.77/1036.29/2072.58 ms | e2e p50/p99/p999=8.77/1138.69/2310.14 ms | cpu=116.3%
+p6: msgs offered=21666300 achieved=21666300 shed=0 pushed=21666300 popped=21606000 lag=60300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1028.10/2023.42 ms | e2e p50/p99/p999=8.77/1155.07/2277.38 ms | cpu=122.6%
+p7: msgs offered=21666500 achieved=21666500 shed=0 pushed=21666500 popped=21664500 lag=2000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1036.29/2039.81 ms | e2e p50/p99/p999=8.90/1138.69/2342.91 ms | cpu=119.4%
+p8: msgs offered=21666400 achieved=21666400 shed=0 pushed=21666400 popped=21703100 lag=-36700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=8.90/1028.10/1990.66 ms | e2e p50/p99/p999=8.77/1155.07/2277.38 ms | cpu=123.0%
+total: 9/9 processes with a final line | msgs offered=194998600 achieved=194998600 shed=0 pushed=194998600 popped=194998600 errors=0 | worst produce p99=1056.77 ms | worst e2e p99=1155.07 ms

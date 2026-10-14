@@ -1,0 +1,20 @@
+{
+  "role": "producer",
+  "event": "result",
+  "mode": "plain",
+  "connections": 800,
+  "totalOps": 148466,
+  "totalMessages": 1484660,
+  "msgPerSec": 24744,
+  "opsPerSec": 2474,
+  "latency": {
+    "p50": 71.1,
+    "p90": 93.9,
+    "p99": 129.2,
+    "avg": 61.24,
+    "max": 280.61
+  },
+  "errors": 3894,
+  "lastError": "timeout exceeded when trying to connect",
+  "durationSec": 60
+}

@@ -1,0 +1,9 @@
+== pipe-64x1 (pipe, 10 s measured)
+  pushed                   429583        42958 /s
+  push calls               429583        42958 /s
+  delivered                429583        42958 /s
+  pop calls                393997        39400 /s
+  push call          p50 1.405  p90 2.390  p99 3.702  p99.9 5.092  max 209.903 ms
+  push to delivery   p50 1.831  p90 3.402  p99 4.980  p99.9 6.644  max 10.741 ms
+  loader cores       2.82
+RESULT {"delivered":429583,"delivered/s":42958.3,"errors":{},"from":1791727309.518469,"loader cores":2.8225636,"mode":"pipe","name":"pipe-64x1","pop calls":393997,"pop calls/s":39399.7,"push call":{"max":209.903,"p50":1.405,"p90":2.39,"p99":3.702,"p999":5.092},"push calls":429583,"push calls/s":42958.3,"push to delivery":{"max":10.741,"p50":1.831,"p90":3.402,"p99":4.98,"p999":6.644},"pushed":429583,"pushed/s":42958.3,"rate":0,"seconds":10,"to":1791727319.518469}

@@ -1,0 +1,46 @@
+##### EXTRA TEST: #6 worker-bound: 20ms work/msg, 100 consumer conns (expect ~5000 msg/s both)
+
+### pgmq side…
+ Network pgmq-bench_default  Creating
+ Network pgmq-bench_default  Created
+ Container pgmq-postgres  Creating
+ Container pgmq-postgres  Created
+ Container pgmq-pgbouncer  Creating
+ Container pgmq-pgbouncer  Created
+ Container pgmq-postgres  Starting
+ Container pgmq-postgres  Started
+ Container pgmq-postgres  Waiting
+ Container pgmq-postgres  Healthy
+ Container pgmq-pgbouncer  Starting
+ Container pgmq-pgbouncer  Started
+   running 120s…
+./compare-extra.sh: line 50: 83831 Terminated: 15          bash sample-metrics.sh "$PGMQ_DIR/metrics.csv" 1 pgmq-postgres pgmq q_bench
+
+### Queen side…
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+   running 120s…
+./compare-extra.sh: line 67: 86789 Terminated: 15          bash sample-metrics.sh "$QUEEN_DIR/metrics.csv" 1 queen-pg queen messages
+
+### Result (worker):
+================================================================
+metric                    QUEEN             pgmq
+----------------------------------------------------------------
+delivered msg/s           4310              4605
+consumer op p99 (ms)      131.7             149
+PG active backends(avg)   2.7               19.3
+----------------------------------------------------------------
+Both bounded by the 20ms/msg work, not the broker -> rates converge,
+PG stays idle. At realistic per-message work the broker is not the bottleneck.
+================================================================
+artifacts: results/extra-20260530-100344-worker-pgmq/ , results/extra-20260530-100344-worker-queen/

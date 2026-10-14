@@ -1,0 +1,11 @@
+2026-10-13T11:09:09Z
+p0: msgs offered=7222200 achieved=7222200 shed=0 pushed=7222200 popped=7214900 lag=7300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=11.97/20.86/27.26 ms | e2e p50/p99/p999=12.99/22.40/29.31 ms | cpu=58.9%
+p1: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7215000 lag=7100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.10/20.86/28.29 ms | e2e p50/p99/p999=12.86/22.14/28.80 ms | cpu=59.6%
+p2: msgs offered=7222400 achieved=7222400 shed=0 pushed=7222400 popped=7260500 lag=-38100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.10/21.12/28.03 ms | e2e p50/p99/p999=12.99/22.14/29.82 ms | cpu=59.3%
+p3: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7169400 lag=52700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.10/20.86/27.01 ms | e2e p50/p99/p999=12.86/21.89/29.06 ms | cpu=66.4%
+p4: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7228000 lag=-5900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.22/20.61/27.78 ms | e2e p50/p99/p999=12.86/21.89/29.82 ms | cpu=67.0%
+p5: msgs offered=7222300 achieved=7222300 shed=0 pushed=7222300 popped=7215100 lag=7200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.22/20.86/27.26 ms | e2e p50/p99/p999=12.86/22.40/29.31 ms | cpu=67.7%
+p6: msgs offered=7222300 achieved=7222300 shed=0 pushed=7222300 popped=7182600 lag=39700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.48/21.12/28.80 ms | e2e p50/p99/p999=12.99/21.63/29.06 ms | cpu=81.7%
+p7: msgs offered=7222200 achieved=7222200 shed=0 pushed=7222200 popped=7240900 lag=-18700 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.35/20.86/28.80 ms | e2e p50/p99/p999=12.99/21.89/29.06 ms | cpu=80.9%
+p8: msgs offered=7222300 achieved=7222300 shed=0 pushed=7222300 popped=7273300 lag=-51000 errs push=0 pop=0 ack=0 | produce p50/p99/p999=12.35/21.12/28.80 ms | e2e p50/p99/p999=12.99/21.63/29.06 ms | cpu=80.7%
+total: 9/9 processes with a final line | msgs offered=65000000 achieved=65000000 shed=0 pushed=65000000 popped=64999700 errors=0 | worst produce p99=21.12 ms | worst e2e p99=22.4 ms

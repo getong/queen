@@ -1,0 +1,56 @@
+=== 10:53:25 single kv-mix-b1-hot1k-w64: -mode kv -incr 60 -get 30 -pia 10 -namespaces 10 -keys 100 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           66767/s  p50=0.93 p90=1.59 p99=3.34 p999=8.34 max=46.0 ms  (n=2003009)
+    [final] ops               2003009       66767/s
+    [final] applied           1202459       40082/s
+    [final] notApplied         199338        6645/s
+    [final] loader cpu 1.51 cores, errors 0, max schedule lag 0.0 ms
+=== 10:54:01 single kv-mix-b1-hot1k-w256: -mode kv -incr 60 -get 30 -pia 10 -namespaces 10 -keys 100 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           96147/s  p50=2.77 p90=4.27 p99=6.68 p999=14.25 max=213.6 ms  (n=2884418)
+    [final] ops               2884418       96147/s
+    [final] applied           1730678       57689/s
+    [final] notApplied         288367        9612/s
+    [final] loader cpu 1.92 cores, errors 0, max schedule lag 0.0 ms
+=== 10:54:36 single kv-mix-b1-hot1k-w1024: -mode kv -incr 60 -get 30 -pia 10 -namespaces 10 -keys 100 -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call          100088/s  p50=11.21 p90=16.53 p99=22.16 p999=41.31 max=65.9 ms  (n=3002646)
+    [final] ops               3002646      100088/s
+    [final] applied           1801893       60063/s
+    [final] notApplied         300345       10012/s
+    [final] loader cpu 2.01 cores, errors 0, max schedule lag 0.0 ms
+=== 10:55:12 single kv-incr-onekey-w16: -mode kv -incr 100 -get 0 -pia 0 -namespaces 1 -keys 1 -workers 16 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           23746/s  p50=0.52 p90=0.93 p99=3.03 p999=7.11 max=24.1 ms  (n=712394)
+    [final] ops                712394       23746/s
+    [final] applied            712394       23746/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 0.58 cores, errors 0, max schedule lag 0.0 ms
+=== 10:55:47 single kv-incr-onekey-w64: -mode kv -incr 100 -get 0 -pia 0 -namespaces 1 -keys 1 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           56008/s  p50=0.98 p90=1.61 p99=3.45 p999=9.48 max=33.3 ms  (n=1680230)
+    [final] ops               1680230       56008/s
+    [final] applied           1680230       56008/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 1.29 cores, errors 0, max schedule lag 0.0 ms
+=== 10:56:23 single kv-incr-onekey-w256: -mode kv -incr 100 -get 0 -pia 0 -namespaces 1 -keys 1 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           82306/s  p50=2.88 p90=4.32 p99=7.01 p999=16.02 max=21.8 ms  (n=2469187)
+    [final] ops               2469187       82306/s
+    [final] applied           2469187       82306/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 1.65 cores, errors 0, max schedule lag 0.0 ms
+=== 10:56:58 single kv-mix-b5-w64: -mode kv -incr 60 -get 30 -pia 10 -batch 5 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           16976/s  p50=2.23 p90=9.48 p99=19.73 p999=51.42 max=78.0 ms  (n=509271)
+    [final] ops               2546355       84878/s
+    [final] applied           1758424       58614/s
+    [final] notApplied          23736         791/s
+    [final] loader cpu 0.45 cores, errors 0, max schedule lag 0.0 ms
+=== 10:57:34 single kv-mix-b100-w64: -mode kv -incr 60 -get 30 -pia 10 -batch 100 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call            1587/s  p50=38.50 p90=45.41 p99=106.05 p999=161.66 max=165.7 ms  (n=47599)
+    [final] ops               4759900      158663/s
+    [final] applied           3256989      108566/s
+    [final] notApplied          75166        2506/s
+    [final] loader cpu 0.11 cores, errors 0, max schedule lag 0.0 ms

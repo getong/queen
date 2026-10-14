@@ -1,0 +1,15 @@
+=== event_loop_lag events ===
+
+=== errors / warnings ===
+[2026-04-21 10:23:52.601] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 10:23:53.310] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 10:23:53.317] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:23:53.317] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:23:53.317] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:23:53.317] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 10:23:53.317] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 10:23:53.317] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 10:23:53.322] [info] [Worker 0] [libqueen] Reconnection thread started
+
+=== line count ===
+     270 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_10-15-01/scenario-3_pg4c8g_q2w_prod4w200c/run-1/server.log

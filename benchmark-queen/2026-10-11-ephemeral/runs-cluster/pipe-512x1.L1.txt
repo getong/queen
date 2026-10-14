@@ -1,0 +1,9 @@
+== pipe-512x1 (pipe, 10 s measured)
+  pushed                   688006        68801 /s
+  push calls               688006        68801 /s
+  delivered                688044        68804 /s
+  pop calls                499549        49955 /s
+  push call          p50 5.556  p90 16.200  p99 25.520  p99.9 34.400  max 219.369 ms
+  push to delivery   p50 9.048  p90 22.544  p99 34.336  p99.9 44.704  max 225.720 ms
+  loader cores       3.96
+RESULT {"delivered":688044,"delivered/s":68804.4,"errors":{},"from":1791727442.2796493,"loader cores":3.958983,"mode":"pipe","name":"pipe-512x1","pop calls":499549,"pop calls/s":49954.9,"push call":{"max":219.369,"p50":5.556,"p90":16.2,"p99":25.52,"p999":34.4},"push calls":688006,"push calls/s":68800.6,"push to delivery":{"max":225.72,"p50":9.048,"p90":22.544,"p99":34.336,"p999":44.704},"pushed":688006,"pushed/s":68800.6,"rate":0,"seconds":10,"to":1791727452.2796493}

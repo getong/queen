@@ -1,0 +1,8 @@
+[21:26:40] run t17-p3-idle30-p10000000-r1500000: binary p3, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 10000000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= QUEEN_CONSUME_IDLE_UNLOAD_S=30 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[21:27:28] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+FATAL warm drain bench: 0 of 10000000 messages came out
+[21:32:52] predrain 240s: 9 processes consumed 9,997,440 prefill messages, 0/s in the last windows, errors 891
+[21:35:00] 1,500,000: last 30 s: offered 1,500,030 pushed 1,500,076 consumed 1,500,286 | run: shed 0 errors 0 | push p50 9.1 p99 557.1 | e2e p50 20.0 p99 130.0 worst 286.7 | cores 7.8 / 5.0 / 4.6 | mem GB 17.6 / 15.6 / 15.7 | loaders 12.0c  OK 
+RUN_DONE

@@ -1,0 +1,11 @@
+== pipe-64x1 (pipe, 10 s measured)
+  pushed                  1016591       101659 /s
+  push calls              1016591       101659 /s
+  delivered               1016607       101661 /s
+  pop calls                803792        80379 /s
+  push call          p50 0.590  p90 1.037  p99 1.537  p99.9 2.386  max 39.759 ms
+  push to delivery   p50 0.914  p90 1.455  p99 2.122  p99.9 3.690  max 39.589 ms
+  broker cores       4.95
+  loader cores       2.91
+RESULT {"broker cores":4.946,"delivered":1016607,"delivered/s":101660.7,"errors":{},"loader cores":2.9077532999999995,"mode":"pipe","name":"pipe-64x1","pop calls":803792,"pop calls/s":80379.2,"push call":{"max":39.759,"p50":0.59,"p90":1.037,"p99":1.537,"p999":2.386},"push calls":1016591,"push calls/s":101659.1,"push to delivery":{"max":39.589,"p50":0.914,"p90":1.455,"p99":2.122,"p999":3.69},"pushed":1016591,"pushed/s":101659.1,"rate":0,"seconds":10}
+  broker RSS after   46 MiB

@@ -1,0 +1,10 @@
+== pipe-1024x1 (pipe, 10 s measured)
+  pushed                   320856        32086 /s
+  push calls               320856        32086 /s
+  delivered                320966        32097 /s
+  pop calls                234826        23483 /s
+  push call          p50 19.728  p90 69.952  p99 148.864  p99.9 364.800  max 743.098 ms
+  push to delivery   p50 32.656  p90 99.136  p99 189.312  p99.9 446.720  max 853.392 ms
+  loader cores       1.97
+  error http_503:ephemeral_forward_failed 2495
+RESULT {"delivered":320966,"delivered/s":32096.6,"errors":{"http_503:ephemeral_forward_failed":2495},"from":1791727351.5059636,"loader cores":1.9744465999999998,"mode":"pipe","name":"pipe-1024x1","pop calls":234826,"pop calls/s":23482.6,"push call":{"max":743.098,"p50":19.728,"p90":69.952,"p99":148.864,"p999":364.8},"push calls":320856,"push calls/s":32085.6,"push to delivery":{"max":853.392,"p50":32.656,"p90":99.136,"p99":189.312,"p999":446.72},"pushed":320856,"pushed/s":32085.6,"rate":0,"seconds":10,"to":1791727361.5059636}

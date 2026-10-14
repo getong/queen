@@ -1,0 +1,10 @@
+p0: msgs offered=14444500 achieved=13828400 shed=616100 pushed=13828400 popped=10326305 lag=3502095 errs push=0 pop=0 ack=0 | produce p50/p99/p999=1105.92/4620.29/5210.11 ms | e2e p50/p99/p999=10158.08/18219.01/20578.30 ms | cpu=62.7%
+p1: NO FINAL LINE
+p2: msgs offered=14444200 achieved=13847900 shed=596300 pushed=13847900 popped=10357882 lag=3490018 errs push=0 pop=0 ack=0 | produce p50/p99/p999=1089.54/4620.29/5144.58 ms | e2e p50/p99/p999=9895.94/17956.86/19267.58 ms | cpu=63.1%
+p3: NO FINAL LINE
+p4: NO FINAL LINE
+p5: msgs offered=14444300 achieved=13831900 shed=612400 pushed=13831900 popped=10515000 lag=3316900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=1073.15/4489.22/5210.11 ms | e2e p50/p99/p999=9371.65/17432.58/19005.44 ms | cpu=72.3%
+p6: msgs offered=14444500 achieved=13317900 shed=1126600 pushed=13317900 popped=9612600 lag=3705300 errs push=0 pop=0 ack=0 | produce p50/p99/p999=1155.07/5144.58/5931.01 ms | e2e p50/p99/p999=13041.66/25034.75/27656.19 ms | cpu=86.4%
+p7: msgs offered=14444500 achieved=13051800 shed=1392700 pushed=13051800 popped=9645400 lag=3406400 errs push=0 pop=0 ack=0 | produce p50/p99/p999=1155.07/5799.94/6389.76 ms | e2e p50/p99/p999=11993.09/24248.32/27131.90 ms | cpu=89.4%
+p8: NO FINAL LINE
+total: 5/9 processes with a final line | msgs offered=72222000 achieved=67877900 shed=4344100 pushed=67877900 popped=50457187 errors=0 | worst produce p99=5799.94 ms | worst e2e p99=25034.75 ms

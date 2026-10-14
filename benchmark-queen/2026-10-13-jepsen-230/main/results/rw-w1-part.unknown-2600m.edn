@@ -1,0 +1,172 @@
+{:faults {:corrupt-outcomes {},
+          :corrupt-not-back [],
+          :valid? true,
+          :member-final nil,
+          :member-removals {},
+          :corrupt-trials 0,
+          :member-rejoins {},
+          :corrupt-late-rejoined {},
+          :corrupt-exit-rcs {},
+          :corrupt-late-exits [],
+          :member-ops {},
+          :member-skipped {}},
+ :perf {:latency-graph {:valid? true},
+        :rate-graph {:valid? true},
+        :valid? true},
+ :valid? :unknown,
+ :leftovers {:valid? true, :leftovers {}},
+ :panic {:valid? true, :count 0, :matches ()},
+ :lazyfs {:valid? true},
+ :ex {:valid? true},
+ :clock {:valid? true},
+ :members {:valid? true,
+           :voters {"n1" [1 2 3 4 5],
+                    "n2" [1 2 3 4 5],
+                    "n3" [1 2 3 4 5],
+                    "n4" [1 2 3 4 5],
+                    "n5" [1 2 3 4 5]},
+           :not-initialized [],
+           :no-answer []},
+ :workload {:valid? :unknown,
+            :error {:via [{:type java.util.concurrent.ExecutionException,
+                           :message "java.lang.OutOfMemoryError: Java heap space",
+                           :at [java.util.concurrent.FutureTask
+                                report
+                                "FutureTask.java"
+                                122]}
+                          {:type java.lang.OutOfMemoryError,
+                           :message "Java heap space",
+                           :at [clojure.lang.PersistentVector
+                                cons
+                                "PersistentVector.java"
+                                229]}],
+                    :trace [[clojure.lang.PersistentVector
+                             cons
+                             "PersistentVector.java"
+                             229]
+                            [clojure.lang.PersistentVector
+                             cons
+                             "PersistentVector.java"
+                             24]
+                            [clojure.lang.RT conj "RT.java" 697]
+                            [clojure.core$conj__5474
+                             invokeStatic
+                             "core.clj"
+                             87]
+                            [clojure.core$conj__5474
+                             invoke
+                             "core.clj"
+                             84]
+                            [jepsen.tests.kafka$plot_unseen_BANG_$fn__4329$fn__4332
+                             invoke
+                             "kafka.clj"
+                             1600]
+                            [clojure.lang.PersistentList
+                             reduce
+                             "PersistentList.java"
+                             146]
+                            [clojure.core$reduce
+                             invokeStatic
+                             "core.clj"
+                             6968]
+                            [clojure.core$reduce
+                             invoke
+                             "core.clj"
+                             6951]
+                            [jepsen.tests.kafka$plot_unseen_BANG_$fn__4329
+                             invoke
+                             "kafka.clj"
+                             1595]
+                            [clojure.lang.PersistentVector
+                             reduce
+                             "PersistentVector.java"
+                             418]
+                            [clojure.core$reduce
+                             invokeStatic
+                             "core.clj"
+                             6968]
+                            [clojure.core$reduce
+                             invoke
+                             "core.clj"
+                             6951]
+                            [jepsen.tests.kafka$plot_unseen_BANG_
+                             invokeStatic
+                             "kafka.clj"
+                             1590]
+                            [jepsen.tests.kafka$plot_unseen_BANG_
+                             invoke
+                             "kafka.clj"
+                             1584]
+                            [jepsen.queen.workload.log$strict_checker$reify__6000
+                             check
+                             "log.clj"
+                             392]
+                            [jepsen.checker$check_safe
+                             invokeStatic
+                             "checker.clj"
+                             95]
+                            [jepsen.checker$check_safe
+                             invoke
+                             "checker.clj"
+                             87]
+                            [jepsen.checker.Compose$fn__14306
+                             invoke
+                             "checker.clj"
+                             106]
+                            [clojure.core$pmap$fn__8582$fn__8583
+                             invoke
+                             "core.clj"
+                             7173]
+                            [clojure.core$binding_conveyor_fn$fn__5842
+                             invoke
+                             "core.clj"
+                             2051]
+                            [clojure.lang.AFn call "AFn.java" 18]
+                            [java.util.concurrent.FutureTask
+                             run
+                             "FutureTask.java"
+                             317]
+                            [java.util.concurrent.ThreadPoolExecutor
+                             runWorker
+                             "ThreadPoolExecutor.java"
+                             1144]
+                            [java.util.concurrent.ThreadPoolExecutor$Worker
+                             run
+                             "ThreadPoolExecutor.java"
+                             642]
+                            [java.lang.Thread
+                             runWith
+                             "Thread.java"
+                             1596]
+                            [java.lang.Thread run "Thread.java" 1583]],
+                    :cause "Java heap space"}},
+ :stats {:valid? true,
+         :count 44621,
+         :ok-count 44475,
+         :fail-count 0,
+         :info-count 146,
+         :by-f {:assign {:valid? true,
+                         :count 727,
+                         :ok-count 727,
+                         :fail-count 0,
+                         :info-count 0},
+                :crash {:valid? false,
+                        :count 10,
+                        :ok-count 0,
+                        :fail-count 0,
+                        :info-count 10},
+                :debug-topic-partitions {:valid? true,
+                                         :count 10,
+                                         :ok-count 10,
+                                         :fail-count 0,
+                                         :info-count 0},
+                :poll {:valid? true,
+                       :count 22335,
+                       :ok-count 22335,
+                       :fail-count 0,
+                       :info-count 0},
+                :send {:valid? true,
+                       :count 21539,
+                       :ok-count 21403,
+                       :fail-count 0,
+                       :info-count 136}}}}

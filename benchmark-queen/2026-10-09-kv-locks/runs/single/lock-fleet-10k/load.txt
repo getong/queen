@@ -1,0 +1,15 @@
+kvlockload mode=lock-renew tag=lock-fleet-10k url=http://127.0.0.1:6632 workers=100 rate=1000 duration=60s warmup=5s held=10000 locks per call=1 ttl=30s
+[10:14:32 run ] renewOps=     500/s calls=     500/s | p50=   0.92 p99=    3.61 ms | errs=0
+[10:14:42 run ] renewOps=    1000/s calls=    1000/s | p50=   0.93 p99=    2.93 ms | errs=0
+[10:14:52 run ] renewOps=    1000/s calls=    1000/s | p50=   0.93 p99=    3.26 ms | errs=0
+[10:15:02 run ] renewOps=    1000/s calls=    1000/s | p50=   0.95 p99=    3.73 ms | errs=0
+[10:15:12 run ] renewOps=    1000/s calls=    1000/s | p50=   0.93 p99=    2.69 ms | errs=0
+[10:15:22 run ] renewOps=    1000/s calls=    1000/s | p50=   0.96 p99=    4.44 ms | errs=0
+
+[final] 60s measured
+[final] call            1000/s  p50=0.94 p90=1.44 p99=3.40 p999=8.68 max=28.4 ms  (n=60000)
+[final] renewOps            60000        1000/s
+[final] renewed             60000        1000/s
+[final] lost                    0           0/s
+[final] loader cpu 0.09 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"lost":0,"renewOps":60000,"renewed":60000},"desc":"held=10000 locks per call=1 ttl=30s","errTotal":0,"errors":{},"loaderCores":0.08775157459014031,"maxLagMs":0,"mode":"lock-renew","opsPerSec":1000,"rate":1000,"seconds":60,"series":{"call":{"count":60000,"perSec":1000,"meanMs":0.9957465666666667,"p50":0.937,"p90":1.435,"p99":3.398,"p999":8.68,"maxMs":28.405}},"tag":"lock-fleet-10k","urls":1,"workers":100}

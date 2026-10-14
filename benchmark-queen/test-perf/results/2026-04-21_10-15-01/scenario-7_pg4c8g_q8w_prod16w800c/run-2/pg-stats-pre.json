@@ -1,0 +1,63 @@
+{
+  "label": "pre",
+  "database": {
+    "ts": 1776761044.48472,
+    "blks_hit": 2325045,
+    "blks_read": 353,
+    "conflicts": 0,
+    "deadlocks": 0,
+    "temp_bytes": 0,
+    "temp_files": 0,
+    "numbackends": 220,
+    "tup_deleted": 30568,
+    "tup_fetched": 946624,
+    "tup_updated": 5240,
+    "xact_commit": 1988,
+    "tup_inserted": 58029,
+    "tup_returned": 4850732,
+    "blk_read_time": 0,
+    "xact_rollback": 0,
+    "blk_write_time": 0
+  },
+  "row_counts": {
+    "messages_total": 28850,
+    "partitions_total": 12,
+    "partition_consumers_total": 0
+  },
+  "messages_table": {
+    "idx_scan": 0,
+    "seq_scan": 700,
+    "n_tup_del": 0,
+    "n_tup_ins": 25350,
+    "n_tup_upd": 0,
+    "n_dead_tup": 0,
+    "n_live_tup": 25350,
+    "seq_tup_read": 3871680,
+    "idx_tup_fetch": 0,
+    "n_tup_hot_upd": 0
+  },
+  "partitions_table": {
+    "idx_scan": 26169,
+    "seq_scan": 1392,
+    "n_tup_del": 2,
+    "n_tup_ins": 13,
+    "n_tup_upd": 0,
+    "n_dead_tup": 2,
+    "n_live_tup": 11,
+    "seq_tup_read": 11873,
+    "idx_tup_fetch": 26156,
+    "n_tup_hot_upd": 0
+  },
+  "partition_consumers_table": {
+    "idx_scan": 0,
+    "seq_scan": 2,
+    "n_tup_del": 0,
+    "n_tup_ins": 0,
+    "n_tup_upd": 0,
+    "n_dead_tup": 0,
+    "n_live_tup": 0,
+    "seq_tup_read": 0,
+    "idx_tup_fetch": 0,
+    "n_tup_hot_upd": 0
+  }
+}

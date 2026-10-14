@@ -1,0 +1,12 @@
+== paced-1k (pipe, 10 s measured)
+  pushed                    10000         1000 /s
+  push calls                10000         1000 /s
+  delivered                 10000         1000 /s
+  pop calls                 10000         1000 /s
+  push call          p50 0.152  p90 0.204  p99 0.303  p99.9 0.441  max 0.676 ms
+  push to delivery   p50 0.304  p90 0.370  p99 0.482  p99.9 0.656  max 0.841 ms
+  broker cores       0.26
+  loader cores       0.21
+  max schedule lag   0.000 ms
+RESULT {"broker cores":0.258,"delivered":10000,"delivered/s":1000,"errors":{},"loader cores":0.2067353,"max lag ms":0,"mode":"pipe","name":"paced-1k","pop calls":10000,"pop calls/s":1000,"push call":{"max":0.676,"p50":0.152,"p90":0.204,"p99":0.303,"p999":0.441},"push calls":10000,"push calls/s":1000,"push to delivery":{"max":0.841,"p50":0.304,"p90":0.37,"p99":0.482,"p999":0.656},"pushed":10000,"pushed/s":1000,"rate":1000,"seconds":10}
+  broker RSS after   29 MiB

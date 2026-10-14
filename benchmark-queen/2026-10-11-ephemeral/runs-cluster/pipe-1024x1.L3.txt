@@ -1,0 +1,9 @@
+== pipe-1024x1 (pipe, 10 s measured)
+  pushed                   421893        42189 /s
+  push calls               421893        42189 /s
+  delivered                421804        42180 /s
+  pop calls                287263        28726 /s
+  push call          p50 12.888  p90 59.232  p99 145.536  p99.9 259.712  max 458.420 ms
+  push to delivery   p50 22.896  p90 86.592  p99 187.008  p99.9 336.640  max 690.916 ms
+  loader cores       3.11
+RESULT {"delivered":421804,"delivered/s":42180.4,"errors":{},"from":1791727351.5075548,"loader cores":3.1058978,"mode":"pipe","name":"pipe-1024x1","pop calls":287263,"pop calls/s":28726.3,"push call":{"max":458.42,"p50":12.888,"p90":59.232,"p99":145.536,"p999":259.712},"push calls":421893,"push calls/s":42189.3,"push to delivery":{"max":690.916,"p50":22.896,"p90":86.592,"p99":187.008,"p999":336.64},"pushed":421893,"pushed/s":42189.3,"rate":0,"seconds":10,"to":1791727361.5075548}

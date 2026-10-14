@@ -1,0 +1,14 @@
+[18:23:20] run c-g3-sync5: groups 3, sync, checkpoint 5 ms, tenants 3, retention completed, steps of 40s at: 1800000 2100000 2400000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=3 QUEEN_TENANT_GROUPS=00000000-0000-4000-8000-000000000000=0,00000001-0000-4000-8000-000000000000=1,00000002-0000-4000-8000-000000000000=2
+[18:23:38] roles: n1 healthy leader | n2 healthy follower+leader | n3 healthy follower+leader
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[18:25:06] 1,800,000: offered 1,799,737 pushed 1,797,601 consumed 1,776,501 shed 0 errors 0 lag 0 | push p50 34.8 p99 116.7 | e2e p50 85.0 p99 1032.2 | n1 10.0c apply 83% raft 94%; n2 9.6c apply 79% raft 90%; n3 9.6c apply 79% raft 89% | loaders 37.4c  NOT CARRIED 
+[18:25:06] stopping at 1800000
+RUN_DONE

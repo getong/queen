@@ -1,0 +1,24 @@
+=== event_loop_lag events ===
+[2026-04-21 12:55:22.813] [warning] [Worker 0] [libqueen] Event loop lag is too high: 450ms, expected: 5ms
+[2026-04-21 12:55:22.813] [warning] [Worker 1] [libqueen] Event loop lag is too high: 458ms, expected: 5ms
+[2026-04-21 12:55:23.274] [warning] [Worker 1] [libqueen] Event loop lag is too high: 156ms, expected: 5ms
+[2026-04-21 12:55:23.275] [warning] [Worker 0] [libqueen] Event loop lag is too high: 157ms, expected: 5ms
+
+=== errors / warnings ===
+[2026-04-21 12:53:21.744] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 12:53:22.767] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:53:22.767] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:53:22.767] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:53:22.769] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:53:22.769] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:53:22.769] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:53:23.281] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 12:53:23.284] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 12:54:51.454] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 12:55:22.813] [warning] [Worker 0] [libqueen] Event loop lag is too high: 450ms, expected: 5ms
+[2026-04-21 12:55:22.813] [warning] [Worker 1] [libqueen] Event loop lag is too high: 458ms, expected: 5ms
+[2026-04-21 12:55:23.274] [warning] [Worker 1] [libqueen] Event loop lag is too high: 156ms, expected: 5ms
+[2026-04-21 12:55:23.275] [warning] [Worker 0] [libqueen] Event loop lag is too high: 157ms, expected: 5ms
+
+=== line count ===
+     459 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_12-40-56/scenario-1_pg2c4g_q2w_prod2w100c/run-3/server.log

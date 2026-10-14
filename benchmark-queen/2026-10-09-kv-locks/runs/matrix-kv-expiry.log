@@ -1,0 +1,14 @@
+=== 10:34:46 single kv-expiry-load: -mode kv -incr 0 -get 0 -pia 100 -ttl 5 -keys 1000000 -workers 256 -warmup 0 -duration 60
+    [final] 60s measured
+    [final] call           48035/s  p50=4.03 p90=10.73 p99=21.65 p999=47.26 max=91.4 ms  (n=2882106)
+    [final] ops               2882106       48035/s
+    [final] applied           2875410       47924/s
+    [final] notApplied           6696         112/s
+    [final] loader cpu 0.98 cores, errors 0, max schedule lag 0.0 ms
+=== 10:38:47 single kv-expiry-then-mix: -mode kv -incr 60 -get 30 -pia 10 -batch 1 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           55559/s  p50=3.75 p90=11.13 p99=19.70 p999=29.65 max=38.1 ms  (n=1666773)
+    [final] ops               1666773       55559/s
+    [final] applied           1157085       38570/s
+    [final] notApplied           9753         325/s
+    [final] loader cpu 1.15 cores, errors 0, max schedule lag 0.0 ms

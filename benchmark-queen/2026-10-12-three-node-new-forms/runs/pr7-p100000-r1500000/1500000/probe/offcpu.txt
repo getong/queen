@@ -1,0 +1,1027 @@
+Attaching 4 probes...
+BEGIN 81085052276181
+WAIT ended 81089019320094 tid 445867 us 19509
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81089019324794 tid 445869 us 19476
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81089019328869 tid 445868 us 19404
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81103393050064 tid 445867 us 15137
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81103393809064 tid 445869 us 15876
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81104064079105 tid 445867 us 16594
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81104064642323 tid 445869 us 17620
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81104065124629 tid 445868 us 18075
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81122930147819 tid 445869 us 15586
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81146476155979 tid 445867 us 22741
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81146476355046 tid 445868 us 22897
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81146476364902 tid 445869 us 22904
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81146989945455 tid 445869 us 21877
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81146989973748 tid 445867 us 22619
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81146990605081 tid 445868 us 23167
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81154998527199 tid 445869 us 20725
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81154999158389 tid 445867 us 21376
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81154999747068 tid 445868 us 22003
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81162001989300 tid 445869 us 16390
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81162001991257 tid 445868 us 16941
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81162002004914 tid 445867 us 17028
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81166951118843 tid 445869 us 17618
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81166951125834 tid 445868 us 17632
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81166951214924 tid 445867 us 17686
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81170999986733 tid 445868 us 15919
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81170999988724 tid 445869 us 16064
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81170999997064 tid 445867 us 16092
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81177214235774 tid 445869 us 23452
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81177214521924 tid 445867 us 23571
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+WAIT ended 81177215320674 tid 445868 us 24486
+
+        __schedule+812
+        schedule+51
+        futex_wait_queue+100
+        __futex_wait+341
+        futex_wait+116
+        do_futex+261
+        __x64_sys_futex+298
+        x64_sys_call+273
+        do_syscall_64+135
+        entry_SYSCALL_64_after_hwframe+120
+
+
+
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    do_sched_yield+159
+    __do_sys_sched_yield+14
+    x64_sys_call+2271
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 1019
+@long_max[445862, 
+    __schedule+812
+    __cond_resched+93
+    zap_pmd_range.isra.0+307
+    unmap_page_range+710
+    unmap_single_vma+137
+    zap_page_range_single+312
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+]: 1146
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: 1233
+@long_max[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_irq_work+75
+    asm_sysvec_irq_work+27
+]: 1269
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: 1273
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: 1290
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: 1412
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: 1460
+@long_max[445867, 
+    __schedule+812
+    __cond_resched+93
+    __alloc_pages+359
+    alloc_pages_mpol+145
+    vma_alloc_folio+100
+    alloc_anon_folio+460
+    do_anonymous_page+108
+    handle_pte_fault+459
+    __handle_mm_fault+1620
+    handle_mm_fault+394
+    do_user_addr_fault+361
+    exc_page_fault+131
+]: 1563
+@long_max[445869, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: 1669
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: 1680
+@long_max[445869, 
+    __schedule+812
+    __cond_resched+93
+    tlb_batch_pages_flush+83
+    tlb_finish_mmu+115
+    zap_page_range_single+354
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 1702
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_irq_work+75
+    asm_sysvec_irq_work+27
+]: 1748
+@long_max[445868, 
+    __schedule+812
+    __cond_resched+93
+    tlb_batch_pages_flush+83
+    tlb_finish_mmu+115
+    zap_page_range_single+354
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 1884
+@long_max[445862, 
+    __schedule+812
+    __cond_resched+93
+    __alloc_pages+359
+    alloc_pages_mpol+145
+    vma_alloc_folio+100
+    alloc_anon_folio+460
+    do_anonymous_page+108
+    handle_pte_fault+459
+    __handle_mm_fault+1620
+    handle_mm_fault+394
+    do_user_addr_fault+361
+    exc_page_fault+131
+]: 1885
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: 1933
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: 1938
+@long_max[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: 2251
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: 2309
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    exc_page_fault+148
+    asm_exc_page_fault+39
+]: 2382
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: 2424
+@long_max[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: 3162
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: 3164
+@long_max[445869, 
+    __schedule+812
+    __cond_resched+93
+    zap_pmd_range.isra.0+307
+    unmap_page_range+710
+    unmap_single_vma+137
+    zap_page_range_single+312
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+]: 3250
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: 3259
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: 3376
+@long_max[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: 3958
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: 4014
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: 4962
+@long_max[445862, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 11888
+@long_max[445869, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 23452
+@long_max[445867, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 23571
+@long_max[445868, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: 24486
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    do_sched_yield+159
+    __do_sys_sched_yield+14
+    x64_sys_call+2271
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 1, average 1019, total 1019
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: count 5, average 1102, total 5511
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: count 4, average 1115, total 4461
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: count 12, average 1123, total 13480
+@long_us[445862, 
+    __schedule+812
+    __cond_resched+93
+    zap_pmd_range.isra.0+307
+    unmap_page_range+710
+    unmap_single_vma+137
+    zap_page_range_single+312
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+]: count 1, average 1146, total 1146
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: count 5, average 1224, total 6123
+@long_us[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_irq_work+75
+    asm_sysvec_irq_work+27
+]: count 1, average 1269, total 1269
+@long_us[445869, 
+    __schedule+812
+    __cond_resched+93
+    tlb_batch_pages_flush+83
+    tlb_finish_mmu+115
+    zap_page_range_single+354
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 4, average 1274, total 5096
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 161, average 1332, total 214604
+@long_us[445869, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: count 5, average 1347, total 6736
+@long_us[445862, 
+    __schedule+812
+    __cond_resched+93
+    __alloc_pages+359
+    alloc_pages_mpol+145
+    vma_alloc_folio+100
+    alloc_anon_folio+460
+    do_anonymous_page+108
+    handle_pte_fault+459
+    __handle_mm_fault+1620
+    handle_mm_fault+394
+    do_user_addr_fault+361
+    exc_page_fault+131
+]: count 4, average 1357, total 5431
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 172, average 1379, total 237304
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 235, average 1396, total 328269
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: count 3, average 1402, total 4206
+@long_us[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 199, average 1404, total 279493
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: count 1, average 1412, total 1412
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: count 15, average 1429, total 21443
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: count 63, average 1459, total 91960
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_irq_work+75
+    asm_sysvec_irq_work+27
+]: count 2, average 1523, total 3046
+@long_us[445868, 
+    __schedule+812
+    __cond_resched+93
+    tlb_batch_pages_flush+83
+    tlb_finish_mmu+115
+    zap_page_range_single+354
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 3, average 1561, total 4683
+@long_us[445867, 
+    __schedule+812
+    __cond_resched+93
+    __alloc_pages+359
+    alloc_pages_mpol+145
+    vma_alloc_folio+100
+    alloc_anon_folio+460
+    do_anonymous_page+108
+    handle_pte_fault+459
+    __handle_mm_fault+1620
+    handle_mm_fault+394
+    do_user_addr_fault+361
+    exc_page_fault+131
+]: count 1, average 1563, total 1563
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: count 5, average 1591, total 7957
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: count 1, average 1680, total 1680
+@long_us[445862, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 21820, average 1764, total 38491149
+@long_us[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: count 2, average 1816, total 3633
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: count 2, average 1876, total 3752
+@long_us[445869, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: count 4, average 2148, total 8592
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: count 1, average 2309, total 2309
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    exc_page_fault+148
+    asm_exc_page_fault+39
+]: count 1, average 2382, total 2382
+@long_us[445867, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 25815, average 2408, total 62162780
+@long_us[445868, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 25791, average 2409, total 62133049
+@long_us[445869, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 25888, average 2424, total 62770401
+@long_us[445869, 
+    __schedule+812
+    __cond_resched+93
+    zap_pmd_range.isra.0+307
+    unmap_page_range+710
+    unmap_single_vma+137
+    zap_page_range_single+312
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+    do_syscall_64+135
+]: count 1, average 3250, total 3250
+
+
+@off_total_us[445862]: 65444950
+@off_total_us[445868]: 82725557
+@off_total_us[445867]: 82747870
+@off_total_us[445869]: 82975018
+

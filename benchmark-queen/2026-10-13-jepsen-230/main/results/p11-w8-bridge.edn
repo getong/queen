@@ -1,0 +1,319 @@
+{:faults {:corrupt-outcomes {},
+          :corrupt-not-back [],
+          :valid? true,
+          :member-final nil,
+          :member-removals {},
+          :corrupt-trials 0,
+          :member-rejoins {},
+          :corrupt-late-rejoined {},
+          :corrupt-exit-rcs {},
+          :corrupt-late-exits [],
+          :member-ops {},
+          :member-skipped {}},
+ :perf {:latency-graph {:valid? true},
+        :rate-graph {:valid? true},
+        :valid? true},
+ :valid? true,
+ :leftovers {:valid? true, :leftovers {}},
+ :panic {:valid? true, :count 0, :matches ()},
+ :lazyfs {:valid? true},
+ :ex {:valid? true},
+ :clock {:valid? true},
+ :members {:valid? true,
+           :voters {"n1" [1 2 3 4 5],
+                    "n2" [1 2 3 4 5],
+                    "n3" [1 2 3 4 5],
+                    "n4" [1 2 3 4 5],
+                    "n5" [1 2 3 4 5]},
+           :not-initialized [],
+           :no-answer []},
+ :workload {:w2 {:total-queue {:ok-count 16354,
+                               :duplicated-count 13,
+                               :valid? true,
+                               :lost-count 0,
+                               :lost #{},
+                               :acknowledged-count 16212,
+                               :recovered #{7740
+                                            6231
+                                            8388
+                                            16161
+                                            5591
+                                            10428
+                                            14771
+                                            4666
+                                            6853
+                                            3123
+                                            3023
+                                            10030
+                                            9013
+                                            15092
+                                            15511
+                                            3310
+                                            4799
+                                            15492
+                                            2403
+                                            7264
+                                            8565
+                                            2283
+                                            12040
+                                            6600
+                                            8474
+                                            1973
+                                            9145
+                                            11230
+                                            11368
+                                            10007
+                                            10872
+                                            9848
+                                            10941
+                                            2334
+                                            11956
+                                            7690
+                                            13200
+                                            6963
+                                            4
+                                            7492
+                                            8125
+                                            1705
+                                            3216
+                                            7174
+                                            11190
+                                            15239
+                                            6574
+                                            10753
+                                            2592
+                                            5804
+                                            15819
+                                            7127
+                                            13436
+                                            10607
+                                            1928
+                                            2654
+                                            16208
+                                            7004
+                                            5802
+                                            3969
+                                            6788
+                                            6127
+                                            3737
+                                            3550
+                                            4227
+                                            4912
+                                            13528
+                                            15759
+                                            15411
+                                            15795
+                                            13727
+                                            7503
+                                            1619
+                                            4215
+                                            5205
+                                            13026
+                                            6142
+                                            16064
+                                            15545
+                                            8677
+                                            6556
+                                            14773
+                                            3277
+                                            13967
+                                            2
+                                            7010
+                                            14871
+                                            15693
+                                            7303
+                                            3627
+                                            3783
+                                            6232
+                                            1621
+                                            14104
+                                            5521
+                                            5304
+                                            6576
+                                            8728
+                                            5782
+                                            13338
+                                            11527
+                                            8044
+                                            14172
+                                            13197
+                                            5512
+                                            11600
+                                            3393
+                                            15202
+                                            12995
+                                            6799
+                                            6234
+                                            6603
+                                            12286
+                                            6338
+                                            13612
+                                            6410
+                                            16241
+                                            8108
+                                            4294
+                                            2943
+                                            10332
+                                            10858
+                                            4489
+                                            3895
+                                            10992
+                                            7288
+                                            10702
+                                            14772
+                                            10329
+                                            6385
+                                            12612
+                                            7539
+                                            4562
+                                            5195
+                                            2765
+                                            5316
+                                            14455
+                                            6861
+                                            6789
+                                            4086
+                                            7253
+                                            7006},
+                               :attempt-count 16355,
+                               :unexpected #{},
+                               :unexpected-count 0,
+                               :recovered-count 142,
+                               :duplicated #{9602
+                                             12359
+                                             10358
+                                             9233
+                                             11411
+                                             11410
+                                             13107
+                                             9018
+                                             11494
+                                             12954
+                                             9912
+                                             11755
+                                             9857}},
+                 :queue {:lease-overlaps (),
+                         :payload-mismatch (),
+                         :valid? true,
+                         :noop-ack-examples (),
+                         :acked-twice (),
+                         :acked-twice-count 0,
+                         :lease-overlap-count 0,
+                         :partial-acks 0,
+                         :acked 16352,
+                         :redeliveries 151,
+                         :pop-skips (),
+                         :offset-value-mismatch (),
+                         :ack-unknown 15,
+                         :pop-skip-count 0,
+                         :noop-acks 0,
+                         :deliveries 16367,
+                         :pop-internal-gaps (),
+                         :redelivered-after-ack-count 0,
+                         :ack-rejected 0,
+                         :redelivered-after-ack ()},
+                 :valid? true},
+            :retention {:valid? true,
+                        :reads {"n1" {"w5" {:log-start 2067,
+                                            :hwm 2067},
+                                      "w0" {:log-start 1990,
+                                            :hwm 1990},
+                                      "w4" {:log-start 2096,
+                                            :hwm 2096},
+                                      "w7" {:log-start 2063,
+                                            :hwm 2063},
+                                      "w2" {:log-start 2002,
+                                            :hwm 2002},
+                                      "w3" {:log-start 2038,
+                                            :hwm 2038},
+                                      "w6" {:log-start 2051,
+                                            :hwm 2051},
+                                      "w1" {:log-start 2047,
+                                            :hwm 2047}},
+                                "n2" {"w5" {:log-start 2067,
+                                            :hwm 2067},
+                                      "w0" {:log-start 1990,
+                                            :hwm 1990},
+                                      "w4" {:log-start 2096,
+                                            :hwm 2096},
+                                      "w7" {:log-start 2063,
+                                            :hwm 2063},
+                                      "w2" {:log-start 2002,
+                                            :hwm 2002},
+                                      "w3" {:log-start 2038,
+                                            :hwm 2038},
+                                      "w6" {:log-start 2051,
+                                            :hwm 2051},
+                                      "w1" {:log-start 2047,
+                                            :hwm 2047}},
+                                "n3" {"w5" {:log-start 2067,
+                                            :hwm 2067},
+                                      "w0" {:log-start 1990,
+                                            :hwm 1990},
+                                      "w4" {:log-start 2096,
+                                            :hwm 2096},
+                                      "w7" {:log-start 2063,
+                                            :hwm 2063},
+                                      "w2" {:log-start 2002,
+                                            :hwm 2002},
+                                      "w3" {:log-start 2038,
+                                            :hwm 2038},
+                                      "w6" {:log-start 2051,
+                                            :hwm 2051},
+                                      "w1" {:log-start 2047,
+                                            :hwm 2047}},
+                                "n4" {"w5" {:log-start 2067,
+                                            :hwm 2067},
+                                      "w0" {:log-start 1990,
+                                            :hwm 1990},
+                                      "w4" {:log-start 2096,
+                                            :hwm 2096},
+                                      "w7" {:log-start 2063,
+                                            :hwm 2063},
+                                      "w2" {:log-start 2002,
+                                            :hwm 2002},
+                                      "w3" {:log-start 2038,
+                                            :hwm 2038},
+                                      "w6" {:log-start 2051,
+                                            :hwm 2051},
+                                      "w1" {:log-start 2047,
+                                            :hwm 2047}},
+                                "n5" {"w5" {:log-start 2067,
+                                            :hwm 2067},
+                                      "w0" {:log-start 1990,
+                                            :hwm 1990},
+                                      "w4" {:log-start 2096,
+                                            :hwm 2096},
+                                      "w7" {:log-start 2063,
+                                            :hwm 2063},
+                                      "w2" {:log-start 2002,
+                                            :hwm 2002},
+                                      "w3" {:log-start 2038,
+                                            :hwm 2038},
+                                      "w6" {:log-start 2051,
+                                            :hwm 2051},
+                                      "w1" {:log-start 2047,
+                                            :hwm 2047}}},
+                        :partitions-moved 80,
+                        :log-start-past-hwm []},
+            :valid? true},
+ :stats {:valid? true,
+         :count 32854,
+         :ok-count 32515,
+         :fail-count 182,
+         :info-count 157,
+         :by-f {:dequeue {:valid? true,
+                          :count 16489,
+                          :ok-count 16293,
+                          :fail-count 182,
+                          :info-count 14},
+                :enqueue {:valid? true,
+                          :count 16355,
+                          :ok-count 16212,
+                          :fail-count 0,
+                          :info-count 143},
+                :watermarks {:valid? true,
+                             :count 10,
+                             :ok-count 10,
+                             :fail-count 0,
+                             :info-count 0}}}}

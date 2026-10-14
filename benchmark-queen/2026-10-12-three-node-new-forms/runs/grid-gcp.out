@@ -1,0 +1,18 @@
+[09:03:22] run gcp-p1000-r1000000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 1000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[09:03:45] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[09:05:34] 1,000,000: last 30 s: offered 999,986 pushed 999,969 consumed 999,989 | run: shed 0 errors 0 | push p50 2.2 p99 11.9 | e2e p50 3.9 p99 15.5 worst 16.6 | cores 7.4 / 3.7 / 3.6 | mem GB 3.6 / 3.3 / 3.3 | loaders 6.6c  OK 
+[09:05:40] run gcp-p1000-r1500000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[09:05:47] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[09:07:36] 1,500,000: last 30 s: offered 1,500,058 pushed 1,499,855 consumed 1,499,615 | run: shed 0 errors 0 | push p50 3.0 p99 18.4 | e2e p50 6.1 p99 27.9 worst 28.7 | cores 8.2 / 4.2 / 4.1 | mem GB 5.2 / 4.9 / 4.9 | loaders 9.7c  OK 
+[09:07:40] run gcp-p1000-r2000000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 2000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[09:08:08] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[09:09:56] 2,000,000: last 30 s: offered 1,999,985 pushed 1,999,939 consumed 2,000,095 | run: shed 0 errors 0 | push p50 5.1 p99 30.2 | e2e p50 12.8 p99 51.7 worst 53.8 | cores 8.6 / 4.4 / 4.2 | mem GB 6.9 / 6.5 / 6.4 | loaders 12.6c  OK 
+[09:10:00] run gcp-p1000-r2500000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 2500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[09:10:25] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[09:12:13] 2,500,000: last 30 s: offered 2,499,978 pushed 1,911,386 consumed 1,959,160 | run: shed 17,204,300 errors 1782 | push p50 178.2 p99 13893.6 | e2e p50 335.9 p99 3735.6 worst 3997.7 | cores 8.7 / 5.3 / 0.6 | mem GB 10.2 / 10.0 / 10.7 | loaders 14.5c  NOT CARRIED 
+[09:12:18] 1000 partitions: not carried at 2500000, the column stops here
+GRID3_DONE

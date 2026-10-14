@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 762" width="960" height="762" role="img" aria-label="Queen 2.3.0 at 3 million messages a second on one queue of 10 to 10 million partitions: push and end to end latency, and per node CPU, memory, disk writes and disk time a write">
+<style>text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums}</style>
+<rect width="960" height="762" rx="10" fill="#ffffff"/>
+<text x="40.0" y="38.0" font-size="18" font-weight="600" fill="#1f1d1a" text-anchor="start">Queen 2.3.0 at 3M msg/s: one queue, 10 to 10M partitions</text>
+<text x="40.0" y="60.0" font-size="12.5" font-weight="400" fill="#6c675f" text-anchor="start">Three GCP c4-standard-24-lssd brokers (24 vCPU, 88 GB, four local NVMe disks in RAID0), three 16-vCPU loaders · 2026-10-14</text>
+<line x1="40" y1="96" x2="66" y2="96" stroke="#1baf7a" stroke-width="2.5" stroke-dasharray="2 4"/>
+<circle cx="53" cy="96" r="3.5" fill="#1baf7a"/>
+<text x="73.0" y="100.5" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="start">push p50</text>
+<line x1="158.2" y1="96" x2="184.2" y2="96" stroke="#c98500" stroke-width="2.5" stroke-dasharray="7 4"/>
+<circle cx="171.2" cy="96" r="3.5" fill="#c98500"/>
+<text x="191.2" y="100.5" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="start">push p99</text>
+<line x1="276.4" y1="96" x2="302.4" y2="96" stroke="#2a78d6" stroke-width="2.5"/>
+<circle cx="289.4" cy="96" r="3.5" fill="#2a78d6"/>
+<text x="309.4" y="100.5" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="start">e2e p50</text>
+<line x1="387.2" y1="96" x2="413.2" y2="96" stroke="#e34948" stroke-width="3.3"/>
+<circle cx="400.2" cy="96" r="3.5" fill="#e34948"/>
+<text x="420.2" y="100.5" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="start">e2e p99</text>
+<text x="502.0" y="100.5" font-size="12" font-weight="400" fill="#6c675f" text-anchor="start">end to end = pushed until consumed</text>
+<line x1="64" y1="372.0" x2="860" y2="372.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="54.0" y="376.5" font-size="12" font-weight="400" fill="#6c675f" text-anchor="end">0</text>
+<line x1="64" y1="311.0" x2="860" y2="311.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="54.0" y="315.5" font-size="12" font-weight="400" fill="#6c675f" text-anchor="end">20</text>
+<line x1="64" y1="250.0" x2="860" y2="250.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="54.0" y="254.5" font-size="12" font-weight="400" fill="#6c675f" text-anchor="end">40</text>
+<line x1="64" y1="189.0" x2="860" y2="189.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="54.0" y="193.5" font-size="12" font-weight="400" fill="#6c675f" text-anchor="end">60</text>
+<line x1="64" y1="128.0" x2="860" y2="128.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="54.0" y="132.5" font-size="12" font-weight="400" fill="#6c675f" text-anchor="end">80</text>
+<text x="54.0" y="116.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="end">ms</text>
+<line x1="64" y1="372" x2="860" y2="372" stroke="#c9c3ba" stroke-width="1"/>
+<text x="88.0" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">10</text>
+<text x="212.7" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">100</text>
+<text x="337.3" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">1k</text>
+<text x="462.0" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">10k</text>
+<text x="586.7" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">100k</text>
+<text x="586.7" y="407.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">1 pop timed out</text>
+<text x="711.3" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">1M</text>
+<text x="836.0" y="392.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">10M</text>
+<text x="462.0" y="424.0" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="middle">partitions in one queue (each step is 10 times the one before)</text>
+<path d="M88.0,347.0 L212.7,349.4 L337.3,345.1 L462.0,338.8 L586.7,340.8 L711.3,340.0 L836.0,340.4" fill="none" stroke="#1baf7a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="2 4"/>
+<g><title>10 partitions · push p50 8.2 ms</title><circle cx="88.0" cy="347.0" r="12" fill="transparent"/><circle cx="88.0" cy="347.0" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · push p50 7.4 ms</title><circle cx="212.7" cy="349.4" r="12" fill="transparent"/><circle cx="212.7" cy="349.4" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · push p50 8.8 ms</title><circle cx="337.3" cy="345.1" r="12" fill="transparent"/><circle cx="337.3" cy="345.1" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · push p50 10.9 ms</title><circle cx="462.0" cy="338.8" r="12" fill="transparent"/><circle cx="462.0" cy="338.8" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · push p50 10.2 ms</title><circle cx="586.7" cy="340.8" r="12" fill="transparent"/><circle cx="586.7" cy="340.8" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · push p50 10.5 ms</title><circle cx="711.3" cy="340.0" r="12" fill="transparent"/><circle cx="711.3" cy="340.0" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · push p50 10.4 ms</title><circle cx="836.0" cy="340.4" r="12" fill="transparent"/><circle cx="836.0" cy="340.4" r="3.6" fill="#1baf7a" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M88.0,312.6 L212.7,300.2 L337.3,304.8 L462.0,278.3 L586.7,279.9 L711.3,300.9 L836.0,293.1" fill="none" stroke="#c98500" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
+<g><title>10 partitions · push p99 19.5 ms</title><circle cx="88.0" cy="312.6" r="12" fill="transparent"/><circle cx="88.0" cy="312.6" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · push p99 23.6 ms</title><circle cx="212.7" cy="300.2" r="12" fill="transparent"/><circle cx="212.7" cy="300.2" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · push p99 22.0 ms</title><circle cx="337.3" cy="304.8" r="12" fill="transparent"/><circle cx="337.3" cy="304.8" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · push p99 30.7 ms</title><circle cx="462.0" cy="278.3" r="12" fill="transparent"/><circle cx="462.0" cy="278.3" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · push p99 30.2 ms</title><circle cx="586.7" cy="279.9" r="12" fill="transparent"/><circle cx="586.7" cy="279.9" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · push p99 23.3 ms</title><circle cx="711.3" cy="300.9" r="12" fill="transparent"/><circle cx="711.3" cy="300.9" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · push p99 25.9 ms</title><circle cx="836.0" cy="293.1" r="12" fill="transparent"/><circle cx="836.0" cy="293.1" r="3.6" fill="#c98500" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M88.0,261.1 L212.7,308.0 L337.3,309.5 L462.0,298.6 L586.7,301.7 L711.3,299.4 L836.0,300.2" fill="none" stroke="#2a78d6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>10 partitions · e2e p50 36.4 ms</title><circle cx="88.0" cy="261.1" r="12" fill="transparent"/><circle cx="88.0" cy="261.1" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · e2e p50 21.0 ms</title><circle cx="212.7" cy="308.0" r="12" fill="transparent"/><circle cx="212.7" cy="308.0" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · e2e p50 20.5 ms</title><circle cx="337.3" cy="309.5" r="12" fill="transparent"/><circle cx="337.3" cy="309.5" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · e2e p50 24.1 ms</title><circle cx="462.0" cy="298.6" r="12" fill="transparent"/><circle cx="462.0" cy="298.6" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · e2e p50 23.0 ms</title><circle cx="586.7" cy="301.7" r="12" fill="transparent"/><circle cx="586.7" cy="301.7" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · e2e p50 23.8 ms</title><circle cx="711.3" cy="299.4" r="12" fill="transparent"/><circle cx="711.3" cy="299.4" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · e2e p50 23.6 ms</title><circle cx="836.0" cy="300.2" r="12" fill="transparent"/><circle cx="836.0" cy="300.2" r="3.6" fill="#2a78d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M88.0,156.5 L212.7,208.0 L337.3,237.7 L462.0,208.0 L586.7,211.1 L711.3,242.4 L836.0,228.3" fill="none" stroke="#e34948" stroke-width="3.0" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>10 partitions · e2e p99 70.7 ms</title><circle cx="88.0" cy="156.5" r="12" fill="transparent"/><circle cx="88.0" cy="156.5" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · e2e p99 53.8 ms</title><circle cx="212.7" cy="208.0" r="12" fill="transparent"/><circle cx="212.7" cy="208.0" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · e2e p99 44.0 ms</title><circle cx="337.3" cy="237.7" r="12" fill="transparent"/><circle cx="337.3" cy="237.7" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · e2e p99 53.8 ms</title><circle cx="462.0" cy="208.0" r="12" fill="transparent"/><circle cx="462.0" cy="208.0" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · e2e p99 52.7 ms</title><circle cx="586.7" cy="211.1" r="12" fill="transparent"/><circle cx="586.7" cy="211.1" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · e2e p99 42.5 ms</title><circle cx="711.3" cy="242.4" r="12" fill="transparent"/><circle cx="711.3" cy="242.4" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · e2e p99 47.1 ms</title><circle cx="836.0" cy="228.3" r="12" fill="transparent"/><circle cx="836.0" cy="228.3" r="3.6" fill="#e34948" stroke="#ffffff" stroke-width="1.5"/></g>
+<text x="852.0" y="232.3" font-size="11.5" font-weight="400" fill="#4f4b45" text-anchor="start">e2e p99 47</text>
+<text x="852.0" y="297.1" font-size="11.5" font-weight="400" fill="#4f4b45" text-anchor="start">push p99 26</text>
+<text x="852.0" y="311.1" font-size="11.5" font-weight="400" fill="#4f4b45" text-anchor="start">e2e p50 24</text>
+<text x="852.0" y="344.4" font-size="11.5" font-weight="400" fill="#4f4b45" text-anchor="start">push p50 10</text>
+<text x="40.0" y="446.0" font-size="14" font-weight="600" fill="#1f1d1a" text-anchor="start">Each node</text>
+<line x1="128" y1="441.5" x2="154" y2="441.5" stroke="#6250d6" stroke-width="2.4"/>
+<circle cx="141" cy="441.5" r="3.5" fill="#6250d6"/>
+<text x="161.0" y="446.0" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="start">leader (n1)</text>
+<line x1="268.4" y1="441.5" x2="294.4" y2="441.5" stroke="#8a857d" stroke-width="2.4" stroke-dasharray="6 4"/>
+<circle cx="281.4" cy="441.5" r="3.5" fill="#8a857d"/>
+<text x="301.4" y="446.0" font-size="13" font-weight="400" fill="#4f4b45" text-anchor="start">followers (n2, n3: mean)</text>
+<text x="30.0" y="470.0" font-size="12.5" font-weight="600" fill="#4f4b45" text-anchor="start">CPU, cores of 24</text>
+<line x1="64" y1="610.0" x2="242" y2="610.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="58.0" y="614.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">0</text>
+<line x1="64" y1="568.7" x2="242" y2="568.7" stroke="#e6e2dc" stroke-width="1"/>
+<text x="58.0" y="572.7" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">8</text>
+<line x1="64" y1="527.3" x2="242" y2="527.3" stroke="#e6e2dc" stroke-width="1"/>
+<text x="58.0" y="531.3" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">16</text>
+<line x1="64" y1="486.0" x2="242" y2="486.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="58.0" y="490.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">24</text>
+<line x1="64" y1="610" x2="242" y2="610" stroke="#c9c3ba" stroke-width="1"/>
+<text x="72.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10</text>
+<text x="126.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">1k</text>
+<text x="180.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">100k</text>
+<text x="234.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10M</text>
+<path d="M72.0,561.4 L99.0,550.6 L126.0,551.6 L153.0,549.5 L180.0,549.5 L207.0,549.0 L234.0,548.0" fill="none" stroke="#6250d6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>10 partitions · n1 9.4 cores · n2 4.6 cores · n3 4.6 cores</title><circle cx="72.0" cy="561.4" r="12" fill="transparent"/><circle cx="72.0" cy="561.4" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 11.5 cores · n2 5.7 cores · n3 5.8 cores</title><circle cx="99.0" cy="550.6" r="12" fill="transparent"/><circle cx="99.0" cy="550.6" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 11.3 cores · n2 5.5 cores · n3 5.6 cores</title><circle cx="126.0" cy="551.6" r="12" fill="transparent"/><circle cx="126.0" cy="551.6" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 11.7 cores · n2 5.8 cores · n3 5.8 cores</title><circle cx="153.0" cy="549.5" r="12" fill="transparent"/><circle cx="153.0" cy="549.5" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 11.7 cores · n2 5.8 cores · n3 5.9 cores</title><circle cx="180.0" cy="549.5" r="12" fill="transparent"/><circle cx="180.0" cy="549.5" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 11.8 cores · n2 5.6 cores · n3 5.6 cores</title><circle cx="207.0" cy="549.0" r="12" fill="transparent"/><circle cx="207.0" cy="549.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 12.0 cores · n2 5.6 cores · n3 5.8 cores</title><circle cx="234.0" cy="548.0" r="12" fill="transparent"/><circle cx="234.0" cy="548.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M72.0,586.2 L99.0,580.3 L126.0,581.3 L153.0,580.0 L180.0,579.8 L207.0,581.1 L234.0,580.5" fill="none" stroke="#8a857d" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>
+<g><title>10 partitions · n1 9.4 cores · n2 4.6 cores · n3 4.6 cores</title><circle cx="72.0" cy="586.2" r="12" fill="transparent"/><circle cx="72.0" cy="586.2" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 11.5 cores · n2 5.7 cores · n3 5.8 cores</title><circle cx="99.0" cy="580.3" r="12" fill="transparent"/><circle cx="99.0" cy="580.3" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 11.3 cores · n2 5.5 cores · n3 5.6 cores</title><circle cx="126.0" cy="581.3" r="12" fill="transparent"/><circle cx="126.0" cy="581.3" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 11.7 cores · n2 5.8 cores · n3 5.8 cores</title><circle cx="153.0" cy="580.0" r="12" fill="transparent"/><circle cx="153.0" cy="580.0" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 11.7 cores · n2 5.8 cores · n3 5.9 cores</title><circle cx="180.0" cy="579.8" r="12" fill="transparent"/><circle cx="180.0" cy="579.8" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 11.8 cores · n2 5.6 cores · n3 5.6 cores</title><circle cx="207.0" cy="581.1" r="12" fill="transparent"/><circle cx="207.0" cy="581.1" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 12.0 cores · n2 5.6 cores · n3 5.8 cores</title><circle cx="234.0" cy="580.5" r="12" fill="transparent"/><circle cx="234.0" cy="580.5" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<text x="258.0" y="470.0" font-size="12.5" font-weight="600" fill="#4f4b45" text-anchor="start">Memory, GB of 88 (broker RSS)</text>
+<line x1="292" y1="610.0" x2="470" y2="610.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="286.0" y="614.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">0</text>
+<line x1="292" y1="568.7" x2="470" y2="568.7" stroke="#e6e2dc" stroke-width="1"/>
+<text x="286.0" y="572.7" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">10</text>
+<line x1="292" y1="527.3" x2="470" y2="527.3" stroke="#e6e2dc" stroke-width="1"/>
+<text x="286.0" y="531.3" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">20</text>
+<line x1="292" y1="486.0" x2="470" y2="486.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="286.0" y="490.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">30</text>
+<line x1="292" y1="610" x2="470" y2="610" stroke="#c9c3ba" stroke-width="1"/>
+<text x="300.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10</text>
+<text x="354.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">1k</text>
+<text x="408.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">100k</text>
+<text x="462.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10M</text>
+<path d="M300.0,564.0 L327.0,555.1 L354.0,548.6 L381.0,547.0 L408.0,543.9 L435.0,544.2 L462.0,504.9" fill="none" stroke="#6250d6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>10 partitions · n1 11.1 GB · n2 10.6 GB · n3 10.6 GB</title><circle cx="300.0" cy="564.0" r="12" fill="transparent"/><circle cx="300.0" cy="564.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 13.3 GB · n2 12.9 GB · n3 12.8 GB</title><circle cx="327.0" cy="555.1" r="12" fill="transparent"/><circle cx="327.0" cy="555.1" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 14.8 GB · n2 14.3 GB · n3 14.3 GB</title><circle cx="354.0" cy="548.6" r="12" fill="transparent"/><circle cx="354.0" cy="548.6" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 15.2 GB · n2 14.7 GB · n3 14.6 GB</title><circle cx="381.0" cy="547.0" r="12" fill="transparent"/><circle cx="381.0" cy="547.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 16.0 GB · n2 14.7 GB · n3 14.7 GB</title><circle cx="408.0" cy="543.9" r="12" fill="transparent"/><circle cx="408.0" cy="543.9" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 15.9 GB · n2 13.9 GB · n3 13.9 GB</title><circle cx="435.0" cy="544.2" r="12" fill="transparent"/><circle cx="435.0" cy="544.2" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 25.4 GB · n2 22.5 GB · n3 22.5 GB</title><circle cx="462.0" cy="504.9" r="12" fill="transparent"/><circle cx="462.0" cy="504.9" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M300.0,566.2 L327.0,556.9 L354.0,550.9 L381.0,549.4 L408.0,549.3 L435.0,552.4 L462.0,516.9" fill="none" stroke="#8a857d" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>
+<g><title>10 partitions · n1 11.1 GB · n2 10.6 GB · n3 10.6 GB</title><circle cx="300.0" cy="566.2" r="12" fill="transparent"/><circle cx="300.0" cy="566.2" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 13.3 GB · n2 12.9 GB · n3 12.8 GB</title><circle cx="327.0" cy="556.9" r="12" fill="transparent"/><circle cx="327.0" cy="556.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 14.8 GB · n2 14.3 GB · n3 14.3 GB</title><circle cx="354.0" cy="550.9" r="12" fill="transparent"/><circle cx="354.0" cy="550.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 15.2 GB · n2 14.7 GB · n3 14.6 GB</title><circle cx="381.0" cy="549.4" r="12" fill="transparent"/><circle cx="381.0" cy="549.4" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 16.0 GB · n2 14.7 GB · n3 14.7 GB</title><circle cx="408.0" cy="549.3" r="12" fill="transparent"/><circle cx="408.0" cy="549.3" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 15.9 GB · n2 13.9 GB · n3 13.9 GB</title><circle cx="435.0" cy="552.4" r="12" fill="transparent"/><circle cx="435.0" cy="552.4" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 25.4 GB · n2 22.5 GB · n3 22.5 GB</title><circle cx="462.0" cy="516.9" r="12" fill="transparent"/><circle cx="462.0" cy="516.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<text x="486.0" y="470.0" font-size="12.5" font-weight="600" fill="#4f4b45" text-anchor="start">Disk writes, MB/s</text>
+<line x1="520" y1="610.0" x2="698" y2="610.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="514.0" y="614.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">0</text>
+<line x1="520" y1="565.7" x2="698" y2="565.7" stroke="#e6e2dc" stroke-width="1"/>
+<text x="514.0" y="569.7" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">500</text>
+<line x1="520" y1="521.4" x2="698" y2="521.4" stroke="#e6e2dc" stroke-width="1"/>
+<text x="514.0" y="525.4" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">1,000</text>
+<line x1="520" y1="610" x2="698" y2="610" stroke="#c9c3ba" stroke-width="1"/>
+<line x1="520" y1="491.3" x2="698" y2="491.3" stroke="#6c675f" stroke-width="1.2" stroke-dasharray="3 3"/>
+<text x="698.0" y="486.3" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">RAID0 limit 1,340</text>
+<text x="528.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10</text>
+<text x="582.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">1k</text>
+<text x="636.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">100k</text>
+<text x="690.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10M</text>
+<path d="M528.0,546.6 L555.0,545.5 L582.0,542.4 L609.0,525.0 L636.0,532.0 L663.0,540.0 L690.0,544.9" fill="none" stroke="#6250d6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>10 partitions · n1 716 MB/s · n2 711 MB/s · n3 713 MB/s</title><circle cx="528.0" cy="546.6" r="12" fill="transparent"/><circle cx="528.0" cy="546.6" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 728 MB/s · n2 724 MB/s · n3 723 MB/s</title><circle cx="555.0" cy="545.5" r="12" fill="transparent"/><circle cx="555.0" cy="545.5" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 764 MB/s · n2 759 MB/s · n3 758 MB/s</title><circle cx="582.0" cy="542.4" r="12" fill="transparent"/><circle cx="582.0" cy="542.4" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 959 MB/s · n2 957 MB/s · n3 957 MB/s</title><circle cx="609.0" cy="525.0" r="12" fill="transparent"/><circle cx="609.0" cy="525.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 880 MB/s · n2 876 MB/s · n3 877 MB/s</title><circle cx="636.0" cy="532.0" r="12" fill="transparent"/><circle cx="636.0" cy="532.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 790 MB/s · n2 787 MB/s · n3 788 MB/s</title><circle cx="663.0" cy="540.0" r="12" fill="transparent"/><circle cx="663.0" cy="540.0" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 736 MB/s · n2 733 MB/s · n3 732 MB/s</title><circle cx="690.0" cy="544.9" r="12" fill="transparent"/><circle cx="690.0" cy="544.9" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M528.0,546.9 L555.0,545.9 L582.0,542.8 L609.0,525.2 L636.0,532.3 L663.0,540.3 L690.0,545.1" fill="none" stroke="#8a857d" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>
+<g><title>10 partitions · n1 716 MB/s · n2 711 MB/s · n3 713 MB/s</title><circle cx="528.0" cy="546.9" r="12" fill="transparent"/><circle cx="528.0" cy="546.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 728 MB/s · n2 724 MB/s · n3 723 MB/s</title><circle cx="555.0" cy="545.9" r="12" fill="transparent"/><circle cx="555.0" cy="545.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 764 MB/s · n2 759 MB/s · n3 758 MB/s</title><circle cx="582.0" cy="542.8" r="12" fill="transparent"/><circle cx="582.0" cy="542.8" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 959 MB/s · n2 957 MB/s · n3 957 MB/s</title><circle cx="609.0" cy="525.2" r="12" fill="transparent"/><circle cx="609.0" cy="525.2" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 880 MB/s · n2 876 MB/s · n3 877 MB/s</title><circle cx="636.0" cy="532.3" r="12" fill="transparent"/><circle cx="636.0" cy="532.3" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 790 MB/s · n2 787 MB/s · n3 788 MB/s</title><circle cx="663.0" cy="540.3" r="12" fill="transparent"/><circle cx="663.0" cy="540.3" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 736 MB/s · n2 733 MB/s · n3 732 MB/s</title><circle cx="690.0" cy="545.1" r="12" fill="transparent"/><circle cx="690.0" cy="545.1" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<text x="714.0" y="470.0" font-size="12.5" font-weight="600" fill="#4f4b45" text-anchor="start">Disk time a write, ms</text>
+<line x1="748" y1="610.0" x2="926" y2="610.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="742.0" y="614.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">0.0</text>
+<line x1="748" y1="548.0" x2="926" y2="548.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="742.0" y="552.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">0.5</text>
+<line x1="748" y1="486.0" x2="926" y2="486.0" stroke="#e6e2dc" stroke-width="1"/>
+<text x="742.0" y="490.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="end">1.0</text>
+<line x1="748" y1="610" x2="926" y2="610" stroke="#c9c3ba" stroke-width="1"/>
+<text x="756.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10</text>
+<text x="810.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">1k</text>
+<text x="864.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">100k</text>
+<text x="918.0" y="626.0" font-size="10.5" font-weight="400" fill="#6c675f" text-anchor="middle">10M</text>
+<path d="M756.0,549.7 L783.0,557.4 L810.0,557.4 L837.0,567.4 L864.0,574.4 L891.0,555.3 L918.0,552.6" fill="none" stroke="#6250d6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<g><title>10 partitions · n1 0.49 ms · n2 0.55 ms · n3 0.53 ms</title><circle cx="756.0" cy="549.7" r="12" fill="transparent"/><circle cx="756.0" cy="549.7" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 0.42 ms · n2 0.50 ms · n3 0.50 ms</title><circle cx="783.0" cy="557.4" r="12" fill="transparent"/><circle cx="783.0" cy="557.4" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 0.42 ms · n2 0.48 ms · n3 0.47 ms</title><circle cx="810.0" cy="557.4" r="12" fill="transparent"/><circle cx="810.0" cy="557.4" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 0.34 ms · n2 0.38 ms · n3 0.35 ms</title><circle cx="837.0" cy="567.4" r="12" fill="transparent"/><circle cx="837.0" cy="567.4" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 0.29 ms · n2 0.34 ms · n3 0.30 ms</title><circle cx="864.0" cy="574.4" r="12" fill="transparent"/><circle cx="864.0" cy="574.4" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 0.44 ms · n2 0.48 ms · n3 0.46 ms</title><circle cx="891.0" cy="555.3" r="12" fill="transparent"/><circle cx="891.0" cy="555.3" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 0.46 ms · n2 0.52 ms · n3 0.56 ms</title><circle cx="918.0" cy="552.6" r="12" fill="transparent"/><circle cx="918.0" cy="552.6" r="3.0" fill="#6250d6" stroke="#ffffff" stroke-width="1.5"/></g>
+<path d="M756.0,542.9 L783.0,548.2 L810.0,551.0 L837.0,565.1 L864.0,570.3 L891.0,551.6 L918.0,542.9" fill="none" stroke="#8a857d" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>
+<g><title>10 partitions · n1 0.49 ms · n2 0.55 ms · n3 0.53 ms</title><circle cx="756.0" cy="542.9" r="12" fill="transparent"/><circle cx="756.0" cy="542.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100 partitions · n1 0.42 ms · n2 0.50 ms · n3 0.50 ms</title><circle cx="783.0" cy="548.2" r="12" fill="transparent"/><circle cx="783.0" cy="548.2" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1k partitions · n1 0.42 ms · n2 0.48 ms · n3 0.47 ms</title><circle cx="810.0" cy="551.0" r="12" fill="transparent"/><circle cx="810.0" cy="551.0" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10k partitions · n1 0.34 ms · n2 0.38 ms · n3 0.35 ms</title><circle cx="837.0" cy="565.1" r="12" fill="transparent"/><circle cx="837.0" cy="565.1" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>100k partitions · n1 0.29 ms · n2 0.34 ms · n3 0.30 ms</title><circle cx="864.0" cy="570.3" r="12" fill="transparent"/><circle cx="864.0" cy="570.3" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>1M partitions · n1 0.44 ms · n2 0.48 ms · n3 0.46 ms</title><circle cx="891.0" cy="551.6" r="12" fill="transparent"/><circle cx="891.0" cy="551.6" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<g><title>10M partitions · n1 0.46 ms · n2 0.52 ms · n3 0.56 ms</title><circle cx="918.0" cy="542.9" r="12" fill="transparent"/><circle cx="918.0" cy="542.9" r="3.0" fill="#8a857d" stroke="#ffffff" stroke-width="1.5"/></g>
+<text x="488.0" y="644.0" font-size="12" font-weight="400" fill="#6c675f" text-anchor="middle">partitions in one queue</text>
+<text x="40.0" y="682.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="start">A fresh three-node cluster for each point; 100 messages of 256 B a request (binary push, zstd), counts acks, framed pops; dedup off, nothing deleted.</text>
+<text x="40.0" y="700.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="start">Latency: nine load processes pooled, last 30 s of a 70 s step. Disk: /dev/md0 each second, mean of the last 30 s. Memory: the most the broker held.</text>
+<text x="40.0" y="718.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="start">10M partitions ran with QUEEN_CONSUME_IDLE_UNLOAD_S=30.</text>
+<text x="40.0" y="736.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="start">100k: every number carried, but one pop of millions timed out (HTTP 503), so the harness marks the point not carried.</text>
+</svg>

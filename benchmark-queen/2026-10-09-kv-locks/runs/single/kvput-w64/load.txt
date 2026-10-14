@@ -1,0 +1,12 @@
+kvlockload mode=guard tag=kvput-w64 url=http://127.0.0.1:6632 workers=64 rate=0 duration=30s warmup=5s guard=false value=16B ttl=60s
+[10:24:15 run ] writes=   23693/s calls=   23690/s | p50=   1.14 p99=    4.50 ms | errs=0
+[10:24:25 run ] writes=   50460/s calls=   50462/s | p50=   1.12 p99=    3.35 ms | errs=0
+[10:24:35 run ] writes=   48916/s calls=   48914/s | p50=   1.13 p99=    4.39 ms | errs=0
+
+[final] 30s measured
+[final] call           49438/s  p50=1.12 p90=1.84 p99=3.79 p999=20.02 max=48.4 ms  (n=1483140)
+[final] writes            1483140       49438/s
+[final] applied           1483140       49438/s
+[final] refusedByGuard            0           0/s
+[final] loader cpu 1.10 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"applied":1483140,"refusedByGuard":0,"writes":1483140},"desc":"guard=false value=16B ttl=60s","errTotal":0,"errors":{},"loaderCores":1.1048080062504708,"maxLagMs":0,"mode":"guard","opsPerSec":49438,"rate":0,"seconds":30,"series":{"call":{"count":1483140,"perSec":49438,"meanMs":1.293248732419057,"p50":1.125,"p90":1.839,"p99":3.794,"p999":20.016,"maxMs":48.438}},"tag":"kvput-w64","urls":1,"workers":64}

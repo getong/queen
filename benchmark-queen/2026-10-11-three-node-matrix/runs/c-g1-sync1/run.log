@@ -1,0 +1,13 @@
+[18:18:54] run c-g1-sync1: groups 1, sync, checkpoint 1 ms, tenants 3, retention completed, steps of 75s at: 1200000 1300000 1400000 1500000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_CONSUME_CHECKPOINT_MS=1 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=1
+[18:19:18] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[18:21:21] warm-up of 80s at 1,000,000 done
+[18:23:13] 1,200,000: offered 1,199,994 pushed 1,200,887 consumed 1,199,925 shed 0 errors 0 lag 0 | push p50 47.6 p99 294.9 | e2e p50 110.6 p99 565.2 | n1 11.2c apply 67% raft 104%; n2 5.0c apply 51% raft 26%; n3 5.0c apply 51% raft 26% | loaders 22.8c  OK 

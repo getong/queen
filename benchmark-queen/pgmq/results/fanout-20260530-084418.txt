@@ -1,0 +1,23 @@
+
+========================================================================
+  FAN-OUT: 10 consumer groups — Mac, 120s, equal Docker budget
+========================================================================
+metric                      QUEEN             pgmq
+------------------------------------------------------------------------
+logical push msg/s          7634              4330
+total delivered msg/s       70298             40272
+delivered / logical         9.2x              9.3x
+------------------------------------------------------------------------
+physical rows written       916130            5097300
+write amplification         1.0x              9.8x
+hot UPDATE+DELETE           0                 9665218
+peak dead tuples            0                 35451
+stored copies size          530 MB            322 MB
+------------------------------------------------------------------------
+PG active backends(avg)     7.0               60.7
+PG backends(peak total)     171               68
+========================================================================
+Queen: 1 physical copy + 10 cursors.  pgmq: 10 physical copies (topic fan-out) + per-copy delete churn.
+logical push = unique events; delivered = sum across all groups.
+NOTE: Queen broker EMULATED on arm64 -> throughput understated; the amplification/churn story is exact.
+

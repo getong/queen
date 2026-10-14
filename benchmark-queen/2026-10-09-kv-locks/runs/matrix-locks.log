@@ -1,0 +1,108 @@
+=== 10:08:25 single lock-cycle-w16: -mode lock-cycle -ttl 30 -workers 16 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] cycle          12043/s  p50=1.08 p90=2.20 p99=4.32 p999=8.58 max=71.2 ms  (n=361288)
+    [final] acquire        12043/s  p50=0.54 p90=0.85 p99=2.75 p999=6.39 max=69.4 ms  (n=361288)
+    [final] release        12043/s  p50=0.53 p90=0.83 p99=2.72 p999=6.49 max=69.4 ms  (n=361288)
+    [final] lockOps            722576       24086/s
+    [final] acquired           361288       12043/s
+    [final] refused                 0           0/s
+    [final] released           361288       12043/s
+    [final] lost                    0           0/s
+    [final] loader cpu 0.73 cores, errors 0, max schedule lag 0.0 ms
+=== 10:09:01 single lock-cycle-w64: -mode lock-cycle -ttl 30 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] cycle          26130/s  p50=2.21 p90=3.45 p99=6.07 p999=12.76 max=41.1 ms  (n=783889)
+    [final] acquire        26130/s  p50=1.08 p90=1.72 p99=3.47 p999=9.85 max=40.0 ms  (n=783889)
+    [final] release        26130/s  p50=1.07 p90=1.72 p99=3.49 p999=9.93 max=40.3 ms  (n=783889)
+    [final] lockOps           1567778       52259/s
+    [final] acquired           783889       26130/s
+    [final] refused                 0           0/s
+    [final] released           783889       26130/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.48 cores, errors 0, max schedule lag 0.0 ms
+=== 10:09:36 single lock-cycle-w256: -mode lock-cycle -ttl 30 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] cycle          37185/s  p50=6.60 p90=8.79 p99=13.45 p999=22.64 max=56.6 ms  (n=1115561)
+    [final] acquire        37185/s  p50=3.23 p90=4.72 p99=7.38 p999=16.56 max=53.1 ms  (n=1115561)
+    [final] release        37185/s  p50=3.22 p90=4.72 p99=7.35 p999=16.53 max=53.1 ms  (n=1115561)
+    [final] lockOps           2231122       74371/s
+    [final] acquired          1115561       37185/s
+    [final] refused                 0           0/s
+    [final] released          1115561       37185/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.82 cores, errors 0, max schedule lag 0.0 ms
+=== 10:10:12 single lock-cycle-w1024: -mode lock-cycle -ttl 30 -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] cycle          37573/s  p50=26.64 p90=34.02 p99=41.44 p999=48.10 max=65.3 ms  (n=1127188)
+    [final] acquire        37573/s  p50=13.11 p90=18.26 p99=24.08 p999=29.74 max=44.4 ms  (n=1127188)
+    [final] release        37573/s  p50=13.10 p90=18.22 p99=24.08 p999=29.90 max=45.0 ms  (n=1127188)
+    [final] lockOps           2254376       75146/s
+    [final] acquired          1127188       37573/s
+    [final] refused                 0           0/s
+    [final] released          1127188       37573/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.81 cores, errors 0, max schedule lag 0.0 ms
+=== 10:10:47 single lock-cycle-b16-w64: -mode lock-cycle -ttl 30 -batch 16 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] cycle           8776/s  p50=6.79 p90=10.04 p99=15.08 p999=21.39 max=26.1 ms  (n=263269)
+    [final] acquire         8776/s  p50=3.27 p90=5.70 p99=9.10 p999=15.83 max=23.8 ms  (n=263269)
+    [final] release         8776/s  p50=3.20 p90=5.64 p99=9.00 p999=16.04 max=23.5 ms  (n=263269)
+    [final] lockOps           8424608      280820/s
+    [final] acquired          4212304      140410/s
+    [final] refused                 0           0/s
+    [final] released          4212304      140410/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.21 cores, errors 0, max schedule lag 0.0 ms
+=== 10:11:23 single lock-cycle-b64-w64: -mode lock-cycle -ttl 30 -batch 64 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] cycle           3213/s  p50=19.02 p90=24.21 p99=38.50 p999=53.73 max=62.6 ms  (n=96395)
+    [final] acquire         3213/s  p50=9.67 p90=12.63 p99=22.29 p999=39.14 max=52.5 ms  (n=96395)
+    [final] release         3213/s  p50=9.38 p90=12.33 p99=23.41 p999=39.46 max=48.4 ms  (n=96395)
+    [final] lockOps          12338560      411285/s
+    [final] acquired          6169280      205643/s
+    [final] refused                 0           0/s
+    [final] released          6169280      205643/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.18 cores, errors 0, max schedule lag 0.0 ms
+=== 10:11:58 single lock-renew-w64: -mode lock-renew -held 20480 -ttl 600 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           41175/s  p50=1.37 p90=2.20 p99=4.58 p999=11.75 max=34.6 ms  (n=1235264)
+    [final] renewOps          1235264       41175/s
+    [final] renewed           1235264       41175/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.30 cores, errors 0, max schedule lag 0.0 ms
+=== 10:12:34 single lock-renew-w256: -mode lock-renew -held 20480 -ttl 600 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           53731/s  p50=4.54 p90=6.24 p99=10.10 p999=20.05 max=61.2 ms  (n=1611924)
+    [final] renewOps          1611924       53731/s
+    [final] renewed           1611924       53731/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.55 cores, errors 0, max schedule lag 0.0 ms
+=== 10:13:10 single lock-renew-w1024: -mode lock-renew -held 20480 -ttl 600 -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           54807/s  p50=18.06 p90=25.07 p99=32.59 p999=42.59 max=69.2 ms  (n=1644197)
+    [final] renewOps          1644197       54807/s
+    [final] renewed           1644197       54807/s
+    [final] lost                    0           0/s
+    [final] loader cpu 1.55 cores, errors 0, max schedule lag 0.0 ms
+=== 10:13:45 single lock-renew-b64-w64: -mode lock-renew -held 102400 -ttl 600 -batch 64 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call            3294/s  p50=18.22 p90=23.50 p99=53.47 p999=69.95 max=80.3 ms  (n=98818)
+    [final] renewOps          6324352      210812/s
+    [final] renewed           6324352      210812/s
+    [final] lost                    0           0/s
+    [final] loader cpu 0.76 cores, errors 0, max schedule lag 0.0 ms
+=== 10:14:21 single lock-fleet-10k: -mode lock-renew -held 10000 -ttl 30 -rate 1000 -workers 100 -warmup 5 -duration 60
+    [final] 60s measured
+    [final] call            1000/s  p50=0.94 p90=1.44 p99=3.40 p999=8.68 max=28.4 ms  (n=60000)
+    [final] renewOps            60000        1000/s
+    [final] renewed             60000        1000/s
+    [final] lost                    0           0/s
+    [final] loader cpu 0.09 cores, errors 0, max schedule lag 0.0 ms
+=== 10:15:27 single lock-fleet-100k: -mode lock-renew -held 100000 -ttl 30 -rate 10000 -workers 500 -warmup 5 -duration 60
+    [final] 60s measured
+    [final] call           10000/s  p50=0.54 p90=1.65 p99=14.71 p999=32.46 max=51.6 ms  (n=600000)
+    [final] renewOps           600000       10000/s
+    [final] renewed            600000       10000/s
+    [final] lost                    0           0/s
+    [final] loader cpu 0.49 cores, errors 0, max schedule lag 1.5 ms

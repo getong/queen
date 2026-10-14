@@ -1,0 +1,13 @@
+kvlockload mode=kv tag=kv-get-prefill url=http://127.0.0.1:6632 workers=64 rate=0 duration=40s warmup=0s ns=100 keys=20000 batch=100 mix incr/get/pia/put/del=100/0/0/0/0 ttl=60s forever=true value=16B
+[10:01:18 run ] ops=  245681/s calls=    2457/s | p50=  23.50 p99=  129.86 ms | errs=0
+[10:01:28 run ] ops=  208450/s calls=    2085/s | p50=  25.36 p99=  104.90 ms | errs=0
+[10:01:38 run ] ops=  198170/s calls=    1982/s | p50=  30.83 p99=   61.28 ms | errs=0
+[10:01:48 run ] ops=  213710/s calls=    2137/s | p50=  29.14 p99=   56.67 ms | errs=0
+
+[final] 40s measured
+[final] call            2167/s  p50=26.06 p90=40.61 p99=88.51 p999=158.34 max=206.7 ms  (n=86665)
+[final] ops               8666500      216662/s
+[final] applied           8666500      216662/s
+[final] notApplied              0           0/s
+[final] loader cpu 0.14 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":100,"counters":{"applied":8666500,"notApplied":0,"ops":8666500},"desc":"ns=100 keys=20000 batch=100 mix incr/get/pia/put/del=100/0/0/0/0 ttl=60s forever=true value=16B","errTotal":0,"errors":{},"loaderCores":0.13772568150090786,"maxLagMs":0,"mode":"kv","opsPerSec":216662.5,"rate":0,"seconds":40,"series":{"call":{"count":86665,"perSec":2166.625,"meanMs":29.535085997807652,"p50":26.064,"p90":40.608,"p99":88.512,"p999":158.336,"maxMs":206.73}},"tag":"kv-get-prefill","urls":1,"workers":64}

@@ -1,0 +1,20 @@
+kvlockload mode=lock-contend tag=contend-1x16-spin url=http://127.0.0.1:6632 workers=16 rate=0 duration=30s warmup=5s names=1 permits=1 hold=0.0ms poll=0 ttl=30s
+[09:55:22 run ] lockOps=   20600/s calls=   19677/s | p50=   0.38 p99=    0.97 ms | errs=0
+[09:55:32 run ] lockOps=   38963/s calls=   37208/s | p50=   0.39 p99=    1.71 ms | errs=0
+[09:55:42 run ] lockOps=   41351/s calls=   39490/s | p50=   0.38 p99=    0.87 ms | errs=0
+
+[final] 30s measured
+[final] wait            1823/s  p50=5.80 p90=18.70 p99=37.92 p999=54.94 max=84.6 ms  (n=54703)
+[final] try            38710/s  p50=0.39 p90=0.55 p99=1.18 p999=3.26 max=12.4 ms  (n=1161299)
+[final] release         1824/s  p50=0.48 p90=0.59 p99=1.59 p999=3.49 max=12.4 ms  (n=54718)
+[final] lockOps           1216017       40534/s
+[final] acquired            54703        1823/s
+[final] tries             1161299       38710/s
+[final] refused           1106582       36886/s
+[final] contended               0           0/s
+[final] released            54718        1824/s
+[final] lost                    0           0/s
+[final] twoHolders              0           0/s
+[final] tokenWentBack            0           0/s
+[final] loader cpu 1.19 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"acquired":54703,"contended":0,"lockOps":1216017,"lost":0,"refused":1106582,"released":54718,"tokenWentBack":0,"tries":1161299,"twoHolders":0},"desc":"names=1 permits=1 hold=0.0ms poll=0 ttl=30s","errTotal":0,"errors":{},"loaderCores":1.1853066208659637,"maxLagMs":0,"mode":"lock-contend","opsPerSec":40533.9,"rate":0,"seconds":30,"series":{"release":{"count":54718,"perSec":1823.9333333333334,"meanMs":0.5046018129317592,"p50":0.476,"p90":0.587,"p99":1.593,"p999":3.494,"maxMs":12.371},"try":{"count":1161299,"perSec":38709.96666666667,"meanMs":0.38845349733358936,"p50":0.386,"p90":0.546,"p99":1.181,"p999":3.262,"maxMs":12.372},"wait":{"count":54703,"perSec":1823.4333333333334,"meanMs":8.263270369083962,"p50":5.796,"p90":18.704,"p99":37.92,"p999":54.944,"maxMs":84.596}},"tag":"contend-1x16-spin","urls":1,"workers":16}

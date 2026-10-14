@@ -1,0 +1,15 @@
+ extversion 
+------------
+ 1.11.1
+(1 row)
+
+                                                                                     List of functions
+ Schema |           Name            |     Result data type      |                                                Argument data types                                                 | Type 
+--------+---------------------------+---------------------------+--------------------------------------------------------------------------------------------------------------------+------
+ pgmq   | read_grouped              | SETOF pgmq.message_record | queue_name text, vt integer, qty integer                                                                           | func
+ pgmq   | read_grouped_head         | SETOF pgmq.message_record | queue_name text, vt integer, qty integer                                                                           | func
+ pgmq   | read_grouped_rr           | SETOF pgmq.message_record | queue_name text, vt integer, qty integer                                                                           | func
+ pgmq   | read_grouped_rr_with_poll | SETOF pgmq.message_record | queue_name text, vt integer, qty integer, max_poll_seconds integer DEFAULT 5, poll_interval_ms integer DEFAULT 100 | func
+ pgmq   | read_grouped_with_poll    | SETOF pgmq.message_record | queue_name text, vt integer, qty integer, max_poll_seconds integer DEFAULT 5, poll_interval_ms integer DEFAULT 100 | func
+(5 rows)
+

@@ -1,0 +1,77 @@
+=== 10:01:08 single kv-get-prefill: -mode kv -incr 100 -get 0 -pia 0 -batch 100 -forever -workers 64 -warmup 0 -duration 40
+    [final] 40s measured
+    [final] call            2167/s  p50=26.06 p90=40.61 p99=88.51 p999=158.34 max=206.7 ms  (n=86665)
+    [final] ops               8666500      216662/s
+    [final] applied           8666500      216662/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 0.14 cores, errors 0, max schedule lag 0.0 ms
+=== 10:01:49 single kv-get-b1-w64: -mode kv -incr 0 -get 100 -pia 0 -workers 64 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call          153320/s  p50=0.39 p90=0.64 p99=0.98 p999=1.48 max=9.4 ms  (n=4599587)
+    [final] ops               4599587      153320/s
+    [final] applied                 0           0/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 2.89 cores, errors 0, max schedule lag 0.0 ms
+=== 10:02:24 single kv-get-b1-w256: -mode kv -incr 0 -get 100 -pia 0 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call          146154/s  p50=1.67 p90=2.73 p99=3.84 p999=5.01 max=23.1 ms  (n=4384614)
+    [final] ops               4384614      146154/s
+    [final] applied                 0           0/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 2.89 cores, errors 0, max schedule lag 0.0 ms
+=== 10:02:59 single kv-get-b1-w1024: -mode kv -incr 0 -get 100 -pia 0 -workers 1024 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call          136940/s  p50=6.60 p90=13.54 p99=20.91 p999=27.22 max=37.9 ms  (n=4108213)
+    [final] ops               4108213      136940/s
+    [final] applied                 0           0/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 2.81 cores, errors 0, max schedule lag 0.0 ms
+=== 10:03:34 single kv-get-b25-w256: -mode kv -incr 0 -get 100 -pia 0 -batch 25 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           52933/s  p50=4.62 p90=7.48 p99=10.42 p999=13.06 max=21.2 ms  (n=1587980)
+    [final] ops              39699500     1323317/s
+    [final] applied                 0           0/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 1.44 cores, errors 0, max schedule lag 0.0 ms
+=== 10:04:09 single kv-put-16B-w256: -mode kv -incr 0 -get 0 -pia 0 -put 100 -value-bytes 16 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           47289/s  p50=3.98 p90=11.03 p99=23.73 p999=47.01 max=77.7 ms  (n=1418683)
+    [final] ops               1418683       47289/s
+    [final] applied           1418683       47289/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 0.97 cores, errors 0, max schedule lag 0.0 ms
+=== 10:04:45 single kv-put-1024B-w256: -mode kv -incr 0 -get 0 -pia 0 -put 100 -value-bytes 1024 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           27462/s  p50=6.40 p90=19.06 p99=31.70 p999=90.82 max=119.5 ms  (n=823866)
+    [final] ops                823866       27462/s
+    [final] applied            823866       27462/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 0.66 cores, errors 0, max schedule lag 0.0 ms
+=== 10:05:21 single kv-put-16384B-w256: -mode kv -incr 0 -get 0 -pia 0 -put 100 -value-bytes 16384 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           11385/s  p50=17.26 p90=29.55 p99=202.62 p999=260.99 max=280.3 ms  (n=341539)
+    [final] ops                341539       11385/s
+    [final] applied            341539       11385/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 0.63 cores, errors 0, max schedule lag 0.0 ms
+=== 10:05:57 single kv-big-prefill: -mode kv -incr 100 -get 0 -pia 0 -batch 100 -forever -keys 100000 -workers 64 -warmup 0 -duration 75
+    [final] 75s measured
+    [final] call            1801/s  p50=33.95 p90=45.60 p99=111.55 p999=185.47 max=201.6 ms  (n=135055)
+    [final] ops              13505500      180073/s
+    [final] applied          13505500      180073/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 0.12 cores, errors 0, max schedule lag 0.0 ms
+=== 10:07:15 single kv-big-mix-b1-w256: -mode kv -incr 60 -get 30 -pia 10 -keys 100000 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call           54376/s  p50=3.62 p90=12.25 p99=21.90 p999=32.14 max=69.2 ms  (n=1631290)
+    [final] ops               1631290       54376/s
+    [final] applied           1139664       37989/s
+    [final] notApplied           1638          55/s
+    [final] loader cpu 1.11 cores, errors 0, max schedule lag 0.0 ms
+=== 10:07:50 single kv-big-get-b1-w256: -mode kv -incr 0 -get 100 -pia 0 -keys 100000 -workers 256 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] call          143060/s  p50=1.70 p90=2.79 p99=4.03 p999=5.80 max=27.7 ms  (n=4291786)
+    [final] ops               4291786      143060/s
+    [final] applied                 0           0/s
+    [final] notApplied              0           0/s
+    [final] loader cpu 2.74 cores, errors 0, max schedule lag 0.0 ms

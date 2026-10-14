@@ -1,0 +1,3 @@
+[12:44:42] start 1x100-2000k-gcp24-dbb1g 2000000 TOPICS=1 PARTITIONS=100 CONSUMERS=11
+[12:47:42] KAFKA_POINT 1x100-2000k-gcp24-dbb1g DONE | 1x100-2000k-gcp24-dbb1g  kafka  1x100 e=0 batch b=100 rr c=11x9 default  2000000   2000k   2000k      0k        6       26         27        28       11.8       10.9          6.5               303              316/303     0       6.7
+[12:47:44] start 1x1000-2000k-gcp24-dbb1g 2000000 TOPICS=1 PARTITIONS=1000 CONSUMERS=33

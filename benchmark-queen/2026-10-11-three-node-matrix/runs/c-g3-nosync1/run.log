@@ -1,0 +1,15 @@
+[18:25:12] run c-g3-nosync1: groups 3, nosync, checkpoint 1 ms, tenants 3, retention completed, steps of 40s at: 1800000 2100000 2400000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_CONSUME_CHECKPOINT_MS=1 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=3 QUEEN_TENANT_GROUPS=00000000-0000-4000-8000-000000000000=0,00000001-0000-4000-8000-000000000000=1,00000002-0000-4000-8000-000000000000=2
+[18:25:22] roles: n1 healthy leader | n2 healthy follower+leader | n3 healthy follower+leader
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[18:26:50] 1,800,000: offered 1,799,454 pushed 1,798,977 consumed 1,788,996 shed 0 errors 0 lag 0 | push p50 26.1 p99 87.0 | e2e p50 63.5 p99 311.3 | n1 10.2c apply 91% raft 101%; n2 9.7c apply 87% raft 97%; n3 9.7c apply 87% raft 97% | loaders 37.7c  OK 
+[18:28:06] 2,100,000: offered 2,099,145 pushed 2,100,633 consumed 1,860,173 shed 0 errors 0 lag 0 | push p50 100.4 p99 258.0 | e2e p50 1310.7 p99 5898.2 | n1 11.8c apply 96% raft 101%; n2 11.3c apply 92% raft 92%; n3 11.4c apply 91% raft 92% | loaders 40.2c  NOT CARRIED 
+[18:28:06] stopping at 2100000
+RUN_DONE

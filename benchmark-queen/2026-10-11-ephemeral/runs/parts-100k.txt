@@ -1,0 +1,10 @@
+== 100000 partitions in one queue, 32 connections
+  filled in                  0.6 s (171180 partitions/s)
+  broker RSS                 23 MiB before, 82 MiB after: 623 bytes a partition
+  broker cores, nobody calling 0.06
+  push + pop by name         78113 /s
+  push call                  p50 0.181  p99 0.619  p99.9 1.575  max 16.777 ms
+  pop call                   p50 0.185  p99 0.638  p99.9 1.579  max 16.914 ms
+  pop with no partition      p50 9.496  p99 9.656  p99.9 9.656  max 10.126 ms
+  broker RSS at the end      156 MiB
+  broker RSS after   156 MiB

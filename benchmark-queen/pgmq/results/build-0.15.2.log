@@ -1,0 +1,1393 @@
+#0 building with "orbstack" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 5.85kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:22-alpine
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/golang:1.24-alpine
+#3 ...
+
+#4 [auth] library/golang:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [auth] library/ubuntu:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#6 [internal] load metadata for docker.io/library/ubuntu:24.04
+#6 DONE 1.1s
+
+#3 [internal] load metadata for docker.io/library/golang:1.24-alpine
+#3 DONE 1.3s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 455B done
+#7 DONE 0.0s
+
+#8 [cli-builder 1/7] FROM docker.io/library/golang:1.24-alpine@sha256:8bee1901f1e530bfb4a7850aa7a479d17ae3a18beb6e09064ed54cfd245b7191
+#8 DONE 0.0s
+
+#9 [cpp-builder  1/10] FROM docker.io/library/ubuntu:24.04@sha256:c4a8d5503dfb2a3eb8ab5f807da5bc69a85730fb49b5cfca2330194ebcc41c7b
+#9 DONE 0.0s
+
+#10 [frontend-builder 1/6] FROM docker.io/library/node:22-alpine
+#10 DONE 0.0s
+
+#11 [internal] load build context
+#11 transferring context: 116.58kB 0.0s done
+#11 DONE 0.0s
+
+#12 [cpp-builder  2/10] RUN sed -i -e 's|security.ubuntu.com|mirrors.edge.kernel.org|g' -e 's|archive.ubuntu.com|mirrors.edge.kernel.org|g' /etc/apt/sources.list.d/ubuntu.sources || true     && apt-get update && apt-get install -y     build-essential libpq-dev libssl-dev zlib1g-dev     curl unzip ca-certificates cmake ccache     && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [cpp-builder  3/10] WORKDIR /usr/build/server
+#13 CACHED
+
+#14 [cpp-builder  5/10] RUN make deps
+#14 CACHED
+
+#15 [cpp-builder  4/10] COPY server/Makefile ./Makefile
+#15 CACHED
+
+#16 [cpp-builder  6/10] COPY server/src/ ./src/
+#16 CACHED
+
+#17 [cpp-builder  7/10] COPY server/include/ ./include/
+#17 CACHED
+
+#18 [cli-builder 3/7] COPY clients/client-go/ ./clients/client-go/
+#18 CACHED
+
+#19 [cli-builder 2/7] WORKDIR /src
+#19 CACHED
+
+#20 [cli-builder 4/7] COPY clients/client-cli/ ./clients/client-cli/
+#20 CACHED
+
+#21 [cli-builder 5/7] WORKDIR /src/clients/client-cli
+#21 CACHED
+
+#22 [cli-builder 6/7] RUN --mount=type=cache,target=/root/.cache/go-build     --mount=type=cache,target=/go/pkg/mod     CGO_ENABLED=0 GOFLAGS=-trimpath go build         -ldflags "-s -w             -X 'github.com/smartpricing/queen/clients/client-cli/cmd.BuildVersion=0.15.2'             -X 'github.com/smartpricing/queen/clients/client-cli/cmd.BuildCommit=none'             -X 'github.com/smartpricing/queen/clients/client-cli/cmd.BuildDate=docker'"         -o /out/queenctl .
+#22 ...
+
+#23 [cpp-builder  8/10] COPY lib/ /usr/build/lib/
+#23 DONE 0.2s
+
+#24 [cpp-builder  9/10] RUN --mount=type=cache,target=/root/.ccache     make -j$(nproc) build-only
+#24 0.568 Compiling precompiled header...
+#24 0.584 Compiling uSockets C: vendor/uSockets/src/bsd.c
+#24 0.599 Compiling uSockets C: vendor/uSockets/src/context.c
+#24 0.611 Compiling uSockets C: vendor/uSockets/src/loop.c
+#24 0.620 Compiling uSockets C: vendor/uSockets/src/quic.c
+#24 0.627 Compiling uSockets C: vendor/uSockets/src/socket.c
+#24 0.647 Compiling uSockets C: vendor/uSockets/src/udp.c
+#24 0.650 Compiling uSockets C: vendor/uSockets/src/crypto/openssl.c
+#24 0.665 Compiling uSockets C: vendor/uSockets/src/eventing/epoll_kqueue.c
+#24 0.665 Compiling uSockets C: vendor/uSockets/src/eventing/gcd.c
+#24 0.695 Compiling uSockets C: vendor/uSockets/src/eventing/libuv.c
+#24 0.918 include/pch.hpp:5:9: warning: #pragma once in main file
+#24 0.918     5 | #pragma once
+#24 0.918       |         ^~~~
+#24 0.921 Compiling uSockets C: vendor/uSockets/src/io_uring/io_context.c
+#24 0.924 Compiling uSockets C: vendor/uSockets/src/io_uring/io_loop.c
+#24 0.929 Compiling uSockets C: vendor/uSockets/src/io_uring/io_socket.c
+#24 0.934 Compiling uSockets C++: vendor/uSockets/src/crypto/sni_tree.cpp
+#24 0.942 Compiling uSockets C++: vendor/uSockets/src/eventing/asio.cpp
+#24 1.016 vendor/uSockets/src/crypto/openssl.c: In function 'create_ssl_context_from_options':
+#24 1.016 vendor/uSockets/src/crypto/openssl.c:499:13: warning: 'PEM_read_DHparams' is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+#24 1.016   499 |             dh_2048 = PEM_read_DHparams(paramfile, NULL, NULL, NULL);
+#24 1.016       |             ^~~~~~~
+#24 1.016 In file included from /usr/include/openssl/ssl.h:36,
+#24 1.016                  from vendor/uSockets/src/crypto/openssl.c:34:
+#24 1.016 /usr/include/openssl/pem.h:469:1: note: declared here
+#24 1.016   469 | DECLARE_PEM_rw_attr(OSSL_DEPRECATEDIN_3_0, DHparams, DH)
+#24 1.016       | ^~~~~~~~~~~~~~~~~~~
+#24 1.016 vendor/uSockets/src/crypto/openssl.c:512:9: warning: 'DH_free' is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+#24 1.016   512 |         DH_free(dh_2048);
+#24 1.016       |         ^~~~~~~
+#24 1.016 In file included from /usr/include/openssl/dsa.h:51,
+#24 1.016                  from /usr/include/openssl/x509.h:37,
+#24 1.016                  from /usr/include/openssl/ssl.h:31:
+#24 1.016 /usr/include/openssl/dh.h:204:28: note: declared here
+#24 1.016   204 | OSSL_DEPRECATEDIN_3_0 void DH_free(DH *dh);
+#24 1.016       |                            ^~~~~~~
+#24 ...
+
+#22 [cli-builder 6/7] RUN --mount=type=cache,target=/root/.cache/go-build     --mount=type=cache,target=/go/pkg/mod     CGO_ENABLED=0 GOFLAGS=-trimpath go build         -ldflags "-s -w             -X 'github.com/smartpricing/queen/clients/client-cli/cmd.BuildVersion=0.15.2'             -X 'github.com/smartpricing/queen/clients/client-cli/cmd.BuildCommit=none'             -X 'github.com/smartpricing/queen/clients/client-cli/cmd.BuildDate=docker'"         -o /out/queenctl .
+#22 DONE 2.4s
+
+#25 [cli-builder 7/7] RUN /out/queenctl version --short
+#25 0.111 queenctl 0.15.2 (commit none, built docker)
+#25 DONE 0.1s
+
+#24 [cpp-builder  9/10] RUN --mount=type=cache,target=/root/.ccache     make -j$(nproc) build-only
+#24 3.142 Compiling src/main_acceptor.cpp...
+#24 3.143 Compiling src/acceptor_server.cpp...
+#24 3.144 Compiling src/database/async_database.cpp...
+#24 3.145 Compiling src/managers/async_queue_manager.cpp...
+#24 3.145 Compiling src/services/encryption.cpp...
+#24 3.145 Compiling src/services/eviction_service.cpp...
+#24 3.147 Compiling src/services/file_buffer.cpp...
+#24 3.147 Compiling src/services/metrics_collector.cpp...
+#24 3.150 Compiling src/services/partition_lookup_reconcile_service.cpp...
+#24 3.151 Compiling src/services/response_queue.cpp...
+#24 3.177 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.177                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.177                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.177                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.177                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.177                  from include/pch.hpp:8:
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.177    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.177       |         ^~~~~
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.177    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.177       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.177    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.177       |         ^~~~~
+#24 3.177 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.177    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.177       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.197 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.197                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.197                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.197                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.197                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.197                  from include/pch.hpp:8:
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.197    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.197       |         ^~~~~
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.197    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.197       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.197    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.197       |         ^~~~~
+#24 3.197 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.197    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.197       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.198 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.198                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.198                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.198                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.198                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.198                  from include/pch.hpp:8:
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.198    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.198       |         ^~~~~
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.198    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.198       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.198    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.198       |         ^~~~~
+#24 3.198 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.198    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.198       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.200 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.200                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.200                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.200                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.200                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.200                  from include/pch.hpp:8:
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |         ^~~~~
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |         ^~~~~
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.200 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.200                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.200                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.200                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.200                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.200                  from include/pch.hpp:8:
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |         ^~~~~
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |         ^~~~~
+#24 3.200 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.200    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.200       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.207 Compiling src/services/retention_service.cpp...
+#24 3.209 src/services/metrics_collector.cpp: In member function 'void queen::MetricsCollector::collect_macos_metrics(queen::MetricsSample&)':
+#24 3.209 src/services/metrics_collector.cpp:297:61: warning: unused parameter 'sample' [-Wunused-parameter]
+#24 3.209   297 | void MetricsCollector::collect_macos_metrics(MetricsSample& sample) {
+#24 3.209       |                                              ~~~~~~~~~~~~~~~^~~~~~
+#24 3.209 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.209                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.209                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.209                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.209                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.209                  from include/pch.hpp:8:
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |         ^~~~~
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |         ^~~~~
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.209 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.209                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.209                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.209                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.209                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.209                  from include/pch.hpp:8:
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |         ^~~~~
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |         ^~~~~
+#24 3.209 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.209    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.209       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.209 src/managers/async_queue_manager.cpp:875:13: warning: 'bool queen::is_connection_error(const std::string&)' defined but not used [-Wunused-function]
+#24 3.209   875 | static bool is_connection_error(const std::string& error_msg) {
+#24 3.209       |             ^~~~~~~~~~~~~~~~~~~
+#24 3.209 src/managers/async_queue_manager.cpp:140:5: warning: 'int queen::{anonymous}::query_int(PGconn*, const std::string&, int)' defined but not used [-Wunused-function]
+#24 3.209   140 | int query_int(PGconn* conn, const std::string& sql, int default_val = -1) {
+#24 3.209       |     ^~~~~~~~~
+#24 3.222 Compiling src/services/stats_service.cpp...
+#24 3.222 Compiling src/services/shared_state_manager.cpp...
+#24 3.222 Compiling src/services/udp_sync_transport.cpp...
+#24 3.227 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.227                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.227                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.227                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.227                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.227                  from include/pch.hpp:8:
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.227    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.227       |         ^~~~~
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.227    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.227       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.227    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.227       |         ^~~~~
+#24 3.227 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.227    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.227       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.232 Compiling src/routes/ack.cpp...
+#24 3.232 Compiling src/routes/configure.cpp...
+#24 3.232 Compiling src/routes/consumer_groups.cpp...
+#24 3.233 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.233                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.233                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.233                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.233                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.233                  from include/pch.hpp:8:
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.233    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.233       |         ^~~~~
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.233    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.233       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.233    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.233       |         ^~~~~
+#24 3.233 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.233    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.233       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.234 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.234                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.234                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.234                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.234                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.234                  from include/pch.hpp:8:
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |         ^~~~~
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |         ^~~~~
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.234 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.234                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.234                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.234                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.234                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.234                  from include/pch.hpp:8:
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |         ^~~~~
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |         ^~~~~
+#24 3.234 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.234    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.234       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.235 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.235                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.235                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.235                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.235                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.235                  from include/pch.hpp:8:
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.235    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.235       |         ^~~~~
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.235    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.235       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.235    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.235       |         ^~~~~
+#24 3.235 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.235    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.235       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.257 Compiling src/routes/dlq.cpp...
+#24 3.259 Compiling src/routes/health.cpp...
+#24 3.261 Compiling src/routes/internal.cpp...
+#24 3.267 Compiling src/routes/leases.cpp...
+#24 3.267 Compiling src/routes/maintenance.cpp...
+#24 3.270 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.270                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.270                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.270                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.270                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.270                  from include/pch.hpp:8:
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.270    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.270       |         ^~~~~
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.270    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.270       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.270    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.270       |         ^~~~~
+#24 3.270 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.270    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.270       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.277 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.277                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.277                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.277                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.277                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.277                  from include/pch.hpp:8:
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.277    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.277       |         ^~~~~
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.277    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.277       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.277    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.277       |         ^~~~~
+#24 3.277 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.277    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.277       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.278 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.278                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.278                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.278                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.278                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.278                  from include/pch.hpp:8:
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.278    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.278       |         ^~~~~
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.278    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.278       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.278    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.278       |         ^~~~~
+#24 3.278 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.278    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.278       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.279 Compiling src/routes/messages.cpp...
+#24 3.280 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.280                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.280                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.280                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.280                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.280                  from include/pch.hpp:8:
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.280    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.280       |         ^~~~~
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.280    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.280       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.280    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.280       |         ^~~~~
+#24 3.280 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.280    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.280       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.285 Compiling src/routes/metrics.cpp...
+#24 3.291 Compiling src/routes/migration.cpp...
+#24 3.296 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.296                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.296                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.296                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.296                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.296                  from include/pch.hpp:8:
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.296    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.296       |         ^~~~~
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.296    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.296       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.296    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.296       |         ^~~~~
+#24 3.296 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.296    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.296       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.301 Compiling src/routes/pop.cpp...
+#24 3.301 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 3.301                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 3.301                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 3.301                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 3.301                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 3.301                  from include/pch.hpp:8:
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.301    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.301       |         ^~~~~
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.301    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.301       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 3.301    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.301       |         ^~~~~
+#24 3.301 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 3.301    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 3.301       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 3.307 Compiling src/routes/prometheus.cpp...
+#24 3.313 Compiling src/routes/push.cpp...
+#24 53.63 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 53.63                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 53.63                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 53.63                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 53.63                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 53.63                  from include/pch.hpp:8:
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 53.63    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 53.63       |         ^~~~~
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 53.63    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 53.63       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 53.63    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 53.63       |         ^~~~~
+#24 53.63 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 53.63    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 53.63       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 53.66 Compiling src/routes/resources.cpp...
+#24 54.19 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 54.19                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 54.19                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 54.19                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 54.19                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 54.19                  from include/pch.hpp:8:
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 54.19    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.19       |         ^~~~~
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 54.19    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.19       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 54.19    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.19       |         ^~~~~
+#24 54.19 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 54.19    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.19       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 54.22 Compiling src/routes/route_helpers.cpp...
+#24 54.25 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 54.25                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 54.25                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 54.25                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 54.25                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 54.25                  from include/pch.hpp:8:
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 54.25    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.25       |         ^~~~~
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 54.25    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.25       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 54.25    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.25       |         ^~~~~
+#24 54.25 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 54.25    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.25       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 54.28 Compiling src/routes/static_files.cpp...
+#24 54.30 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 54.30                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 54.30                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 54.30                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 54.30                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 54.30                  from include/pch.hpp:8:
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 54.30    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.30       |         ^~~~~
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 54.30    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.30       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 54.30    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.30       |         ^~~~~
+#24 54.30 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 54.30    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 54.30       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 54.33 Compiling src/routes/status.cpp...
+#24 56.54 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 56.54                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 56.54                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 56.54                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 56.54                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 56.54                  from include/pch.hpp:8:
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 56.54    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 56.54       |         ^~~~~
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 56.54    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 56.54       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 56.54    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 56.54       |         ^~~~~
+#24 56.54 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 56.54    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 56.54       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 56.59 Compiling src/routes/traces.cpp...
+#24 57.64 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 57.64                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 57.64                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 57.64                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 57.64                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 57.64                  from include/pch.hpp:8:
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 57.64    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 57.64       |         ^~~~~
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 57.64    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 57.64       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 57.64    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 57.64       |         ^~~~~
+#24 57.64 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 57.64    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 57.64       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 57.65 Compiling src/routes/transactions.cpp...
+#24 58.83 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 58.83                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 58.83                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 58.83                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 58.83                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 58.83                  from include/pch.hpp:8:
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 58.83    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.83       |         ^~~~~
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 58.83    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.83       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 58.83    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.83       |         ^~~~~
+#24 58.83 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 58.83    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.83       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 58.85 Compiling src/routes/streams/cycle.cpp...
+#24 58.87 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 58.87                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 58.87                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 58.87                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 58.87                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 58.87                  from include/pch.hpp:8:
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 58.87    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.87       |         ^~~~~
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 58.87    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.87       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 58.87    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.87       |         ^~~~~
+#24 58.87 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 58.87    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 58.87       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 58.90 Compiling src/routes/streams/register_query.cpp...
+#24 59.36 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 59.36                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 59.36                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 59.36                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 59.36                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 59.36                  from include/pch.hpp:8:
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 59.36    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 59.36       |         ^~~~~
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 59.36    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 59.36       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 59.36    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 59.36       |         ^~~~~
+#24 59.36 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 59.36    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 59.36       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 59.37 Compiling src/routes/streams/state_get.cpp...
+#24 60.69 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 60.69                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 60.69                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 60.69                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 60.69                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 60.69                  from include/pch.hpp:8:
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.69    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.69       |         ^~~~~
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.69    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.69       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.69    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.69       |         ^~~~~
+#24 60.69 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.69    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.69       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.70 Compiling src/auth/auth_middleware.cpp...
+#24 60.71 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 60.71                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 60.71                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 60.71                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 60.71                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 60.71                  from include/pch.hpp:8:
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.71    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.71       |         ^~~~~
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.71    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.71       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.71    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.71       |         ^~~~~
+#24 60.71 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.71    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.71       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.71 Compiling src/auth/jwt_validator.cpp...
+#24 60.74 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 60.74                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 60.74                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 60.74                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 60.74                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 60.74                  from include/pch.hpp:8:
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.74    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.74       |         ^~~~~
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.74    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.74       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.74    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.74       |         ^~~~~
+#24 60.74 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.74    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.74       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.93 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 60.93                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 60.93                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 60.93                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 60.93                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 60.93                  from include/pch.hpp:8:
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.93    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.93       |         ^~~~~
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.93    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.93       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 60.93    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.93       |         ^~~~~
+#24 60.93 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 60.93    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 60.93       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 80.22 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 80.22                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 80.22                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 80.22                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 80.22                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 80.22                  from include/pch.hpp:8:
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 80.22    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.22       |         ^~~~~
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 80.22    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.22       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 80.22    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.22       |         ^~~~~
+#24 80.22 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 80.22    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.22       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 80.76 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 80.76                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 80.76                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 80.76                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 80.76                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 80.76                  from include/pch.hpp:8:
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 80.76    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.76       |         ^~~~~
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 80.76    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.76       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 80.76    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.76       |         ^~~~~
+#24 80.76 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 80.76    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 80.76       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 81.61 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 81.61                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 81.61                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 81.61                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 81.61                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 81.61                  from include/pch.hpp:8:
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 81.61    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 81.61       |         ^~~~~
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 81.61    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 81.61       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 81.61    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 81.61       |         ^~~~~
+#24 81.61 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 81.61    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 81.61       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.39 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 82.39                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 82.39                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 82.39                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 82.39                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 82.39                  from include/pch.hpp:8:
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |         ^~~~~
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |         ^~~~~
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.39 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 82.39                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 82.39                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 82.39                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 82.39                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 82.39                  from include/pch.hpp:8:
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |         ^~~~~
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |         ^~~~~
+#24 82.39 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.39    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.39       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.46 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 82.46                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 82.46                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 82.46                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 82.46                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 82.46                  from include/pch.hpp:8:
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.46    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.46       |         ^~~~~
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.46    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.46       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.46    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.46       |         ^~~~~
+#24 82.46 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.46    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.46       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.82 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 82.82                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 82.82                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 82.82                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 82.82                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 82.82                  from include/pch.hpp:8:
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.82    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.82       |         ^~~~~
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.82    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.82       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 82.82    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.82       |         ^~~~~
+#24 82.82 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 82.82    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 82.82       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 83.01 In file included from vendor/spdlog/include/spdlog/fmt/bundled/format.h:4530,
+#24 83.01                  from vendor/spdlog/include/spdlog/fmt/bundled/core.h:2967,
+#24 83.01                  from vendor/spdlog/include/spdlog/fmt/fmt.h:24,
+#24 83.01                  from vendor/spdlog/include/spdlog/common.h:50,
+#24 83.01                  from vendor/spdlog/include/spdlog/spdlog.h:12,
+#24 83.01                  from include/pch.hpp:8:
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = wchar_t]':
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1268:37:   required from here
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 83.01    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 83.01       |         ^~~~~
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<wchar_t> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 83.01    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 83.01       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h: In instantiation of 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep_impl(locale_ref) [with Char = char]':
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:1263:41:   required from 'fmt::v10::detail::thousands_sep_result<Char> fmt::v10::detail::thousands_sep(locale_ref) [with Char = char]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2033:35:   required from 'fmt::v10::detail::digit_grouping<Char>::digit_grouping(fmt::v10::detail::locale_ref, bool) [with Char = char]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2665:21:   required from 'OutputIt fmt::v10::detail::do_write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char; Grouping = digit_grouping<char>]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:2730:26:   required from 'OutputIt fmt::v10::detail::write_float(OutputIt, const DecimalFP&, const fmt::v10::format_specs<Char>&, float_specs, locale_ref) [with OutputIt = fmt::v10::appender; DecimalFP = dragonbox::decimal_fp<float>; Char = char]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3665:21:   required from 'OutputIt fmt::v10::detail::write(OutputIt, T) [with Char = char; OutputIt = fmt::v10::appender; T = float; typename std::enable_if<is_fast_float<T>::value, int>::type <anonymous> = 0]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:3776:23:   required from 'fmt::v10::detail::default_arg_formatter<Char>::iterator fmt::v10::detail::default_arg_formatter<Char>::operator()(T) [with T = float; Char = char; iterator = fmt::v10::appender]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/core.h:1720:15:   required from 'constexpr decltype (vis(0)) fmt::v10::visit_format_arg(Visitor&&, const basic_format_arg<Context>&) [with Visitor = detail::default_arg_formatter<char>; Context = basic_format_context<appender, char>; decltype (vis(0)) = appender]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format.h:4360:21:   required from 'void fmt::v10::detail::vformat_to(buffer<T>&, fmt::v10::basic_string_view<Char>, typename vformat_args<Char>::type, locale_ref) [with Char = char; typename vformat_args<Char>::type = fmt::v10::basic_format_args<fmt::v10::basic_format_context<fmt::v10::appender, char> >]'
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:1430:21:   required from here
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:9: warning: possibly dangling reference to a temporary [-Wdangling-reference]
+#24 83.01    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 83.01       |         ^~~~~
+#24 83.01 vendor/spdlog/include/spdlog/fmt/bundled/format-inl.h:95:52: note: the temporary was destroyed at the end of the full expression 'std::use_facet<__cxx11::numpunct<char> >(fmt::v10::detail::locale_ref::get() const [with Locale = std::locale]())'
+#24 83.01    95 |   auto& facet = std::use_facet<std::numpunct<Char>>(loc.get<std::locale>());
+#24 83.01       |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+#24 83.01 Linking bin/queen-server with 39 Queen objects and 15 uSockets objects...
+#24 83.41 ✅ Build complete! (Acceptor/Worker pattern - works on all platforms)
+#24 DONE 83.6s
+
+#26 [cpp-builder 10/10] RUN test -f bin/queen-server && echo "Build successful"
+#26 0.160 Build successful
+#26 DONE 0.2s
+
+#27 [frontend-builder 4/6] RUN npm ci
+#27 CACHED
+
+#28 [frontend-builder 2/6] WORKDIR /app/webapp
+#28 CACHED
+
+#29 [frontend-builder 3/6] COPY app/package*.json ./
+#29 CACHED
+
+#30 [frontend-builder 5/6] COPY app/ ./
+#30 CACHED
+
+#31 [stage-3 2/7] RUN sed -i -e 's|security.ubuntu.com|mirrors.edge.kernel.org|g' -e 's|archive.ubuntu.com|mirrors.edge.kernel.org|g' /etc/apt/sources.list.d/ubuntu.sources || true     && apt-get update && apt-get install -y     libssl3     zlib1g     ca-certificates     curl     gnupg     lsb-release     && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc        | gpg --dearmor -o /usr/share/keyrings/pgdg.gpg     && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt        $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list     && apt-get update     && apt-get install -y postgresql-client-18     && rm -rf /var/lib/apt/lists/*
+#31 CACHED
+
+#32 [frontend-builder 6/6] RUN npm run build
+#32 CACHED
+
+#33 [stage-3 3/7] WORKDIR /app
+#33 CACHED
+
+#34 [stage-3 4/7] COPY --from=cpp-builder /usr/build/server/bin/queen-server ./bin/queen-server
+#34 DONE 0.1s
+
+#35 [stage-3 5/7] COPY --from=cpp-builder /usr/build/lib/schema ./schema
+#35 DONE 0.1s
+
+#36 [stage-3 6/7] COPY --from=frontend-builder /app/webapp/dist ./webapp/dist
+#36 DONE 0.1s
+
+#37 [stage-3 7/7] COPY --from=cli-builder /out/queenctl /usr/local/bin/queenctl
+#37 DONE 0.1s
+
+#38 exporting to image
+#38 exporting layers
+#38 exporting layers 0.1s done
+#38 writing image sha256:71f0b5141236f8c6388499be07e2566267de7976c4cd4cfce359aa785150a65b done
+#38 naming to docker.io/library/queen-mq:arm64-local-0.15.2 done
+#38 DONE 0.1s
+
+View build details: docker-desktop://dashboard/build/orbstack/orbstack/ldglgxpw9h8elc6x76rb5p6xk

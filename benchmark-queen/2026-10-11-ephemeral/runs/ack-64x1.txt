@@ -1,0 +1,12 @@
+== ack-64x1 (pipe, 10 s measured)
+  pushed                   966894        96689 /s
+  push calls               966894        96689 /s
+  delivered                966872        96687 /s
+  pop calls                467140        46714 /s
+  push call          p50 0.624  p90 1.075  p99 1.597  p99.9 2.314  max 18.915 ms
+  push to delivery   p50 1.337  p90 2.186  p99 3.050  p99.9 4.276  max 15.491 ms
+  ack call           p50 0.670  p90 1.111  p99 1.649  p99.9 2.450  max 10.854 ms
+  broker cores       4.95
+  loader cores       3.25
+RESULT {"ack call":{"max":10.854,"p50":0.67,"p90":1.111,"p99":1.649,"p999":2.45},"broker cores":4.951,"delivered":966872,"delivered/s":96687.2,"errors":{},"loader cores":3.2510429000000003,"mode":"pipe","name":"ack-64x1","pop calls":467140,"pop calls/s":46714,"push call":{"max":18.915,"p50":0.624,"p90":1.075,"p99":1.597,"p999":2.314},"push calls":966894,"push calls/s":96689.4,"push to delivery":{"max":15.491,"p50":1.337,"p90":2.186,"p99":3.05,"p999":4.276},"pushed":966894,"pushed/s":96689.4,"rate":0,"seconds":10}
+  broker RSS after   45 MiB

@@ -1,0 +1,59 @@
+==========================================================
+  Scenario 5 (pg4c8g_q4w_prod8w400c), run 3
+  PG: 4c/8g  Queen: 4w  Prod: 8w/400c  Cons: 2w/100c
+  Out: /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-20_16-59-25/scenario-5_pg4c8g_q4w_prod8w400c/run-3
+==========================================================
+[pg-up] tearing down any previous container/volume...
+[pg-up] starting fresh PG: cpus=4 mem=8g port=5434 shared_buffers=2048MB
+[pg-up] waiting for PG to accept real connections (SELECT 1)...
+[pg-up] ready after 3s (stable)
+[server-up] launching queen-server: workers=4 sidecar=200 dbpool=20 port=6632 pg=5434
+[server-up] pid=86640 log=/Users/alice/Work/queen/test-perf/scripts/../results/2026-04-20_16-59-25/scenario-5_pg4c8g_q4w_prod8w400c/run-3/server.log
+[server-up] healthy after 2s
+[run-once] producer warm-up: 10s (discarded)
+[run-once] measurement: 60s
+[consumer] 118399 req in 60.77s, p50=16ms p99=510ms, errors=0, non2xx=0
+
+┌─────────┬──────┬───────┬────────┬────────┬──────────┬───────────┬─────────┐
+│ Stat    │ 2.5% │ 50%   │ 97.5%  │ 99%    │ Avg      │ Stdev     │ Max     │
+├─────────┼──────┼───────┼────────┼────────┼──────────┼───────────┼─────────┤
+│ Latency │ 6 ms │ 16 ms │ 269 ms │ 510 ms │ 50.51 ms │ 151.34 ms │ 6861 ms │
+└─────────┴──────┴───────┴────────┴────────┴──────────┴───────────┴─────────┘
+┌───────────┬────────┬────────┬─────────┬─────────┬──────────┬──────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%     │ 97.5%   │ Avg      │ Stdev    │ Min    │
+├───────────┼────────┼────────┼─────────┼─────────┼──────────┼──────────┼────────┤
+│ Req/Sec   │ 102    │ 141    │ 1,097   │ 6,611   │ 1,973.49 │ 1,886.41 │ 102    │
+├───────────┼────────┼────────┼─────────┼─────────┼──────────┼──────────┼────────┤
+│ Bytes/Sec │ 110 kB │ 142 kB │ 1.89 MB │ 7.68 MB │ 2.48 MB  │ 2.11 MB  │ 110 kB │
+└───────────┴────────┴────────┴─────────┴─────────┴──────────┴──────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 120
+
+118k requests in 60.77s, 149 MB read
+[producer] 29500 req in 60.86s, p50=186ms p99=6003ms, errors=298, non2xx=0
+
+┌─────────┬───────┬────────┬─────────┬─────────┬───────────┬────────────┬─────────┐
+│ Stat    │ 2.5%  │ 50%    │ 97.5%   │ 99%     │ Avg       │ Stdev      │ Max     │
+├─────────┼───────┼────────┼─────────┼─────────┼───────────┼────────────┼─────────┤
+│ Latency │ 28 ms │ 186 ms │ 4435 ms │ 6003 ms │ 695.93 ms │ 1239.62 ms │ 9901 ms │
+└─────────┴───────┴────────┴─────────┴─────────┴───────────┴────────────┴─────────┘
+┌───────────┬───────┬─────────┬─────────┬─────────┬─────────┬────────┬─────────┐
+│ Stat      │ 1%    │ 2.5%    │ 50%     │ 97.5%   │ Avg     │ Stdev  │ Min     │
+├───────────┼───────┼─────────┼─────────┼─────────┼─────────┼────────┼─────────┤
+│ Req/Sec   │ 19    │ 24      │ 524     │ 963     │ 491.67  │ 267.02 │ 19      │
+├───────────┼───────┼─────────┼─────────┼─────────┼─────────┼────────┼─────────┤
+│ Bytes/Sec │ 45 kB │ 56.9 kB │ 1.24 MB │ 2.29 MB │ 1.17 MB │ 633 kB │ 44.9 kB │
+└───────────┴───────┴─────────┴─────────┴─────────┴─────────┴────────┴─────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 480
+
+30k requests in 60.86s, 69.9 MB read
+298 errors (298 timeouts)
+[collect] artifacts written to /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-20_16-59-25/scenario-5_pg4c8g_q4w_prod8w400c/run-3
+[run-once] scenario 5 run 3 done.
+[run-once] cleanup (exit=0)
+[server-down] sending SIGTERM to 86640...
+[server-down] exited cleanly after 2s
+[pg-down] container and volume removed

@@ -1,0 +1,43 @@
+##### ENGINE-vs-ENGINE latency (direct libpq, concurrency=1, single msg, sync_commit=on)
+
+### pgmq functions, direct…
+ Network pgmq-bench_default  Creating
+ Network pgmq-bench_default  Created
+ Container pgmq-postgres  Creating
+ Container pgmq-postgres  Created
+ Container pgmq-pgbouncer  Creating
+ Container pgmq-pgbouncer  Created
+ Container pgmq-postgres  Starting
+ Container pgmq-postgres  Started
+ Container pgmq-postgres  Waiting
+ Container pgmq-postgres  Healthy
+ Container pgmq-pgbouncer  Starting
+ Container pgmq-pgbouncer  Started
+   running 60s…
+
+### Queen stored procedures, direct (pg_qpubsub style)…
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+   waiting broker (schema init)… ok
+   running 60s…
+
+### Result — engine latency (no broker, no hop):
+======================================================================
+p50 / p99 (ms)          Queen SP (direct)     pgmq (direct)
+----------------------------------------------------------------------
+push                    1.4 / 4.7             1.5 / 5.2
+pop+consume             1.4 / 4.9             1.5 / 5.1
+======================================================================
+Reference: Queen via HTTP broker (test #5) was push 7.9/15.2, pop 7.9/15.7 ms.
+=> (Queen HTTP) - (Queen SP) = the broker/HTTP hop cost; the rest is the engine.
+artifacts: results/sp-20260530-102426-pgmq/ , results/sp-20260530-102426-queensp/

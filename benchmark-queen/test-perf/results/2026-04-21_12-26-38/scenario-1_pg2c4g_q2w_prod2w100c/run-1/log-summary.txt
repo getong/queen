@@ -1,0 +1,21 @@
+=== event_loop_lag events ===
+[2026-04-21 12:27:36.292] [warning] [Worker 0] [libqueen] Event loop lag is too high: 102ms, expected: 10ms
+[2026-04-21 12:28:36.464] [warning] [Worker 1] [libqueen] Event loop lag is too high: 228ms, expected: 10ms
+[2026-04-21 12:28:36.466] [warning] [Worker 0] [libqueen] Event loop lag is too high: 254ms, expected: 10ms
+
+=== errors / warnings ===
+[2026-04-21 12:26:46.560] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 12:26:48.658] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:26:48.658] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:26:48.658] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:26:48.658] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 12:26:48.658] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 12:26:48.658] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 12:26:49.177] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 12:26:49.191] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 12:27:36.292] [warning] [Worker 0] [libqueen] Event loop lag is too high: 102ms, expected: 10ms
+[2026-04-21 12:28:36.464] [warning] [Worker 1] [libqueen] Event loop lag is too high: 228ms, expected: 10ms
+[2026-04-21 12:28:36.466] [warning] [Worker 0] [libqueen] Event loop lag is too high: 254ms, expected: 10ms
+
+=== line count ===
+     426 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_12-26-38/scenario-1_pg2c4g_q2w_prod2w100c/run-1/server.log

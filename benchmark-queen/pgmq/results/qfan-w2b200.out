@@ -1,0 +1,28 @@
+>> QUEEN fan-out: groups=10 duration=180s | broker: cpus=3 workers=2 sidecar=150 dbpool=20
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+   waiting broker… ok
+   running 180s…
+
+==================== QUEEN FAN-OUT (queen-fanout-w2-b200) ====================
+logical push msg/s : 7957
+delivered msg/s    : 69539    (delivered/logical = 8.7x of 10)
+pending at end     : 0
+PG active backends : 7.9 avg,  21 peak
+PG backends total  : 171 peak
+batch eff (pop)    : 164.49
+./run-queen-fanout.sh: line 67: 37625 Terminated: 15          bash sample-metrics.sh "$OUTDIR/metrics.csv" 1 queen-pg queen messages
+====================================================================
+Stack left UP. Dashboard: http://localhost:6633
+Tear down when done with:  docker compose -f queen-compose.yml down -v
+artifacts: results/queen-fanout-w2-b200/  (pgmq fan-out ref: ~63k delivered, 9.9x writes, 15M churn, 59 active backends)

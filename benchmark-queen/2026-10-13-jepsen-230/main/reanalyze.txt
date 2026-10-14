@@ -1,0 +1,17 @@
+2026-10-14T05:18:51Z start rw-w1-part: /root/jepsen-230/store/queen-log-partition_p=one,primaries,majority,majorities-ring_dedupwin=2_offload=on_lanes=16_env=QLOG_SEAL_AGE_S=10,SEGMENT_BYTES=262144,TXN_WINDOW_MIN_S=2,RETENTION_INTERVAL=1000/2026-10-13T14:36:17.548373068Z
+2026-10-14T05:19:01Z done  rw-w1-part: CRASHED(rc=255) (re-analysis of the stored history) log=/root/runs-230/rw-w1-part-reanalyze.log
+2026-10-14T05:19:01Z start p11-w1-part: /root/jepsen-230/store/queen-log-partition_p=one,primaries,majority,majorities-ring_offload=on_lanes=16/2026-10-13T23:09:59.618503929Z
+2026-10-14T05:19:11Z done  p11-w1-part: CRASHED(rc=255) (re-analysis of the stored history) log=/root/runs-230/p11-w1-part-reanalyze.log
+2026-10-14T05:19:11Z start p11-w1-leader-deaf: /root/jepsen-230/store/queen-log-leader-deaf_offload=on_lanes=16/2026-10-13T23:23:28.558800603Z
+2026-10-14T05:19:20Z done  p11-w1-leader-deaf: CRASHED(rc=255) (re-analysis of the stored history) log=/root/runs-230/p11-w1-leader-deaf-reanalyze.log
+2026-10-14T05:19:20Z REANALYZE DONE
+2026-10-14T05:22:26Z start rw-w1-part (second try: the folder, 8 GB, nice 19): /root/jepsen-230/store/queen-log-partition_p=one,primaries,majority,majorities-ring_dedupwin=2_offload=on_lanes=16_env=QLOG_SEAL_AGE_S=10,SEGMENT_BYTES=262144,TXN_WINDOW_MIN_S=2,RETENTION_INTERVAL=1000/2026-10-13T14:36:17.548373068Z
+2026-10-14T05:25:47Z done  rw-w1-part: CRASHED(rc=0) log=/root/runs-230/rw-w1-part-reanalyze2.log
+2026-10-14T05:25:47Z start p11-w1-part (second try: the folder, 8 GB, nice 19): /root/jepsen-230/store/queen-log-partition_p=one,primaries,majority,majorities-ring_offload=on_lanes=16/2026-10-13T23:09:59.618503929Z
+2026-10-14T05:29:02Z done  p11-w1-part: CRASHED(rc=0) log=/root/runs-230/p11-w1-part-reanalyze2.log
+2026-10-14T05:29:02Z start p11-w1-leader-deaf (second try: the folder, 8 GB, nice 19): /root/jepsen-230/store/queen-log-leader-deaf_offload=on_lanes=16/2026-10-13T23:23:28.558800603Z
+2026-10-14T05:32:44Z done  p11-w1-leader-deaf: CRASHED(rc=0) log=/root/runs-230/p11-w1-leader-deaf-reanalyze2.log
+2026-10-14T05:32:44Z REANALYZE2 DONE
+2026-10-14T05:33:26Z verdict rw-w1-part: valid (re-analysis with 8 GB: overall :valid? true, workload :kafka valid, :fetch 0 anomalies / 0 duplicates / 0 torn; the CRASHED(rc=0) line above is my script not knowing the analyze command prints no summary line)
+2026-10-14T05:33:26Z verdict p11-w1-part: valid (re-analysis with 8 GB: overall :valid? true, workload :kafka valid, :fetch 0 anomalies / 0 duplicates / 0 torn; the CRASHED(rc=0) line above is my script not knowing the analyze command prints no summary line)
+2026-10-14T05:33:26Z verdict p11-w1-leader-deaf: valid (re-analysis with 8 GB: overall :valid? true, workload :kafka valid, :fetch 0 anomalies / 0 duplicates / 0 torn; the CRASHED(rc=0) line above is my script not knowing the analyze command prints no summary line)

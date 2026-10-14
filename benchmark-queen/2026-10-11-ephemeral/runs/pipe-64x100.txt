@@ -1,0 +1,12 @@
+== pipe-64x100 (pipe, 10 s measured)
+  pushed                 45664900      4566490 /s
+  push calls               456649        45665 /s
+  delivered              45664900      4566490 /s
+  pop calls                456649        45665 /s
+  push call          p50 0.941  p90 1.669  p99 2.446  p99.9 3.230  max 18.288 ms
+  push to delivery   p50 2.486  p90 5.916  p99 10.680  p99.9 17.712  max 55.729 ms
+  broker cores       6.47
+  loader cores       2.39
+  error http_429:queue_full          93921
+RESULT {"broker cores":6.475,"delivered":45664900,"delivered/s":4566490,"errors":{"http_429:queue_full":93921},"loader cores":2.3936555,"mode":"pipe","name":"pipe-64x100","pop calls":456649,"pop calls/s":45664.9,"push call":{"max":18.288,"p50":0.941,"p90":1.669,"p99":2.446,"p999":3.23},"push calls":456649,"push calls/s":45664.9,"push to delivery":{"max":55.729,"p50":2.486,"p90":5.916,"p99":10.68,"p999":17.712},"pushed":45664900,"pushed/s":4566490,"rate":0,"seconds":10}
+  broker RSS after   74 MiB

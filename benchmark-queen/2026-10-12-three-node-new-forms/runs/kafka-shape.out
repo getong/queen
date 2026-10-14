@@ -1,0 +1,11 @@
+n1: b1 52e16aa8 41811136 bytes
+n2: b1 52e16aa8 41811136 bytes
+n3: b1 52e16aa8 41811136 bytes
+[09:51:58] KS_DONE 1000000 1,000,000: last 30 s: offered 1,000,012 pushed 1,000,028 consumed 999,985 | run: shed 0 errors 0 | push p50 4.9 p99 7.6 | e2e p50 9.7 p99 14.3 worst 14.7 | cores 5.9 / 3.8 / 3.8 | mem GB 3.4 / 3.3 / 3.3 | loaders 8.5c  
+[09:54:03] KS_DONE 1500000 1,500,000: last 30 s: offered 1,499,983 pushed 1,499,820 consumed 1,500,476 | run: shed 0 errors 0 | push p50 7.0 p99 14.6 | e2e p50 16.6 p99 37.4 worst 38.9 | cores 7.2 / 4.7 / 4.7 | mem GB 5.1 / 4.8 / 4.8 | loaders 12
+[09:56:07] KS_DONE 2000000 2,000,000: last 30 s: offered 1,999,969 pushed 2,000,169 consumed 2,000,526 | run: shed 0 errors 0 | push p50 11.3 p99 25.1 | e2e p50 33.3 p99 66.6 worst 67.6 | cores 8.2 / 5.5 / 5.5 | mem GB 6.9 / 6.3 / 6.4 | loaders 1
+[09:58:24] KS_DONE 300000   300,000: last 30 s: offered 299,986 pushed 299,983 consumed 299,990 | run: shed 0 errors 0 | push p50 2.9 p99 4.7 | e2e p50 4.4 p99 6.7 worst 7.2 | cores 3.6 / 2.5 / 2.5 | mem GB 1.2 / 1.1 / 1.1 | loaders 3.1c  OK 
+[10:00:47] KS_DONE 600000   600,000: last 30 s: offered 599,984 pushed 599,987 consumed 599,981 | run: shed 0 errors 0 | push p50 3.6 p99 5.8 | e2e p50 6.3 p99 9.9 worst 10.4 | cores 5.0 / 3.3 / 3.3 | mem GB 2.3 / 2.0 / 2.0 | loaders 5.7c  OK 
+[10:03:03] KS_DONE 2500000 2,500,000: last 30 s: offered 2,499,972 pushed 2,497,759 consumed 2,496,745 | run: shed 0 errors 0 | push p50 23.6 p99 53.2 | e2e p50 68.6 p99 153.6 worst 155.6 | cores 9.5 / 6.5 / 6.5 | mem GB 8.9 / 8.1 / 8.0 | loaders
+[10:05:23] KS_DONE 3000000 3,000,000: last 30 s: offered 2,999,934 pushed 2,689,018 consumed 2,688,623 | run: shed 17,620,200 errors 0 | push p50 1736.7 p99 1884.2 | e2e p50 1835.0 p99 2424.8 worst 2457.6 | cores 10.4 / 8.2 / 8.0 | mem GB 10.0 / 
+[10:05:23] KS_ALL_DONE

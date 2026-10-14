@@ -1,0 +1,34 @@
+wl: 5 queues x 2000 partitions = 10000 | 200 msg/s, 1 per push, ~256 B | 4 consumers per queue (pop batch 100, width 10) | 1m0s
+  [queen] healthy, version 2.3.0 (http://queen-mq-v2.queen.svc.cluster.local:6632)
+  [configure] wl-0: leaseTime 30s, dedupWindowSeconds 0, completedRetentionSeconds 300, retentionSeconds 3600 -> a push's row stays 900s
+  [configure] wl-1: leaseTime 30s, dedupWindowSeconds 0, completedRetentionSeconds 300, retentionSeconds 3600 -> a push's row stays 900s
+  [configure] wl-2: leaseTime 30s, dedupWindowSeconds 0, completedRetentionSeconds 300, retentionSeconds 3600 -> a push's row stays 900s
+  [configure] wl-3: leaseTime 30s, dedupWindowSeconds 0, completedRetentionSeconds 300, retentionSeconds 3600 -> a push's row stays 900s
+  [configure] wl-4: leaseTime 30s, dedupWindowSeconds 0, completedRetentionSeconds 300, retentionSeconds 3600 -> a push's row stays 900s
+  [broker 0] before the run: 2960 rows, 687 MB resident, 0 cold claims (http://queen-mq-v2-0.queen-mq-v2-headless.queen.svc.cluster.local:6632)
+  [broker 1] before the run: 2960 rows, 714 MB resident, 0 cold claims (http://queen-mq-v2-1.queen-mq-v2-headless.queen.svc.cluster.local:6632)
+  [broker 2] before the run: 2960 rows, 743 MB resident, 0 cold claims (http://queen-mq-v2-2.queen-mq-v2-headless.queen.svc.cluster.local:6632)
+  [warm] 10000 partitions created in 0.4s; 10000 of 10000 warm-up messages consumed after 0.9s
+START 2026-10-14T07:11:41Z
+[07:11:51] push     200/s  pop     200/s  backlog      2 | push ms p50   4.84 p99    6.78 max    12.8 | e2e ms p50    8.11 p99    11.81 max     17.4 | failed 0 shed 0 popErr 0 ackErr 0 | rows 12007/12007/12007 model 2000 | rss MB 709/736/776 | cold claims 0
+[07:12:01] push     200/s  pop     200/s  backlog      2 | push ms p50   4.84 p99    7.06 max    10.7 | e2e ms p50    8.11 p99    11.58 max     15.7 | failed 0 shed 0 popErr 0 ackErr 0 | rows 14018/14018/14018 model 4001 | rss MB 709/738/778 | cold claims 0
+[07:12:11] push     200/s  pop     200/s  backlog      3 | push ms p50   4.94 p99    7.34 max     9.8 | e2e ms p50    8.27 p99    11.81 max     14.1 | failed 0 shed 0 popErr 0 ackErr 0 | rows 16039/16039/16039 model 6000 | rss MB 711/740/781 | cold claims 0
+[07:12:21] push     200/s  pop     200/s  backlog      2 | push ms p50   4.84 p99    6.92 max    10.6 | e2e ms p50    8.27 p99    11.81 max     14.8 | failed 0 shed 0 popErr 0 ackErr 0 | rows 18044/18044/18044 model 8000 | rss MB 713/742/783 | cold claims 0
+[07:12:31] push     200/s  pop     200/s  backlog      1 | push ms p50   4.84 p99    7.34 max    13.5 | e2e ms p50    8.11 p99    11.81 max     20.7 | failed 0 shed 0 popErr 0 ackErr 0 | rows 20045/20046/20046 model 10000 | rss MB 720/748/789 | cold claims 0
+[07:12:41] push     200/s  pop     200/s  backlog      2 | push ms p50   4.94 p99    7.06 max     8.1 | e2e ms p50    8.27 p99    11.13 max     15.2 | failed 0 shed 0 popErr 0 ackErr 0 | rows 22048/22048/22048 model 12000 | rss MB 718/746/790 | cold claims 0
+
+== result ==
+  5 queues (wl-0..wl-4) x 2000 partitions = 10000 | offered 200 msg/s, 1 per push, payload 256 B | 4 consumers per queue | 60s
+  pushed         12000 msgs      200.0/s   failed 0   shed 0
+  consumed       12000 msgs      199.8/s   left 0   pop errors 0   ack errors 0
+  latency, ms
+  push               p50     4.84   p90     5.79   p99     7.06   p99.9     8.95   max     13.5   (n=12000)
+  end to end         p50     8.27   p90     9.69   p99    11.81   p99.9    14.39   max     20.7   (n=12000)
+  ack call           p50     4.84   p90     6.78   p99    13.30   p99.9    19.37   max     36.9   (n=13006)
+  per queue (pushed/consumed):  wl-0 2400/2400  wl-1 2400/2400  wl-2 2400/2400  wl-3 2400/2400  wl-4 2400/2400
+  rows in RAM, one per push (queen_raft_store_ram_rows ks=txns live, minus the rows of before START), per broker, against the model
+    row window per queue:  wl-0 900s  wl-1 900s  wl-2 900s  wl-3 900s  wl-4 900s
+    highest model          at    60s   measured 22048 / 22048 / 22048   model 12000
+    last report of pushing at    60s   measured 22048 / 22048 / 22048   model 12000
+    end                    at    60s   measured 22048 / 22048 / 22048   model 12000
+  errors: none

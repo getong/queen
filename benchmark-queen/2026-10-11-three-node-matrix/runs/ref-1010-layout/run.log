@@ -1,0 +1,7 @@
+[17:43:04] run ref-1010-layout: groups 1, sync, checkpoint 5 ms, tenants 0, retention completed, steps of 180s at: 1000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60
+[17:43:15] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 500000 partitions
+[17:47:00] 1,000,000: offered 999,997 pushed 999,985 consumed 999,723 shed 0 errors 0 lag 0 | push p50 17.7 p99 655.4 | e2e p50 51.7 p99 1261.6 | n1 9.4c apply 65% raft 100%; n2 4.2c apply 50% raft 26%; n3 4.2c apply 51% raft 26% | loaders 18.2c  OK 
+RUN_DONE

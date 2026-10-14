@@ -1,0 +1,9 @@
+== g3-leader-b500 (pipe, 20 s measured)
+  pushed                 28849500      1442475 /s
+  push calls                57699         2885 /s
+  delivered              28836500      1441825 /s
+  pop calls                 38108         1905 /s
+  push call          p50 64.288  p90 92.992  p99 248.448  p99.9 276.736  max 467.182 ms
+  push to delivery   p50 226.688  p90 425.216  p99 559.616  p99.9 720.384  max 888.525 ms
+  loader cores       2.38
+RESULT {"delivered":28836500,"delivered/s":1441825,"errors":{},"from":1791731358.5851653,"loader cores":2.37996635,"mode":"pipe","name":"g3-leader-b500","pop calls":38108,"pop calls/s":1905.4,"push call":{"max":467.182,"p50":64.288,"p90":92.992,"p99":248.448,"p999":276.736},"push calls":57699,"push calls/s":2884.95,"push to delivery":{"max":888.525,"p50":226.688,"p90":425.216,"p99":559.616,"p999":720.384},"pushed":28849500,"pushed/s":1442475,"rate":0,"seconds":20,"to":1791731378.5851653}

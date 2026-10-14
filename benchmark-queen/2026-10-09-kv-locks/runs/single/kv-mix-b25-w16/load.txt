@@ -1,0 +1,12 @@
+kvlockload mode=kv tag=kv-mix-b25-w16 url=http://127.0.0.1:6632 workers=16 rate=0 duration=30s warmup=5s ns=100 keys=20000 batch=25 mix incr/get/pia/put/del=60/30/10/0/0 ttl=60s forever=false value=16B
+[09:49:14 run ] ops=   71480/s calls=    2859/s | p50=   2.04 p99=   19.82 ms | errs=0
+[09:49:24 run ] ops=  100512/s calls=    4020/s | p50=   2.25 p99=   21.20 ms | errs=0
+[09:49:34 run ] ops=   83345/s calls=    3334/s | p50=   2.65 p99=   15.59 ms | errs=0
+
+[final] 30s measured
+[final] call            3907/s  p50=2.34 p90=9.50 p99=18.42 p999=51.87 max=262.0 ms  (n=117197)
+[final] ops               2929925       97664/s
+[final] applied           2017236       67241/s
+[final] notApplied          33549        1118/s
+[final] loader cpu 0.14 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":25,"counters":{"applied":2017236,"notApplied":33549,"ops":2929925},"desc":"ns=100 keys=20000 batch=25 mix incr/get/pia/put/del=60/30/10/0/0 ttl=60s forever=false value=16B","errTotal":0,"errors":{},"loaderCores":0.14155167357171144,"maxLagMs":0,"mode":"kv","opsPerSec":97664.16666666667,"rate":0,"seconds":30,"series":{"call":{"count":117197,"perSec":3906.5666666666666,"meanMs":4.091441948172735,"p50":2.338,"p90":9.496,"p99":18.416,"p999":51.872,"maxMs":262.036}},"tag":"kv-mix-b25-w16","urls":1,"workers":16}

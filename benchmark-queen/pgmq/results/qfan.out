@@ -1,0 +1,27 @@
+>> QUEEN fan-out: groups=10 duration=120s | broker: cpus=8 workers=8 sidecar=200 dbpool=20
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ queen The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested 
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+   waiting broker… ok
+   running 120s…
+
+==================== QUEEN FAN-OUT (queen-fanout-cpu8) ====================
+logical push msg/s : 12727
+delivered msg/s    : 39962    (delivered/logical = 3.1x of 10)
+pending at end     : 0
+PG active backends : 13.9 avg,  34 peak
+PG backends total  : 221 peak
+batch eff (pop)    : 82.07
+./run-queen-fanout.sh: line 67:  2001 Terminated: 15          bash sample-metrics.sh "$OUTDIR/metrics.csv" 1 queen-pg queen messages
+====================================================================
+artifacts: results/queen-fanout-cpu8/  (pgmq fan-out ref: ~63k delivered, 9.9x writes, 15M churn, 59 active backends)

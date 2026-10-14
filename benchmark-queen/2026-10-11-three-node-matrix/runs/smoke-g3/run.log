@@ -1,0 +1,18 @@
+[17:40:59] run smoke-g3: groups 3, sync, checkpoint 5 ms, tenants 3, retention completed, steps of 30s at: 1000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=3 QUEEN_TENANT_GROUPS=00000000-0000-4000-8000-000000000000=0,00000001-0000-4000-8000-000000000000=1,00000002-0000-4000-8000-000000000000=2
+[17:41:06] roles: n1 healthy leader | n2 healthy follower+leader | n3 healthy follower+leader
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[17:42:25] == 1000000: 9 load processes
+   steady window 20s: offered 999,972/s  pushed 1,000,022/s  consumed 999,972/s  loader cpu 18.3 cores
+   whole run: offered 25,000,000  achieved 25,000,000  shed 0  push errors 0  pop errors 0  ack errors 0  popped 25,000,000  lag at end 0
+   push ms p50 7.6 p99 16.1 p999 21.2   e2e ms p50 18.9 p99 36.4 p999 44.0  (n=25,000,000)
+   per 10 s, pushed/consumed in k msg/s: 499/498 1000/1000 1000/1000 1/2
+   windows after the ramp: pushed min 999,958 max 1,000,086  consumed min 999,908  worst window e2e p99 41 ms
+RUN_DONE

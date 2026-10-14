@@ -1,0 +1,20 @@
+{"role":"consumer","event":"start","queues":["fanout-bench"],"queueCount":1,"consumerGroup":"cg2","numWorkers":1,"conns":5,"duration":120,"batchSize":100,"timestamp":"2026-05-30T05:53:32.121Z"}
+{
+  "role": "consumer",
+  "event": "result",
+  "consumerGroup": "cg2",
+  "totalRequests": 7632,
+  "reqPerSec": 64,
+  "maxMsgPerSecCeiling": 6400,
+  "latency": {
+    "p50": 71,
+    "p90": 112,
+    "p99": 248,
+    "avg": 78.07,
+    "max": 1813
+  },
+  "errors": 0,
+  "non2xx": 0,
+  "timeouts": 0,
+  "durationSec": 120
+}

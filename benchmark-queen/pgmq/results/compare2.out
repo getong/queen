@@ -1,0 +1,106 @@
+##############################################################
+# COMPARE  duration=120s  conns/role=100  msgs/push=10
+#          popBatch=100  partitions=1000
+##############################################################
+
+### Tearing down any prior stacks…
+
+### [1/2] pgmq run…
+>> run: cmp-20260529-153944-pgmq
+>> mode=fifo conns(prod/cons)=100/100 msgsPerPush=10 readQty=100 partitions=1000 duration=120s
+>> bringing up stack (postgres+pgmq + pgbouncer)…
+ Network pgmq-bench_default  Creating
+ Network pgmq-bench_default  Created
+ Container pgmq-postgres  Creating
+ Container pgmq-postgres  Created
+ Container pgmq-pgbouncer  Creating
+ Container pgmq-pgbouncer  Created
+ Container pgmq-postgres  Starting
+ Container pgmq-postgres  Started
+ Container pgmq-postgres  Waiting
+ Container pgmq-postgres  Healthy
+ Container pgmq-pgbouncer  Starting
+ Container pgmq-pgbouncer  Started
+>> waiting for Postgres… ready
+>> waiting for PgBouncer… ready
+>> resetting queue 'bench'…
+   fifo index created
+>> starting metrics sampler…
+>> starting consumer (100 conns)…
+>> starting producer (100 conns)…
+>> running for 120s…
+
+==================== SUMMARY (cmp-20260529-153944-pgmq) ====================
+PRODUCER:  msg/s=7882  p50=116.4ms  p99=314ms  errors=0
+CONSUMER:  msg/s=6650  p50=170.4ms  p99=366.2ms  errors=0
+PG BACKENDS: avg_active=57.3  peak_active=66  peak_total=66
+PG CHURN:    peak_dead_tuples=259884  autovacuum_runs=12
+pgmq version: 1.11.1
+queue table:  53MB
+artifacts:    results/cmp-20260529-153944-pgmq/
+============================================================
+
+Compare against Queen's hi-part-1000 / bp-10 (≈25–39k msg/s, ~2.5 active PG conns).
+Tear down with:  docker compose down -v
+### tearing down pgmq stack…
+
+### [2/2] Queen run…
+>> run: cmp-20260529-153944-queen (QUEEN)
+>> conns(per role)=100 (=2x50) msgsPerPush=10 popBatch=100 partitions=1000 duration=120s
+>> bringing up Queen stack (broker + postgres)…
+ Network queen-bench_default  Creating
+ Network queen-bench_default  Created
+ Container queen-pg  Creating
+ Container queen-pg  Created
+ Container queen-broker  Creating
+ queen The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested 
+ Container queen-broker  Created
+ Container queen-pg  Starting
+ Container queen-pg  Started
+ Container queen-pg  Waiting
+ Container queen-pg  Healthy
+ Container queen-broker  Starting
+ Container queen-broker  Started
+>> waiting for Queen broker…. ready
+>> starting metrics sampler…
+>> starting producer (100 conns)…
+>> starting consumer (100 conns, batch=100)…
+>> running for 120s…
+
+==================== SUMMARY (cmp-20260529-153944-queen / QUEEN) ====================
+./run-queen.sh: line 104: 58685 Terminated: 15          bash sample-metrics.sh "$OUTDIR/metrics.csv" 1 queen-pg queen messages
+PRODUCER:  push msg/s=14616   p50=00ms  p99=50ms
+CONSUMER:  pop  msg/s=14271    p50=00ms  p99=00ms
+PG BACKENDS: avg_active=7.0  peak_active=17  peak_total=41
+PG CHURN:    peak_dead=0  upd=0  del=0  autovacuum_runs=8
+artifacts:   results/cmp-20260529-153944-queen/
+====================================================================
+Tear down with:  docker compose -f queen-compose.yml down -v
+### tearing down Queen stack…
+
+### Combined result:
+
+======================================================================
+  QUEEN vs pgmq — Mac, 120s, equal Docker budget (6 vCPU / 5 GiB per stack)
+======================================================================
+metric                    QUEEN               pgmq
+----------------------------------------------------------------------
+push msg/s                14616               7882
+pop msg/s                 14271               6650
+push p50 / p99 (ms)       58 / 230.5          116.4 / 314
+pop p50 / p99 (ms)        130 / 908           170.4 / 366.2
+----------------------------------------------------------------------
+PG active backends (avg)  7.0                 57.3
+PG backends (peak total)  41                  66
+----------------------------------------------------------------------
+hot-table UPDATEs         0                   798059
+hot-table DELETEs         0                   798059
+peak dead tuples          0                   259884
+autovacuum runs           8                   12
+======================================================================
+push/pop msg/s (Queen) = server lifetime total/completed ÷ duration.
+Both PG: identical config, 3 CPU / 3 GiB. NOTE: Queen broker image is
+amd64 running EMULATED on arm64 Mac — its throughput is understated here.
+"hot table": pgmq.q_bench (UPDATE vt + DELETE per msg) vs queen.messages (append-only).
+
+Saved: results/cmp-20260529-153944.txt

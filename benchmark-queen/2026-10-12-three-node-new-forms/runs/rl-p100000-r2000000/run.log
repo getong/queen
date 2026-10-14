@@ -1,0 +1,7 @@
+[06:27:39] run rl-p100000-r2000000: binary p5, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 360s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s
+[06:28:09] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 100000 partitions
+[06:34:49] 2,000,000: last 30 s: offered 1,999,983 pushed 1,998,498 consumed 1,999,888 | run: shed 537,500 errors 0 | push p50 1753.1 p99 2228.2 | e2e p50 2064.4 p99 2490.4 worst 2490.4 | cores 10.4 / 7.1 / 7.1 | mem GB 11.2 / 12.7 / 12.8 | loaders 15.8c  NOT CARRIED 
+RUN_DONE

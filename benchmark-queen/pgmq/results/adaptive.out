@@ -1,0 +1,15 @@
+##### ADAPTIVE BYPASS PROOF (image=queen-mq:arm64-local-0.15.2, PUSH_MAX_HOLD_MS=20)
+
+### Gate ON (QUEEN_PUSH_BATCH_INFLIGHT_THRESHOLD=1, default) — producer concurrency sweep
+connections    push msg/s     p50 (ms)     p99 (ms)
+1              637            1.5          4.1
+5              1719           2.7          7
+20             4449           3.8          17
+100            7869           11.5         36.1
+
+### Gate OFF (QUEEN_PUSH_BATCH_INFLIGHT_THRESHOLD=0) — concurrency=1 control (old behavior)
+1 (gate off)   34             28.9         35.8
+
+Expected: gate ON @ conn=1 ~1.5ms (fires immediately though hold=20); rises
+with concurrency as batching engages. Gate OFF @ conn=1 ~21ms (hold honored).
+artifacts: results/adaptive-20260530-110246/

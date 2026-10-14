@@ -19,8 +19,11 @@ PRIV=""
 for ip in ${B_PRIV[@]:-} ${L_PRIV[@]:-}; do case "$MYIPS" in *" $ip "*) PRIV=$ip;; esac; done
 IFACE=$(ip -o -4 addr show 2>/dev/null | awk -v ip="${PRIV:-none}" '{split($4,a,"/"); if (a[1]==ip) {print $2; exit}}')
 [ -n "$IFACE" ] || IFACE=$(ip -o -4 route show default 2>/dev/null | awk '{print $5; exit}')
-SRC=$(findmnt -no SOURCE --target "$ROOT" 2>/dev/null | sed 's#^/dev/##')
-DISK=$(lsblk -no PKNAME "/dev/$SRC" 2>/dev/null | head -1); [ -n "$DISK" ] || DISK=$SRC
+# the device itself when it is a whole block device (md0: a RAID of the local NVMe disks on GCP, 2026-10-14; a bind
+# mount reads "/dev/md0[/bench]"), else the disk under the partition (vda under vda1 on the droplets)
+SRC=$(findmnt -no SOURCE --target "$ROOT" 2>/dev/null | sed 's#^/dev/##; s#\[.*##')
+if [ -e "/sys/block/$SRC/stat" ]; then DISK=$SRC
+else DISK=$(lsblk -no PKNAME "/dev/$SRC" 2>/dev/null | head -1); [ -n "$DISK" ] || DISK=$SRC; fi
 sample_loop() {  # sample_loop <interval> <iface> <disk> [once] : prints lines forever (or one)
   python3 - "$1" "$2" "$3" ${4:-} <<'PY'
 import os, sys, time, re

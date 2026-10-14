@@ -1,0 +1,11 @@
+[14:35:01] run grid-p100: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100, consumers 11 per process, retention completed, steps of 90s at: 100000 500000 1000000 1500000 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[14:35:17] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 100 partitions
+[14:37:20]   100,000: last 30 s: offered 100,013 pushed 100,010 consumed 100,000 | run: shed 0 errors 0 | push p50 2.9 p99 4.6 | e2e p50 6.6 p99 11.4 | cores 1.3 / 1.0 / 0.9 | mem GB 0.6 / 0.4 / 0.4 | loaders 1.3c  OK 
+[14:39:22]   500,000: last 30 s: offered 500,007 pushed 499,977 consumed 499,970 | run: shed 0 errors 0 | push p50 3.7 p99 6.1 | e2e p50 8.1 p99 21.0 | cores 4.6 / 3.2 / 3.0 | mem GB 2.2 / 1.8 / 1.8 | loaders 5.2c  OK 
+[14:41:25] 1,000,000: last 30 s: offered 999,960 pushed 999,974 consumed 999,980 | run: shed 0 errors 0 | push p50 6.0 p99 15.9 | e2e p50 14.1 p99 68.6 | cores 6.9 / 4.5 / 4.1 | mem GB 4.5 / 3.5 / 3.5 | loaders 10.0c  OK 
+[14:43:27] 1,500,000: last 30 s: offered 1,500,015 pushed 1,499,995 consumed 1,499,925 | run: shed 0 errors 0 | push p50 9.1 p99 31.5 | e2e p50 24.8 p99 95.2 | cores 8.3 / 5.4 / 5.1 | mem GB 6.6 / 5.0 / 5.0 | loaders 13.5c  OK 
+[14:45:30] 2,000,000: last 30 s: offered 1,999,927 pushed 2,000,130 consumed 2,000,650 | run: shed 0 errors 0 | push p50 16.9 p99 53.8 | e2e p50 46.1 p99 149.5 | cores 9.2 / 6.1 / 5.8 | mem GB 8.8 / 6.9 / 6.9 | loaders 16.2c  OK 
+RUN_DONE

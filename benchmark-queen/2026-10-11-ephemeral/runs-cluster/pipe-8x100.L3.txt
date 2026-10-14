@@ -1,0 +1,10 @@
+== pipe-8x100 (pipe, 10 s measured)
+  pushed                  8967000       896700 /s
+  push calls                89670         8967 /s
+  delivered               8957200       895720 /s
+  pop calls                 89572         8957 /s
+  push call          p50 0.359  p90 1.169  p99 1.371  p99.9 1.655  max 3.219 ms
+  push to delivery   p50 1.945  p90 4.812  p99 10.200  p99.9 14.216  max 18.628 ms
+  loader cores       1.37
+  error http_429:queue_full          11915
+RESULT {"delivered":8957200,"delivered/s":895720,"errors":{"http_429:queue_full":11915},"from":1791727541.1965978,"loader cores":1.3694108000000003,"mode":"pipe","name":"pipe-8x100","pop calls":89572,"pop calls/s":8957.2,"push call":{"max":3.219,"p50":0.359,"p90":1.169,"p99":1.371,"p999":1.655},"push calls":89670,"push calls/s":8967,"push to delivery":{"max":18.628,"p50":1.945,"p90":4.812,"p99":10.2,"p999":14.216},"pushed":8967000,"pushed/s":896700,"rate":0,"seconds":10,"to":1791727551.1965978}

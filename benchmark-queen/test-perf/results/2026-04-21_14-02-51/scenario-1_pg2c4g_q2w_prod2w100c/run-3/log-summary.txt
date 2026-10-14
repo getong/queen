@@ -1,0 +1,26 @@
+=== event_loop_lag events ===
+
+=== errors / warnings ===
+[2026-04-21 14:08:51.639] [warning] Encryption disabled - QUEEN_ENCRYPTION_KEY not set
+[2026-04-21 14:08:52.447] [warning] [Worker 1] Webapp directory not found - Static file serving disabled
+[2026-04-21 14:08:52.447] [warning] [Worker 1] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 14:08:52.447] [warning] [Worker 1] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 14:08:52.448] [warning] [Worker 0] Webapp directory not found - Static file serving disabled
+[2026-04-21 14:08:52.448] [warning] [Worker 0] Searched: ./webapp/dist, ../webapp/dist, ../../webapp/dist
+[2026-04-21 14:08:52.448] [warning] [Worker 0] Set WEBAPP_ROOT environment variable to override
+[2026-04-21 14:08:52.468] [info] [Worker 0] [libqueen] Reconnection thread started
+[2026-04-21 14:08:52.472] [info] [Worker 1] [libqueen] Reconnection thread started
+[2026-04-21 14:09:28.436] [error] [Worker 0] [libqueen] Query failed: ERROR:  deadlock detected
+[2026-04-21 14:09:28.437] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.438] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.438] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.439] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.439] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.439] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.440] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.445] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.446] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+[2026-04-21 14:09:28.446] [warning] [Worker 0] PUSH: Database error detected: ERROR:  deadlock detected
+
+=== line count ===
+    1663 /Users/alice/Work/queen/test-perf/scripts/../results/2026-04-21_14-02-51/scenario-1_pg2c4g_q2w_prod2w100c/run-3/server.log

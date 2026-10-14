@@ -1,0 +1,23 @@
+kvlockload mode=lock-contend tag=contend-100x800-sdk-hold20 url=http://127.0.0.1:6632 workers=800 rate=0 duration=60s warmup=5s names=100 permits=1 hold=20.0ms poll=sdk ttl=30s
+[10:20:11 run ] lockOps=    4994/s calls=    2745/s | p50=   0.65 p99=    6.20 ms | errs=0
+[10:20:21 run ] lockOps=   10115/s calls=    5526/s | p50=   0.59 p99=    2.73 ms | errs=0
+[10:20:31 run ] lockOps=   10114/s calls=    5531/s | p50=   0.59 p99=    3.34 ms | errs=0
+[10:20:41 run ] lockOps=   10002/s calls=    5477/s | p50=   0.62 p99=    4.78 ms | errs=0
+[10:20:51 run ] lockOps=   10111/s calls=    5527/s | p50=   0.60 p99=    2.72 ms | errs=0
+[10:21:01 run ] lockOps=   10094/s calls=    5517/s | p50=   0.60 p99=    2.93 ms | errs=0
+
+[final] 60s measured
+[final] wait            4547/s  p50=0.64 p90=1.64 p99=6.32 p999=21381.12 max=56192.5 ms  (n=272845)
+[final] try             5510/s  p50=0.60 p90=1.46 p99=3.96 p999=8.26 max=32.8 ms  (n=330590)
+[final] release         4560/s  p50=0.67 p90=1.44 p99=3.98 p999=9.16 max=33.6 ms  (n=273607)
+[final] lockOps            604197       10070/s
+[final] acquired           272845        4547/s
+[final] tries              330590        5510/s
+[final] refused             57083         951/s
+[final] contended               0           0/s
+[final] released           273607        4560/s
+[final] lost                    0           0/s
+[final] twoHolders              0           0/s
+[final] tokenWentBack            0           0/s
+[final] loader cpu 0.38 cores, errors 0, max schedule lag 0.0 ms
+[json] {"batch":1,"counters":{"acquired":272845,"contended":0,"lockOps":604197,"lost":0,"refused":57083,"released":273607,"tokenWentBack":0,"tries":330590,"twoHolders":0},"desc":"names=100 permits=1 hold=20.0ms poll=sdk ttl=30s","errTotal":0,"errors":{},"loaderCores":0.3826036391199413,"maxLagMs":0,"mode":"lock-contend","opsPerSec":10069.95,"rate":0,"seconds":60,"series":{"release":{"count":273607,"perSec":4560.116666666667,"meanMs":0.8747484823122216,"p50":0.669,"p90":1.435,"p99":3.978,"p999":9.16,"maxMs":33.594},"try":{"count":330590,"perSec":5509.833333333333,"meanMs":0.8029679693880638,"p50":0.605,"p90":1.457,"p99":3.958,"p999":8.264,"maxMs":32.761},"wait":{"count":272845,"perSec":4547.416666666667,"meanMs":69.2659838699628,"p50":0.637,"p90":1.641,"p99":6.324,"p999":21381.12,"maxMs":56192.528}},"tag":"contend-100x800-sdk-hold20","urls":1,"workers":800}

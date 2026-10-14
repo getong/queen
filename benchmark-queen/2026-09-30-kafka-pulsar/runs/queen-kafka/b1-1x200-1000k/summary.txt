@@ -1,0 +1,7 @@
+p3: msgs offered=7222300 achieved=7222300 shed=0 pushed=7222300 popped=7150100 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=10.94/18.30/24.19 ms | e2e p50/p99/p999=11.71/19.33/24.96 ms | cpu=48.2%
+p4: msgs offered=7222200 achieved=7222200 shed=0 pushed=7222200 popped=7150000 lag=72200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=10.82/18.30/24.19 ms | e2e p50/p99/p999=11.71/19.58/25.98 ms | cpu=48.4%
+p5: msgs offered=7222700 achieved=7222700 shed=0 pushed=7222700 popped=7474900 lag=-252200 errs push=0 pop=0 ack=0 | produce p50/p99/p999=10.94/18.56/24.45 ms | e2e p50/p99/p999=11.58/36.10/56.06 ms | cpu=49.3%
+p6: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7150000 lag=72100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=11.33/18.30/24.70 ms | e2e p50/p99/p999=11.58/19.58/25.73 ms | cpu=57.7%
+p7: msgs offered=7222200 achieved=7222200 shed=0 pushed=7222200 popped=7150100 lag=72100 errs push=0 pop=0 ack=0 | produce p50/p99/p999=11.20/18.30/24.19 ms | e2e p50/p99/p999=11.46/19.07/25.22 ms | cpu=57.9%
+p8: msgs offered=7222100 achieved=7222100 shed=0 pushed=7222100 popped=7475000 lag=-252900 errs push=0 pop=0 ack=0 | produce p50/p99/p999=11.07/18.56/24.96 ms | e2e p50/p99/p999=12.22/38.66/57.09 ms | cpu=59.6%
+total: 6/9 processes with a final line | msgs offered=43333600 achieved=43333600 shed=0 pushed=43333600 popped=43550100 errors=0 | worst produce p99=18.56 ms | worst e2e p99=38.66 ms

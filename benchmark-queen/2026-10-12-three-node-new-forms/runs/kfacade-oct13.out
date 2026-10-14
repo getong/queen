@@ -1,0 +1,16 @@
+[10:49:14] binary b1 on the three brokers, Kafka facade on :9092 of the private addresses
+[10:49:47] start b1-1x200-300k (roles: n1 healthy leader | n2 healthy follower | n3 healthy follower)
+[10:54:38] KFAC_POINT b1-1x200-300k FAILED | b1-1x200-300k  kafka  1x200 e=0 batch b=100 rr c=22x9 default   300000      0k      0k      0k        0        0        nan         0        0.0        0.0          0.0                 0                  0/0     0       0.0
+[10:55:43] first launch stopped: it ran kload's default group protocol (consumer); the 10-02 runs were classic groups with retention.ms=600000. Relaunched with those.
+[10:55:43] binary b1 on the three brokers, Kafka facade on :9092 of the private addresses
+[10:56:32] start b1-1x200-300k (roles: n1 healthy leader | n2 healthy follower | n3 healthy follower)
+[10:59:19] KFAC_POINT b1-1x200-300k DONE | b1-1x200-300k  kafka  1x200 e=0 batch b=100 rr c=22x9 default   300000    300k    300k      0k        9       11         11        11        7.9        7.8          1.9               176               90/108     0       1.7
+[10:59:38] start b1-1x200-1000k (roles: n1 healthy leader | n2 healthy follower | n3 healthy follower)
+[11:02:37] KFAC_POINT b1-1x200-1000k FAILED | b1-1x200-1000k  kafka  1x200 e=0 batch b=100 rr c=22x9 default  1000000    667k    670k      0k       12       48         57        19       15.4       14.8          6.1               337              295/356     0       3.2
+[11:03:12] start b1-1x200-1500k (roles: n1 healthy leader | n2 healthy follower | n3 healthy follower)
+[11:06:02] KFAC_POINT b1-1x200-1500k DONE | b1-1x200-1500k  kafka  1x200 e=0 batch b=100 rr c=22x9 default  1500000   1499k   1498k      0k       98      175        175        74       16.7       16.2          8.8               450              424/516     0       4.6
+[11:06:21] start b1-1x10k-1000k (roles: n1 healthy leader | n2 healthy follower | n3 healthy follower)
+[11:09:09] KFAC_POINT b1-1x10k-1000k DONE | b1-1x10k-1000k  kafka  1x10000 e=0 batch b=100 rr c=33x9 default  1000000   1000k   1000k      0k       13       26         26        24       17.4       16.5          5.8               402              294/356     0       6.2
+[11:09:46] start b1-1x200-2000k (roles: n1 healthy leader | n2 healthy follower | n3 healthy follower)
+[11:12:42] KFAC_POINT b1-1x200-2000k DONE | b1-1x200-2000k  kafka  1x200 e=0 batch b=100 rr c=22x9 default  2000000   2007k   1992k      0k      334    20578      20578       276       20.1       19.7         10.8               563              580/701     0       4.6
+[11:12:46] KFAC_ALL_DONE

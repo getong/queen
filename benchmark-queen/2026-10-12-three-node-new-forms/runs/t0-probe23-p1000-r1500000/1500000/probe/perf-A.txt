@@ -1,0 +1,211 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 1K of event 'cpu-clock'
+# Event count (approx.): 3749498968
+#
+# Overhead  Command          Shared Object      Symbol                                                                                                                                                                                                                                                                                                                                                 
+# ........  ...............  .................  .......................................................................................................................................................................................................................................................................................................................................................
+#
+     7.70%  queen-rsm-apply  queen              [.] _RNvMsi_NtNtNtCs1C1lLj4PWSY_5alloc11collections5btree3mapINtB5_8BTreeMapNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ram6RamKeyINtNtBb_4sync3ArcShEE5entryB1f_
+            |
+            ---_RNvMsi_NtNtNtCs1C1lLj4PWSY_5alloc11collections5btree3mapINtB5_8BTreeMapNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ram6RamKeyINtNtBb_4sync3ArcShEE5entryB1f_
+               _RNvMsh_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ramNtB5_8TreeRows10put_in_map
+               |          
+                --7.64%--_RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+                          _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+                          |          
+                          |--5.45%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                          |          |          
+                          |           --5.34%--_RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+                          |                     _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+                          |                     _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+                          |                     _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+                          |                     _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+                          |                     0x7457cdc9cb83
+                          |                     0x7457cdd29ecb
+                          |          
+                           --2.19%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5dedup15record_with_lenNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                                     _RINvMs1_NtNtNtCs2cvMjFx1uWV_5queen3rsm5apply5shardNtB6_5Shard6effectNtNtNtBa_5store10heed_store9HeedWriteEBc_
+     5.67%  queen-rsm-apply  queen              [.] _RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+            |
+            ---_RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+               _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+               |          
+               |--3.42%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+               |          _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+               |          _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+               |          _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+               |          _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+               |          _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+               |          0x7457cdc9cb83
+               |          0x7457cdd29ecb
+               |          
+                --1.28%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5dedup15record_with_lenNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                          _RINvMs1_NtNtNtCs2cvMjFx1uWV_5queen3rsm5apply5shardNtB6_5Shard6effectNtNtNtBa_5store10heed_store9HeedWriteEBc_
+     5.24%  queen-rsm-apply  queen              [.] _RNvMs1_NtNtCs2cvMjFx1uWV_5queen3rsm5entryNtB5_7Outcome11encode_body
+            |
+            ---_RNvMs1_NtNtCs2cvMjFx1uWV_5queen3rsm5entryNtB5_7Outcome11encode_body
+               _RNvMs1_NtNtCs2cvMjFx1uWV_5queen3rsm5entryNtB5_7Outcome6encode
+               _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+               _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+               _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+               _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+               _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+               _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+               0x7457cdc9cb83
+               0x7457cdd29ecb
+     4.28%  queen-rsm-apply  queen              [.] _RINvNtCsevLNFiNqfJP_4core3ptr9drop_glueNtNvMs4_NtNtNtCs2cvMjFx1uWV_5queen3rsm5apply5shardNtBJ_4Pool5scope7WaitAllEBP_
+            |
+            ---_RINvNtCsevLNFiNqfJP_4core3ptr9drop_glueNtNvMs4_NtNtNtCs2cvMjFx1uWV_5queen3rsm5apply5shardNtBJ_4Pool5scope7WaitAllEBP_
+               _RNvMs4_NtNtNtCs2cvMjFx1uWV_5queen3rsm5apply5shardNtB5_4Pool5scope
+               |          
+                --4.22%--_RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE9flush_runB9_
+                          _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+                          _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+                          _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+                          _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+                          _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+                          0x7457cdc9cb83
+                          0x7457cdd29ecb
+     4.06%  queen-rsm-apply  queen              [.] _RINvMs1_NtCskibSv91bgl1_9hashbrown3mapINtB6_7HashMapNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ram6RamKeyINtNtCsevLNFiNqfJP_4core6option6OptionINtNtCs1C1lLj4PWSY_5alloc4sync3ArcShEEINtNtB1G_4hash18BuildHasherDefaultNtNtBU_8fasthash8FxHasherEE7get_mutB2L_EBW_
+            |
+            ---_RINvMs1_NtCskibSv91bgl1_9hashbrown3mapINtB6_7HashMapNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ram6RamKeyINtNtCsevLNFiNqfJP_4core6option6OptionINtNtCs1C1lLj4PWSY_5alloc4sync3ArcShEEINtNtB1G_4hash18BuildHasherDefaultNtNtBU_8fasthash8FxHasherEE7get_mutB2L_EBW_
+               |          
+                --2.35%--_RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+                          _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+                          |          
+                           --1.34%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                                     _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+                                     _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+                                     _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+                                     _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+                                     _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+                                     0x7457cdc9cb83
+                                     0x7457cdd29ecb
+     3.37%  queen-rsm-apply  queen              [.] _mi_page_malloc_zero
+            |
+            ---_mi_page_malloc_zero
+     2.46%  queen-rsm-apply  [kernel.kallsyms]  [k] _raw_spin_unlock_irqrestore
+            |
+            ---_raw_spin_unlock_irqrestore
+               |          
+                --1.34%--try_to_wake_up
+                          wake_up_q
+                          futex_wake
+                          do_futex
+                          __x64_sys_futex
+                          x64_sys_call
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          syscall
+     2.46%  queen-rsm-apply  queen              [.] mi_theap_umalloc
+            |
+            ---mi_theap_umalloc
+               _mi_theap_realloc_zero
+               _RNvMs5_NtCs1C1lLj4PWSY_5alloc7raw_vecNtB5_11RawVecInner11finish_growCs2cvMjFx1uWV_5queen
+               _RINvNvMs2_NtCs1C1lLj4PWSY_5alloc7raw_vecINtB8_11RawVecInnerpE7reserve21do_reserve_and_handleNtNtBa_5alloc6GlobalECs2cvMjFx1uWV_5queen
+               |          
+                --2.03%--_RNvMs1_NtNtCs2cvMjFx1uWV_5queen3rsm5entryNtB5_7Outcome11encode_body
+                          _RNvMs1_NtNtCs2cvMjFx1uWV_5queen3rsm5entryNtB5_7Outcome6encode
+                          _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                          |          
+                           --1.98%--_RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+                                     _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+                                     _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+                                     _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+                                     _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+                                     0x7457cdc9cb83
+                                     0x7457cdd29ecb
+     2.24%  queen-rsm-apply  [kernel.kallsyms]  [k] finish_task_switch.isra.0
+            |
+            ---finish_task_switch.isra.0
+               __schedule
+               schedule
+               |          
+                --1.71%--futex_wait_queue
+                          __futex_wait
+                          futex_wait
+                          do_futex
+                          __x64_sys_futex
+                          x64_sys_call
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          syscall
+     2.03%  queen-rsm-apply  queen              [.] _RNvMsh_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ramNtB5_8TreeRows10put_in_map
+            |
+            ---_RNvMsh_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ramNtB5_8TreeRows10put_in_map
+               |          
+                --1.82%--_RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+                          _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+                          |          
+                           --1.44%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                                     |          
+                                      --1.39%--_RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+                                                _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+                                                _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+                                                _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+                                                _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+                                                0x7457cdc9cb83
+                                                0x7457cdd29ecb
+     1.98%  queen-rsm-apply  queen              [.] _RNvNtNtNtCs2cvMjFx1uWV_5queen3rsm5store4keys9push_name
+            |
+            ---_RNvNtNtNtCs2cvMjFx1uWV_5queen3rsm5store4keys9push_name
+     1.87%  queen-rsm-apply  queen              [.] _RNvMs1_NtCskibSv91bgl1_9hashbrown3mapINtB5_7HashMapNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ram6RamKeyINtNtCsevLNFiNqfJP_4core6option6OptionINtNtCs1C1lLj4PWSY_5alloc4sync3ArcShEEINtNtB1F_4hash18BuildHasherDefaultNtNtBT_8fasthash8FxHasherEE6insertBV_
+            |
+            ---_RNvMs1_NtCskibSv91bgl1_9hashbrown3mapINtB5_7HashMapNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store3ram6RamKeyINtNtCsevLNFiNqfJP_4core6option6OptionINtNtCs1C1lLj4PWSY_5alloc4sync3ArcShEEINtNtB1F_4hash18BuildHasherDefaultNtNtBT_8fasthash8FxHasherEE6insertBV_
+               |          
+                --1.82%--_RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+                          _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+                          |          
+                           --1.55%--_RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply14record_outcomeNtNtNtB4_5store10heed_store9HeedWriteEB6_
+                                     _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE7executeB9_
+                                     _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+                                     _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+                                     _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+                                     _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+                                     0x7457cdc9cb83
+                                     0x7457cdd29ecb
+     1.60%  queen-rsm-apply  libc.so.6          [.] 0x000000000019869e
+            |
+            ---0x7457cdd9869e
+     1.60%  queen-rsm-apply  libc.so.6          [.] 0x00000000001986a5
+            |
+            ---0x7457cdd986a5
+     1.60%  queen-rsm-apply  queen              [.] _RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore10ram_upsert
+            |
+            ---_RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore10ram_upsert
+               _RNvYNtNtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_store9HeedWriteNtNtB6_5typed11TypedWrites11add_counterBa_
+               _RINvMsc_NtNtCs2cvMjFx1uWV_5queen3rsm5applyNtB6_12CounterCache5flushNtNtNtB8_5store10heed_store9HeedWriteEBa_
+               _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE14flush_countersB9_
+               _RNvMsd_NtNtCs2cvMjFx1uWV_5queen3rsm5applyINtB5_7ApplierNtNtNtB7_5store10heed_store9HeedStoreE6commitB9_
+               _RINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply3runNtNtNtB4_5store10heed_store9HeedStoreEB6_
+               _RINvNtNtCsgHYyB3hU8Ec_3std3sys9backtrace28___rust_begin_short_backtraceNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1e_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB1c_10ApplyStatsNtB1c_10ApplyErrorEEB1g_
+               _RNSNvYNCINvNtNtCsgHYyB3hU8Ec_3std6thread9lifecycle15spawn_uncheckedNCINvNtNtCs2cvMjFx1uWV_5queen3rsm5apply17spawn_with_readerNtNtNtB1a_5store10heed_store9HeedStoreE0INtNtCsevLNFiNqfJP_4core6result6ResultNtB18_10ApplyStatsNtB18_10ApplyErrorEEs_0INtNtNtB2I_3ops8function6FnOnceuE9call_once6vtableB1c_
+               _RNvNvMs0_NtNtNtCsgHYyB3hU8Ec_3std3sys6thread4unixNtB7_6Thread3new12thread_start
+               0x7457cdc9cb83
+               0x7457cdd29ecb
+     1.55%  queen-rsm-apply  queen              [.] _RNvNtCsjAS2YDW9Dla_11xxhash_rust4xxh323hash_long_internal_loop
+            |
+            ---_RNvNtCsjAS2YDW9Dla_11xxhash_rust4xxh323hash_long_internal_loop
+               _RNvNtCsjAS2YDW9Dla_11xxhash_rust4xxh322xxh3_64_long_with_seed
+               _RNvMs0_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedStore7ram_put
+               _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+     1.50%  queen-rsm-apply  queen              [.] _RNvMNtNtNtCs2cvMjFx1uWV_5queen3rsm7consume5hooksNtB4_6Engine13append_locked
+            |
+            ---_RNvMNtNtNtCs2cvMjFx1uWV_5queen3rsm7consume5hooksNtB4_6Engine13append_locked
+               _RNvMs0_NtNtCs2cvMjFx1uWV_5queen3rsm7consumeNtB5_6Engine9on_append
+               _RINvMs1_NtNtNtCs2cvMjFx1uWV_5queen3rsm5apply5shardNtB6_5Shard6effectNtNtNtBa_5store10heed_store9HeedWriteEBc_
+     1.39%  queen-rsm-apply  queen              [.] _RINvMs1_NtCskibSv91bgl1_9hashbrown3mapINtB6_7HashMapINtNtCs1C1lLj4PWSY_5alloc5boxed3BoxShExINtNtCsevLNFiNqfJP_4core4hash18BuildHasherDefaultNtNtNtCs2cvMjFx1uWV_5queen3rsm8fasthash8FxHasherEE7get_mutB1n_EB2k_
+            |
+            ---_RINvMs1_NtCskibSv91bgl1_9hashbrown3mapINtB6_7HashMapINtNtCs1C1lLj4PWSY_5alloc5boxed3BoxShExINtNtCsevLNFiNqfJP_4core4hash18BuildHasherDefaultNtNtNtCs2cvMjFx1uWV_5queen3rsm8fasthash8FxHasherEE7get_mutB1n_EB2k_
+               |          
+                --1.34%--_RINvMsc_NtNtCs2cvMjFx1uWV_5queen3rsm5applyNtB6_12CounterCache3addNtNtNtB8_5store10heed_store9HeedWriteEBa_
+     1.39%  queen-rsm-apply  queen              [.] _RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+            |
+            ---_RNvXs6_NtNtNtCs2cvMjFx1uWV_5queen3rsm5store10heed_storeNtB5_9HeedWriteNtB7_6Writes7put_raw
+#
+# (Cannot load tips.txt file, please install perf!)
+#

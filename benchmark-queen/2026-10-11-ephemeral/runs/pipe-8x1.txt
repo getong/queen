@@ -1,0 +1,11 @@
+== pipe-8x1 (pipe, 10 s measured)
+  pushed                   757154        75715 /s
+  push calls               757154        75715 /s
+  delivered                757156        75716 /s
+  pop calls                669375        66938 /s
+  push call          p50 0.099  p90 0.156  p99 0.224  p99.9 0.329  max 14.651 ms
+  push to delivery   p50 0.141  p90 0.219  p99 0.312  p99.9 0.479  max 14.850 ms
+  broker cores       3.38
+  loader cores       2.94
+RESULT {"broker cores":3.3839999999999995,"delivered":757156,"delivered/s":75715.6,"errors":{},"loader cores":2.9370196,"mode":"pipe","name":"pipe-8x1","pop calls":669375,"pop calls/s":66937.5,"push call":{"max":14.651,"p50":0.099,"p90":0.156,"p99":0.224,"p999":0.329},"push calls":757154,"push calls/s":75715.4,"push to delivery":{"max":14.85,"p50":0.141,"p90":0.219,"p99":0.312,"p999":0.479},"pushed":757154,"pushed/s":75715.4,"rate":0,"seconds":10}
+  broker RSS after   33 MiB

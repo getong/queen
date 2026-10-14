@@ -1,0 +1,143 @@
+=== 10:16:33 single contend-1x2-spin: -mode lock-contend -locks 1 -workers 2 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait            2347/s  p50=0.49 p90=0.58 p99=1.93 p999=4.07 max=44.0 ms  (n=70396)
+    [final] try             5031/s  p50=0.15 p90=0.39 p99=0.93 p999=2.74 max=43.9 ms  (n=150941)
+    [final] release         2347/s  p50=0.29 p90=0.33 p99=0.80 p999=2.41 max=17.7 ms  (n=70397)
+    [final] lockOps            221338        7378/s
+    [final] acquired            70396        2347/s
+    [final] tries              150941        5031/s
+    [final] refused             80544        2685/s
+    [final] contended               0           0/s
+    [final] released            70397        2347/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:17:09 single contend-1x16-spin: -mode lock-contend -locks 1 -workers 16 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait            1743/s  p50=5.97 p90=19.66 p99=39.20 p999=59.30 max=99.1 ms  (n=52279)
+    [final] try            36848/s  p50=0.41 p90=0.58 p99=1.20 p999=3.12 max=8.8 ms  (n=1105434)
+    [final] release         1743/s  p50=0.50 p90=0.62 p99=1.51 p999=3.27 max=7.7 ms  (n=52294)
+    [final] lockOps           1157728       38591/s
+    [final] acquired            52279        1743/s
+    [final] tries             1105434       36848/s
+    [final] refused           1053141       35105/s
+    [final] contended               0           0/s
+    [final] released            52294        1743/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:17:44 single contend-1x64-spin: -mode lock-contend -locks 1 -workers 64 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait             971/s  p50=44.70 p90=149.89 p99=298.75 p999=432.90 max=694.8 ms  (n=29122)
+    [final] try            79218/s  p50=0.77 p90=1.14 p99=2.03 p999=4.40 max=13.0 ms  (n=2376529)
+    [final] release          973/s  p50=0.94 p90=1.26 p99=2.34 p999=4.63 max=12.0 ms  (n=29185)
+    [final] lockOps           2405714       80190/s
+    [final] acquired            29122         971/s
+    [final] tries             2376529       79218/s
+    [final] refused           2347345       78245/s
+    [final] contended               0           0/s
+    [final] released            29185         973/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:18:19 single contend-100x1600-spin: -mode lock-contend -locks 100 -workers 1600 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait            5463/s  p50=186.75 p90=628.22 p99=1254.40 p999=1872.90 max=3613.6 ms  (n=163900)
+    [final] try            88281/s  p50=16.40 p90=22.74 p99=29.84 p999=35.81 max=51.9 ms  (n=2648443)
+    [final] release         5514/s  p50=16.43 p90=22.77 p99=29.84 p999=35.68 max=48.2 ms  (n=165409)
+    [final] lockOps           2813852       93795/s
+    [final] acquired           163900        5463/s
+    [final] tries             2648443       88281/s
+    [final] refused           2483127       82771/s
+    [final] contended               0           0/s
+    [final] released           165409        5514/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:18:55 single contend-1x8-sdk-hold20: -mode lock-contend -locks 1 -workers 8 -poll sdk -hold-ms 20 -ttl 30 -warmup 5 -duration 60
+    [final] 60s measured
+    [final] wait              47/s  p50=0.37 p90=0.47 p99=1.55 p999=3586.05 max=32555.7 ms  (n=2828)
+    [final] try               56/s  p50=0.36 p90=0.46 p99=1.17 p999=2.46 max=5.6 ms  (n=3356)
+    [final] release           47/s  p50=0.50 p90=0.67 p99=1.93 p999=4.92 max=30.9 ms  (n=2834)
+    [final] lockOps              6190         103/s
+    [final] acquired             2828          47/s
+    [final] tries                3356          56/s
+    [final] refused               523           9/s
+    [final] contended               0           0/s
+    [final] released             2834          47/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:20:01 single contend-100x800-sdk-hold20: -mode lock-contend -locks 100 -workers 800 -poll sdk -hold-ms 20 -ttl 30 -warmup 5 -duration 60
+    [final] 60s measured
+    [final] wait            4547/s  p50=0.64 p90=1.64 p99=6.32 p999=21381.12 max=56192.5 ms  (n=272845)
+    [final] try             5510/s  p50=0.60 p90=1.46 p99=3.96 p999=8.26 max=32.8 ms  (n=330590)
+    [final] release         4560/s  p50=0.67 p90=1.44 p99=3.98 p999=9.16 max=33.6 ms  (n=273607)
+    [final] lockOps            604197       10070/s
+    [final] acquired           272845        4547/s
+    [final] tries              330590        5510/s
+    [final] refused             57083         951/s
+    [final] contended               0           0/s
+    [final] released           273607        4560/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:21:07 single sem-free-8-w256: -mode sem -locks 64 -limit 8 -workers 256 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait           31438/s  p50=4.08 p90=6.52 p99=10.82 p999=19.34 max=69.1 ms  (n=943139)
+    [final] try            31439/s  p50=4.08 p90=6.52 p99=10.82 p999=19.09 max=69.1 ms  (n=943184)
+    [final] release        31443/s  p50=3.43 p90=4.80 p99=7.39 p999=14.97 max=63.8 ms  (n=943300)
+    [final] lockOps           1886484       62883/s
+    [final] acquired           943139       31438/s
+    [final] tries              943184       31439/s
+    [final] refused                 0           0/s
+    [final] contended              45           2/s
+    [final] released           943300       31443/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:21:43 single sem-free-64-w256: -mode sem -locks 8 -limit 64 -workers 256 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait           22197/s  p50=5.79 p90=10.41 p99=17.20 p999=26.86 max=69.3 ms  (n=665912)
+    [final] try            22210/s  p50=5.78 p90=10.41 p99=17.17 p999=25.14 max=69.2 ms  (n=666304)
+    [final] release        22201/s  p50=4.69 p90=6.15 p99=8.73 p999=14.65 max=57.2 ms  (n=666039)
+    [final] lockOps           1332343       44411/s
+    [final] acquired           665912       22197/s
+    [final] tries              666304       22210/s
+    [final] refused                 0           0/s
+    [final] contended             392          13/s
+    [final] released           666039       22201/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:22:18 single sem-free-1024-w256: -mode sem -locks 1 -limit 1024 -workers 256 -poll 0 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait            5487/s  p50=24.53 p90=35.81 p99=58.72 p999=79.94 max=124.0 ms  (n=164598)
+    [final] try             5487/s  p50=24.53 p90=35.81 p99=58.72 p999=79.94 max=107.5 ms  (n=164612)
+    [final] release         5490/s  p50=20.11 p90=24.08 p99=29.36 p999=35.81 max=54.7 ms  (n=164700)
+    [final] lockOps            329312       10977/s
+    [final] acquired           164598        5487/s
+    [final] tries              164612        5487/s
+    [final] refused                 0           0/s
+    [final] contended              14           0/s
+    [final] released           164700        5490/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:22:54 single sem-full-8-w32: -mode sem -locks 1 -limit 8 -workers 32 -poll 5 -hold-ms 2 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait            2382/s  p50=0.84 p90=35.23 p99=88.90 p999=145.79 max=302.5 ms  (n=71468)
+    [final] try             6959/s  p50=0.51 p90=1.30 p99=3.21 p999=8.00 max=17.2 ms  (n=208765)
+    [final] release         2383/s  p50=0.48 p90=0.69 p99=2.35 p999=6.28 max=16.4 ms  (n=71500)
+    [final] lockOps            280265        9342/s
+    [final] acquired            71468        2382/s
+    [final] tries              208765        6959/s
+    [final] refused            132797        4427/s
+    [final] contended            4476         149/s
+    [final] released            71500        2383/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s
+=== 10:23:29 single sem-full-64-w256: -mode sem -locks 1 -limit 64 -workers 256 -poll 5 -hold-ms 2 -ttl 30 -warmup 5 -duration 30
+    [final] 30s measured
+    [final] wait            4655/s  p50=32.66 p90=103.74 p99=205.18 p999=308.99 max=463.4 ms  (n=139641)
+    [final] try             9218/s  p50=23.54 p90=29.74 p99=35.17 p999=55.14 max=78.7 ms  (n=276546)
+    [final] release         4662/s  p50=6.22 p90=8.09 p99=10.62 p999=17.55 max=50.0 ms  (n=139860)
+    [final] lockOps            416406       13880/s
+    [final] acquired           139641        4655/s
+    [final] tries              276546        9218/s
+    [final] refused               137           5/s
+    [final] contended          136636        4555/s
+    [final] released           139860        4662/s
+    [final] lost                    0           0/s
+    [final] twoHolders              0           0/s

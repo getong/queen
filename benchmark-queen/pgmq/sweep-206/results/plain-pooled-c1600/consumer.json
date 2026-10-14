@@ -1,0 +1,20 @@
+{
+  "role": "consumer",
+  "event": "result",
+  "mode": "plain",
+  "connections": 1600,
+  "totalOps": 1751834,
+  "totalMessages": 0,
+  "msgPerSec": 0,
+  "opsPerSec": 29197,
+  "latency": {
+    "p50": 13.4,
+    "p90": 26.2,
+    "p99": 32.8,
+    "avg": 15.61,
+    "max": 262.88
+  },
+  "errors": 3664,
+  "lastError": "Connection terminated due to connection timeout",
+  "durationSec": 60
+}

@@ -1,0 +1,6 @@
+ queue_table_size 
+------------------
+ 69 MB
+(1 row)
+
+./run.sh: line 37: 21637 Terminated: 15          bash sample-metrics.sh "$OUTDIR/metrics.csv" 1 "$QUEUE"

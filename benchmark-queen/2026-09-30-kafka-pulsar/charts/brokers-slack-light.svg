@@ -120,11 +120,11 @@
 <circle cx="1023.5" cy="379.9" r="3.6" fill="#9a5b07" stroke="#9a5b07" stroke-width="1.8"/>
 <circle cx="1129.2" cy="379.9" r="3.6" fill="#9a5b07" stroke="#9a5b07" stroke-width="1.8"/>
 <circle cx="1235.0" cy="385.7" r="3.6" fill="#9a5b07" stroke="#9a5b07" stroke-width="1.8"/>
-<path d="M738.2,357.8 L917.8,339.8 L991.7,272.0 L1023.5,207.6" fill="none" stroke="#6f4fa0" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="738.2" cy="357.8" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
-<circle cx="917.8" cy="339.8" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
-<circle cx="991.7" cy="272.0" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
-<circle cx="1023.5" cy="207.6" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
+<path d="M738.2,397.3 L917.8,391.5 L991.7,376.4 L1023.5,366.5" fill="none" stroke="#6f4fa0" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="738.2" cy="397.3" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
+<circle cx="917.8" cy="391.5" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
+<circle cx="991.7" cy="376.4" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
+<circle cx="1023.5" cy="366.5" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
 <text xml:space="preserve" x="1294.0" y="178.0" font-size="13.5" font-weight="600" fill="#1f1d1a" text-anchor="start">memory, GB: RSS of the busiest broker (Queen: leader, anonymous)</text>
 <line x1="1344.0" y1="486.0" x2="1866.0" y2="486.0" stroke="#e0dcd6" stroke-width="1"/>
 <text xml:space="preserve" x="1336.0" y="490.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="end">0</text>
@@ -170,15 +170,13 @@
 <circle cx="1748.2" cy="431.9" r="3.6" fill="#9a5b07" stroke="#9a5b07" stroke-width="1.8"/>
 <circle cx="1822.1" cy="371.9" r="3.6" fill="#9a5b07" stroke="#9a5b07" stroke-width="1.8"/>
 <circle cx="1854.0" cy="293.6" r="3.6" fill="#9a5b07" stroke="#9a5b07" stroke-width="1.8"/>
-<path d="M1357.2,436.7 L1536.8,417.4 L1610.7,319.7 L1642.5,253.0" fill="none" stroke="#6f4fa0" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M1357.2,436.7 L1536.8,417.4 L1610.7,420.3 L1642.5,418.3" fill="none" stroke="#6f4fa0" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
 <circle cx="1357.2" cy="436.7" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
 <circle cx="1536.8" cy="417.4" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
-<circle cx="1610.7" cy="319.7" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
-<circle cx="1642.5" cy="253.0" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
+<circle cx="1610.7" cy="420.3" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
+<circle cx="1642.5" cy="418.3" r="3.6" fill="#6f4fa0" stroke="#6f4fa0" stroke-width="1.8"/>
 <text xml:space="preserve" x="1866.0" y="214.0" font-size="11.5" font-weight="500" fill="#4f4b45" text-anchor="end">Queen leader: +16.3 GB from 200</text>
 <text xml:space="preserve" x="1866.0" y="230.0" font-size="11.5" font-weight="500" fill="#4f4b45" text-anchor="end">to 10M partitions, under 2 KB each</text>
-<text xml:space="preserve" x="1033.5" y="226.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="start">Queen (Kafka protocol) at 100k partitions:</text>
-<text xml:space="preserve" x="1033.5" y="242.0" font-size="11.5" font-weight="400" fill="#6c675f" text-anchor="start">saturated, sampler reads 49.7</text>
 <rect x="32" y="546" width="1060" height="434" rx="10" fill="#f9f7f4" stroke="#e0dcd6" stroke-width="1"/>
 <text xml:space="preserve" x="56.0" y="576.0" font-size="17" font-weight="650" fill="#1f1d1a" text-anchor="start">200 partitions: p99 as the offered rate rises</text>
 <text xml:space="preserve" x="56.0" y="597.0" font-size="12.5" font-weight="400" fill="#6c675f" text-anchor="start">x: offered msg/s · y: p99 end-to-end, log scale · hollow: fell behind (consumed &lt; 97% of offered, or p99 &gt; 5 s) · Kafka acks from page cache, the others after 2 of 3 fsync</text>

@@ -1,0 +1,20 @@
+{"role":"producer","event":"start","queues":["fanout-bench"],"queueCount":1,"numWorkers":2,"conns":50,"duration":120,"maxPartition":1000,"msgsPerPush":10,"timestamp":"2026-05-30T06:46:34.211Z"}
+{
+  "role": "producer",
+  "event": "result",
+  "totalRequests": 130666,
+  "totalMessages": 1306660,
+  "reqPerSec": 1089,
+  "msgPerSec": 10890,
+  "latency": {
+    "p50": 89,
+    "p90": 140.5,
+    "p99": 225.5,
+    "avg": 91.475,
+    "max": 618
+  },
+  "errors": 0,
+  "non2xx": 0,
+  "timeouts": 0,
+  "durationSec": 120
+}

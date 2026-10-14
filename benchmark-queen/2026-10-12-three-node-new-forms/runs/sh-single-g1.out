@@ -1,0 +1,9 @@
+[09:18:47] run sh-single-g1: binary p7, groups 1, sync, checkpoint 5 ms, tenants 3, partitions 3000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 60s at: 50000 100000 150000 200000 300000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=1 | QEXTRA=-push-wire bin -ack-counts -pop-frames -tail 30s
+[09:19:18] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[create] done: bench x 1000 partitions
+[create] done: bench x 1000 partitions
+[09:21:02]    50,000: last 30 s: offered 49,995 pushed 49,996 consumed 50,000 | run: shed 0 errors 0 | push p50 4.9 p99 14.8 | e2e p50 11.5 p99 38.4 worst 41.0 | cores 8.9 / 6.1 / 6.0 | mem GB 2.1 / 1.9 / 1.9 | loaders 9.7c  OK 
+[09:22:39]   100,000: last 30 s: offered 99,998 pushed 99,997 consumed 100,032 | run: shed 0 errors 0 | push p50 22.8 p99 65.5 | e2e p50 93.2 p99 188.4 worst 194.6 | cores 11.0 / 7.9 / 7.7 | mem GB 3.7 / 3.3 / 3.3 | loaders 14.1c  OK 
+[09:24:17]   150,000: last 30 s: offered 149,991 pushed 124,014 consumed 124,166 | run: shed 1,385,881 errors 0 | push p50 256.0 p99 688.1 | e2e p50 458.8 p99 1146.9 worst 1179.6 | cores 11.4 / 7.7 / 7.5 | mem GB 4.7 / 5.3 / 5.3 | loaders 15.7c  NOT CARRIED 
+[09:24:17] stopping at 150000

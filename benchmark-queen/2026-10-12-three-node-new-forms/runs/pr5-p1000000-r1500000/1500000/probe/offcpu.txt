@@ -1,0 +1,336 @@
+Attaching 3 probes...
+
+
+@long_us[427053, 
+    __schedule+812
+    __cond_resched+93
+    tlb_batch_pages_flush+83
+    tlb_finish_mmu+115
+    zap_page_range_single+354
+    madvise_vma_behavior+1945
+    madvise_walk_vmas+196
+    do_madvise+313
+    __x64_sys_madvise+44
+    x64_sys_call+7752
+]: count 1, average 1015, total 1015
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: count 1, average 1021, total 1021
+@long_us[427046, 
+    __schedule+812
+    __cond_resched+93
+    dput+35
+    fscrypt_file_open+75
+    ext4_file_open+80
+    do_dentry_open+544
+    vfs_open+51
+    do_open+749
+    path_openat+309
+    do_filp_open+175
+]: count 1, average 1043, total 1043
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_apic_timer_interrupt+75
+    asm_sysvec_apic_timer_interrupt+27
+]: count 1, average 1047, total 1047
+@long_us[427053, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    common_interrupt+84
+    asm_common_interrupt+39
+]: count 2, average 1073, total 2146
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    io_schedule+70
+    folio_wait_bit_common+310
+    folio_wait_bit+24
+    folio_wait_writeback+43
+    __filemap_fdatawait_range+147
+    file_write_and_wait_range+147
+    ext4_sync_file+160
+    vfs_fsync_range+75
+]: count 1, average 1077, total 1077
+@long_us[427046, 
+    __schedule+812
+    __cond_resched+93
+    __alloc_pages+359
+    alloc_pages_mpol+145
+    vma_alloc_folio+100
+    alloc_anon_folio+460
+    do_anonymous_page+108
+    handle_pte_fault+459
+    __handle_mm_fault+1620
+    handle_mm_fault+394
+]: count 1, average 1094, total 1094
+@long_us[427052, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_reschedule_ipi+105
+    asm_sysvec_reschedule_ipi+27
+]: count 1, average 1115, total 1115
+@long_us[427051, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: count 2, average 1168, total 2336
+@long_us[427046, 
+    __schedule+812
+    __cond_resched+93
+    kmem_cache_alloc+662
+    getname_flags.part.0+48
+    getname+52
+    do_sys_openat2+127
+    __x64_sys_openat+85
+    x64_sys_call+7857
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 1, average 1291, total 1291
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    jbd2_log_wait_commit+217
+    __jbd2_journal_force_commit+89
+    jbd2_journal_force_commit+33
+    ext4_force_commit+42
+    ext4_sync_file+716
+    vfs_fsync_range+75
+    __x64_sys_fsync+60
+    x64_sys_call+9552
+]: count 3, average 1337, total 4011
+@long_us[427052, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 14, average 1338, total 18737
+@long_us[427051, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 20, average 1415, total 28319
+@long_us[427053, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 17, average 1418, total 24116
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function_single+75
+    asm_sysvec_call_function_single+27
+]: count 13, average 1431, total 18610
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_reschedule_ipi+105
+    asm_sysvec_reschedule_ipi+27
+]: count 1, average 1462, total 1462
+@long_us[427046, 
+    __schedule+812
+    __cond_resched+93
+    vfs_write+831
+    ksys_write+115
+    __x64_sys_write+25
+    x64_sys_call+126
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 1, average 1555, total 1555
+@long_us[427051, 
+    __schedule+812
+    schedule+51
+    irqentry_exit_to_user_mode+286
+    irqentry_exit+67
+    sysvec_call_function+75
+    asm_sysvec_call_function+27
+]: count 1, average 1577, total 1577
+@long_us[427046, 
+    __schedule+812
+    __cond_resched+93
+    __filemap_get_folio+504
+    ext4_da_write_begin+309
+    generic_perform_write+207
+    ext4_buffered_write_iter+112
+    ext4_file_write_iter+76
+    vfs_write+676
+    ksys_write+115
+    __x64_sys_write+25
+]: count 1, average 1633, total 1633
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 1826, average 1708, total 3119270
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    syscall_exit_to_user_mode+297
+    do_syscall_64+148
+    entry_SYSCALL_64_after_hwframe+120
+]: count 2, average 1714, total 3429
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    jbd2_log_wait_commit+217
+    jbd2_complete_transaction+115
+    ext4_fc_commit+455
+    ext4_sync_file+514
+    vfs_fsync_range+75
+    __x64_sys_fsync+60
+    x64_sys_call+9552
+    do_syscall_64+135
+]: count 7, average 2001, total 14010
+@long_us[427046, 
+    __schedule+812
+    schedule+51
+    io_schedule+70
+    bit_wait_io+17
+    __wait_on_bit+69
+    out_of_line_wait_on_bit+140
+    do_get_write_access+639
+    jbd2_journal_get_write_access+155
+    __ext4_journal_get_write_access+66
+    ext4_reserve_inode_write+103
+]: count 2, average 2065, total 4130
+@long_us[427052, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 2650, average 2543, total 6741249
+@long_us[427051, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 2665, average 2544, total 6781549
+@long_us[427053, 
+    __schedule+812
+    schedule+51
+    futex_wait_queue+100
+    __futex_wait+341
+    futex_wait+116
+    do_futex+261
+    __x64_sys_futex+298
+    x64_sys_call+273
+    do_syscall_64+135
+    entry_SYSCALL_64_after_hwframe+120
+]: count 2665, average 2555, total 6810877
+
+
+@off_total_us[427046]: 6061571
+@off_total_us[427053]: 9160044
+@off_total_us[427052]: 9168630
+@off_total_us[427051]: 9184562
+@off_us[427053]: 
+[2, 4)                30 |                                                    |
+[4, 8)               417 |@@@@@@@@@@@                                         |
+[8, 16)              519 |@@@@@@@@@@@@@                                       |
+[16, 32)             356 |@@@@@@@@@                                           |
+[32, 64)             427 |@@@@@@@@@@@                                         |
+[64, 128)            738 |@@@@@@@@@@@@@@@@@@@                                 |
+[128, 256)          1151 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                      |
+[256, 512)          1637 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@         |
+[512, 1K)           1962 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[1K, 2K)            1545 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            |
+[2K, 4K)             768 |@@@@@@@@@@@@@@@@@@@@                                |
+[4K, 8K)             226 |@@@@@                                               |
+[8K, 16K)             37 |                                                    |
+[16K, 32K)            36 |                                                    |
+
+@off_us[427051]: 
+[2, 4)                41 |@                                                   |
+[4, 8)               383 |@@@@@@@@@                                           |
+[8, 16)              495 |@@@@@@@@@@@@                                        |
+[16, 32)             379 |@@@@@@@@@                                           |
+[32, 64)             434 |@@@@@@@@@@@                                         |
+[64, 128)            779 |@@@@@@@@@@@@@@@@@@@@                                |
+[128, 256)          1176 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                      |
+[256, 512)          1658 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@         |
+[512, 1K)           2004 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[1K, 2K)            1568 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            |
+[2K, 4K)             753 |@@@@@@@@@@@@@@@@@@@                                 |
+[4K, 8K)             235 |@@@@@@                                              |
+[8K, 16K)             35 |                                                    |
+[16K, 32K)            34 |                                                    |
+
+@off_us[427052]: 
+[2, 4)                24 |                                                    |
+[4, 8)               473 |@@@@@@@@@@@@                                        |
+[8, 16)              571 |@@@@@@@@@@@@@@                                      |
+[16, 32)             412 |@@@@@@@@@@                                          |
+[32, 64)             441 |@@@@@@@@@@@                                         |
+[64, 128)            812 |@@@@@@@@@@@@@@@@@@@@                                |
+[128, 256)          1223 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                     |
+[256, 512)          1675 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          |
+[512, 1K)           2040 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[1K, 2K)            1578 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@            |
+[2K, 4K)             716 |@@@@@@@@@@@@@@@@@@                                  |
+[4K, 8K)             238 |@@@@@@                                              |
+[8K, 16K)             31 |                                                    |
+[16K, 32K)            36 |                                                    |
+
+@off_us[427046]: 
+[2, 4)               228 |@@@@                                                |
+[4, 8)               845 |@@@@@@@@@@@@@@@@@@                                  |
+[8, 16)              985 |@@@@@@@@@@@@@@@@@@@@@                               |
+[16, 32)             924 |@@@@@@@@@@@@@@@@@@@                                 |
+[32, 64)            1334 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@                        |
+[64, 128)           1676 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@                 |
+[128, 256)          2032 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@         |
+[256, 512)          2429 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[512, 1K)           1961 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@           |
+[1K, 2K)            1177 |@@@@@@@@@@@@@@@@@@@@@@@@@                           |
+[2K, 4K)             626 |@@@@@@@@@@@@@                                       |
+[4K, 8K)              12 |                                                    |
+
+
+@switches[427053]: 9849
+@switches[427051]: 9974
+@switches[427052]: 10270
+@switches[427046]: 14229

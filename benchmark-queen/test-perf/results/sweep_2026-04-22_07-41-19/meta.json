@@ -1,0 +1,20 @@
+{
+  "stamp": "2026-04-22_07-41-19",
+  "git": { "sha": "21dbc06", "branch": "nagle" },
+  "sweep": {
+    "pg_cores_list": "1 2 3 4 5 6",
+    "payload_kb_list": "1 10",
+    "push_batch": 10,
+    "num_workers": 2,
+    "producer": { "workers": 4, "connections": 200 },
+    "consumer": { "workers": 1, "connections": 25 },
+    "warmup_s": 5,
+    "measure_s": 30,
+    "vegas": {
+      "push_max_concurrent": 32,
+      "max_limit": 32,
+      "alpha": 3,
+      "beta": 16
+    }
+  }
+}

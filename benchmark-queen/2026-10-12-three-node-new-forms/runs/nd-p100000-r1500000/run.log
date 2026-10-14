@@ -1,0 +1,7 @@
+[16:28:35] run nd-p100000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[16:29:01] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 100000 partitions
+[16:31:12] 1,500,000: last 30 s: offered 1,499,993 pushed 1,499,969 consumed 1,499,856 | run: shed 0 errors 0 | push p50 8.6 p99 20.2 | e2e p50 18.7 p99 55.3 worst 58.9 | cores 7.3 / 5.0 / 4.7 | mem GB 6.7 / 5.9 / 5.8 | loaders 12.1c  OK 
+RUN_DONE

@@ -1,0 +1,7 @@
+[19:13:31] run t0-probe23-p1000-r1500000: binary 23, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 90s at: 1500000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[19:13:57] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[19:16:18] 1,500,000: last 30 s: offered 1,499,893 pushed 1,499,670 consumed 1,499,723 | run: shed 0 errors 0 | push p50 7.9 p99 22.0 | e2e p50 17.7 p99 63.5 worst 72.7 | cores 7.2 / 4.9 / 4.6 | mem GB 6.2 / 5.7 / 5.7 | loaders 12.1c  OK 
+RUN_DONE
