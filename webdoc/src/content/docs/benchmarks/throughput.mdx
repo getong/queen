@@ -1,6 +1,6 @@
 ---
 title: "Throughput and latency vs Kafka, Redpanda, Pulsar"
-description: "One queue offered 100,000 to 2,500,000 msg/s on three nodes with Queen 2.3.0, Kafka on the same machines up to 4,000,000, and the four systems of September: latency at each rate, each ceiling, CPU, and where Queen's latency comes from."
+description: "One queue offered 100,000 to 2,500,000 msg/s on three 16-vCPU nodes with pre-release builds of Queen 2.3.0, Kafka on the same machines up to 4,000,000, and the four systems of September: latency at each rate, each ceiling, CPU, and where Queen's latency comes from."
 type: reference
 tier: operate
 sidebar:
@@ -23,9 +23,12 @@ sourceOfTruth:
 
 Few partitions in one queue is the shape that suits a broker with a log per partition best: few
 logs, full batches, little state to keep. So that is where we raised the rate until each system
-stopped. Queen 2.3.0 carries 1,000,000 messages a second here with an end-to-end p99 of 19 ms and
-2,000,000 with 63 ms. Kafka, on the same machines the same day, read 11 ms and 43 ms and went on
-to 4,000,000, where Queen does not go: 2,500,000 is the first rate it did not carry (2026-10-13).
+stopped. On three 16-vCPU DigitalOcean nodes, pre-release builds of Queen 2.3.0 carry 1,000,000
+messages a second here with an end-to-end p99 of 19 ms and 2,000,000 with 63 ms. Kafka, on the same
+machines the same day, read 11 ms and 43 ms and went on to 4,000,000, where Queen did not go on
+these machines: 2,500,000 is the first rate it did not carry (2026-10-13). On three GCP nodes with
+24 vCPU and local NVMe, the released 2.3.0 carried 3,500,000 on 1,000 partitions and not 4,000,000
+([Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions)).
 [Compare](/start/compare/) explains where each system is better.
 
 ## The shape

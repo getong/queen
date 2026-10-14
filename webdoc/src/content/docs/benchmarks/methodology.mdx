@@ -38,16 +38,19 @@ Every number in this section comes from a folder of logs, and most can be produc
 command. This page is how: the machines, the load generators and what they count, the settings
 each system ran with, and the scripts.
 
-## Two sets of machines
+## Three sets of machines
 
-The section has two generations of runs. The 2.3.0 figures (2026-10-12 and 13: Queen's matrix,
-Kafka at 1,000,000 to 4,000,000 msg/s, the transactions against 2.2.0, five Kafka-client points)
-come from the second set below. Everything measured in September and on 2026-10-01 and 02 (Queen
-2.0.0-beta builds with Kafka, Redpanda and Pulsar, the soak, the first Kafka-client runs) comes
-from the first. Both are six DigitalOcean droplets of the same size; they are not the same
-machines, so no page compares a number across the two.
+The section has three generations of runs. The released 2.3.0 against Kafka 4.3.1 (2026-10-14)
+ran on six GCP VMs with local NVMe disks; their machines, settings and method are on
+[Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#the-machines). The pre-release 2.3.0 figures
+(2026-10-12 and 13: Queen's matrix, Kafka at 1,000,000 to 4,000,000 msg/s, the transactions
+against 2.2.0, five Kafka-client points) come from the second set of DigitalOcean droplets below.
+Everything measured in September and on 2026-10-01 and 02 (Queen 2.0.0-beta builds with Kafka,
+Redpanda and Pulsar, the soak, the first Kafka-client runs) comes from the first. The two
+DigitalOcean sets are six droplets of the same size. No two sets are the same machines, so no page
+compares a number across two of them.
 
-## The 2.3.0 runs
+## The 2.3.0 runs on DigitalOcean
 
 | Role | Machine | CPU | 32 KB write and fdatasync, p50 / p99 |
 |---|---|---|---|

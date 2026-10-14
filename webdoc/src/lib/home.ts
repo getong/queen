@@ -38,8 +38,8 @@ export const hero = {
   lead:
     "Queen MQ is a transactional event broker. When a worker handles an event, the ack, the " +
     "state it changes, the events it emits and the timer it sets commit as one entry of a " +
-    "replicated log, or not at all. On three nodes it carries 1M msg/s in and out of one queue " +
-    "of 10M partitions.",
+    "replicated log, or not at all. On three nodes it carries up to 3M msg/s in and out of one " +
+    "queue of 10M partitions.",
   second:
     "Every customer, order or conversation gets its own ordered partition, created by the first " +
     "message that names it. One binary with no database beside it: Kafka clients connect " +
@@ -219,25 +219,25 @@ export const proofSection = {
   eyebrow: "Benchmarks",
   title: "Measured, with the conditions attached",
   lead:
-    "Queen 2.3 on three 16-vCPU nodes, every write fsynced on two of them, beside Kafka on the " +
-    "same machines and September's runs of Redpanda and Pulsar. Every number names its run, including the places where " +
-    "another system does better.",
+    "Queen 2.3 on three GCP nodes with local NVMe, every write fsynced on two of them, beside Kafka " +
+    "on the same machines, and September's runs of Redpanda and Pulsar. Every number names its run, including the " +
+    "places where another system does better.",
   link: { label: "All the benchmarks", href: "/benchmarks/" },
 };
 
 /** The numbers strip. Each figure and body reaches dist/index.md (checked). */
 export const proof: { figure: string; unit: string; body: string; href: string }[] = [
   {
-    figure: "1,000,000",
+    figure: "3,000,000",
     unit: "msg/s pushed and consumed",
-    body: "One queue on three nodes at every partition count from 10 to 10,000,000, e2e p99 18 to 38 ms, and 2,000,000 msg/s at 59 to 100 ms. Deduplication off (2.3.0 pre-release builds, 90 s runs).",
-    href: "/benchmarks/partitions/",
+    body: "One queue on three nodes at every partition count from 10 to 10,000,000, e2e p99 47 to 78 ms on 19 to 23 cores, with 256-byte messages; 1 KB messages at 1,000,000 msg/s read 27 to 34 ms. Deduplication off (the released 2.3.0, 70 s runs).",
+    href: "/benchmarks/queen-vs-kafka/",
   },
   {
     figure: "10,000,000",
     unit: "partitions in one queue",
-    body: "Each one created by a push, none declared. 1,000,000 msg/s in and out on the same three nodes at an e2e p99 of 38 ms, 2,000,000 at 73 ms.",
-    href: "/benchmarks/partitions/",
+    body: "Each one created by a push, none declared. 3,000,000 msg/s in and out on the same three nodes at an e2e p99 of 54 ms; Kafka did not carry 100,000.",
+    href: "/benchmarks/queen-vs-kafka/",
   },
   {
     figure: "4 ms",
@@ -247,8 +247,8 @@ export const proof: { figure: string; unit: string; body: string; href: string }
   },
   {
     figure: "244",
-    unit: "Jepsen tests on the code of 2.2.0",
-    body: "Five nodes under kill -9, pauses, network partitions, clock jumps and power loss: all valid, one at its second run after the test harness crashed in the first. No acknowledged message lost, no lease held twice. Testing, not proof.",
+    unit: "Jepsen tests on the code of 2.3.0",
+    body: "Five nodes under kill -9, pauses, network partitions, clock jumps and power loss: all valid, three once their histories were checked again with more memory, one at its second run after the test harness crashed in the first. No acknowledged message lost, no lease held twice. Testing, not proof.",
     href: "/benchmarks/jepsen/",
   },
 ];

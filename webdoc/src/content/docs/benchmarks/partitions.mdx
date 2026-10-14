@@ -1,6 +1,6 @@
 ---
 title: "Partition scaling to 10 million vs Kafka and Pulsar"
-description: "One queue from 10 to 10,000,000 partitions at 100,000 to 2,000,000 msg/s on three nodes with Queen 2.3.0, Kafka on the same machines at 2,000,000 msg/s, and September's comparison with Redpanda and Pulsar: latency, CPU, what a partition costs Queen in memory, and what many queues cost."
+description: "One queue from 10 to 10,000,000 partitions at 100,000 to 2,000,000 msg/s on three 16-vCPU nodes with pre-release builds of Queen 2.3.0, Kafka on the same machines at 2,000,000 msg/s, and September's comparison with Redpanda and Pulsar: latency, CPU, what a partition costs Queen in memory, and what many queues cost."
 type: reference
 tier: operate
 sidebar:
@@ -9,12 +9,15 @@ sidebar:
 ---
 
 This is the test Queen was built for. Give every entity its own partition and your partition
-count is your entity count: a million customers, ten million orders. We offered one queue from
-100,000 to 2,000,000 messages a second at partition counts from 10 to 10,000,000. Queen 2.3.0
-carried every one of the 35 points, and the count hardly shows: at 1,000,000 msg/s the end-to-end
-p99 is 18 to 21 ms from 10 to 100,000 partitions, 32 ms at a million and 38 ms at ten million
-(2026-10-12 and 13). Kafka, on the same machines at 2,000,000 msg/s, is ahead up to 1,000
-partitions, behind at 10,000, and does not carry 100,000. [Compare](/start/compare/) explains how
+count is your entity count: a million customers, ten million orders. On three 16-vCPU
+DigitalOcean nodes we offered one queue from 100,000 to 2,000,000 messages a second at partition
+counts from 10 to 10,000,000. Pre-release builds of Queen 2.3.0 carried every one of the 35 points,
+and the count hardly shows: at 1,000,000 msg/s the end-to-end p99 is 18 to 21 ms from 10 to 100,000
+partitions, 32 ms at a million and 38 ms at ten million (2026-10-12 and 13). Kafka, on the same
+machines at 2,000,000 msg/s, is ahead up to 1,000 partitions, behind at 10,000, and does not carry
+100,000. On three GCP nodes with 24 vCPU and local NVMe, the released 2.3.0 carried 3,000,000 msg/s
+at every count from 10 to 10,000,000 with a p99 of 47 to 78 ms
+([Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/)). [Compare](/start/compare/) explains how
 each system gets order per entity.
 
 ## The shape
