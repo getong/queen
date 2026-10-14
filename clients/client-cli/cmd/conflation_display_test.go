@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 )
 
@@ -114,60 +113,44 @@ func TestConsumerGroupTableShowsConflation(t *testing.T) {
 	// §2.6 fixes M7 (the broker hard-coded subscriptionMode to NULL and had no
 	// conflation field at all). Without a column here the policy that decides
 	// how MESSAGES and LAG on the same row should be read is invisible.
+	//
+	// The rows are the broker's: a bare array under queueName, totalLag and
+	// maxTimeLag. The column means nothing next to a MESSAGES that prints `-`,
+	// which is what the keys this test used to feed (queue, lagMessages,
+	// lagSeconds: no broker sends them) let through.
 	fb := newFakeBroker(t)
-	fb.route("/api/v1/consumer-groups", `{"consumerGroups":[
-        {"name":"workers","queue":"orders","lagMessages":4000000,"lagSeconds":30,"conflation":true},
-        {"name":"audit","queue":"orders","lagMessages":12,"lagSeconds":1,"conflation":false}
-    ]}`)
+	fb.route("/api/v1/consumer-groups", `[
+        {"name":"audit","queueName":"orders","totalLag":12,"maxTimeLag":1,"conflation":false},
+        {"name":"workers","queueName":"orders","totalLag":4000000,"maxTimeLag":30,"conflation":true}
+    ]`)
 
-	stop := captureStdio(t)
-	err := runCLI(t, fb.url(), "cg", "list", "-o", "table")
-	stdout, _ := stop()
+	stdout, _, err := runLag(t, fb.url(), "cg", "list", "-o", "table")
 	if err != nil {
 		t.Fatalf("cg list: %v", err)
 	}
-
-	if !strings.Contains(stdout, "CONFLATION") {
-		t.Fatalf("cg list has no CONFLATION column:\n%s", stdout)
-	}
-	lines := strings.Split(strings.TrimRight(stdout, "\n"), "\n")
-	var workers, audit string
-	for _, l := range lines {
-		if strings.HasPrefix(l, "workers") {
-			workers = l
-		}
-		if strings.HasPrefix(l, "audit") {
-			audit = l
-		}
-	}
-	if workers == "" || audit == "" {
-		t.Fatalf("both groups should be listed:\n%s", stdout)
-	}
-	if !strings.Contains(workers, "yes") {
-		t.Errorf("conflating group row does not say so: %q", workers)
-	}
-	if strings.Contains(audit, "yes") {
-		t.Errorf("non-conflating group row claims conflation: %q", audit)
-	}
+	wantTable(t, stdout, [][]string{
+		{"CG", "QUEUE", "MESSAGES", "LAG", "CONFLATION"},
+		{"audit", "orders", "12", "1s", "-"},
+		{"workers", "orders", "4,000,000", "30s", "yes"},
+	})
 }
 
 func TestConsumerGroupTableSurvivesAnOlderBroker(t *testing.T) {
 	// A 1.0.x broker sends no conflation field; the column renders "-" rather
 	// than blowing up or printing "<nil>".
 	fb := newFakeBroker(t)
-	fb.route("/api/v1/consumer-groups", `{"consumerGroups":[
-        {"name":"workers","queue":"orders","lagMessages":3,"lagSeconds":0}
-    ]}`)
+	fb.route("/api/v1/consumer-groups", `[
+        {"name":"workers","queueName":"orders","totalLag":3,"maxTimeLag":0}
+    ]`)
 
-	stop := captureStdio(t)
-	err := runCLI(t, fb.url(), "cg", "list", "-o", "table")
-	stdout, _ := stop()
+	stdout, _, err := runLag(t, fb.url(), "cg", "list", "-o", "table")
 	if err != nil {
 		t.Fatalf("cg list: %v", err)
 	}
-	if strings.Contains(stdout, "<nil>") || strings.Contains(stdout, "false") {
-		t.Fatalf("missing conflation should render as '-':\n%s", stdout)
-	}
+	wantTable(t, stdout, [][]string{
+		{"CG", "QUEUE", "MESSAGES", "LAG", "CONFLATION"},
+		{"workers", "orders", "3", "0s", "-"},
+	})
 }
 
 // ---------------------------------------------------------------------------
