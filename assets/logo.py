@@ -17,6 +17,7 @@ alone for small sizes, one colour, and the badge.
   assets/logo/queen{,-on-dark}.svg                without its line
   assets/logo/q{,-on-dark}.svg                    the small logo: the q and its flower
   assets/logo/*-mono{,-on-dark}.svg               each of the three in one colour
+  assets/logo/*-rainbow{,-on-dark}.svg            each of the three with a colour of the rainbow on each petal
   assets/logo/q-auto.svg                          the small logo, its letter following the colour scheme
   assets/logo/q{,-on-dark}-{16,32,48}.png         the small logo as icons
   assets/logo/q-tile{,-on-dark}.svg, -512.png     the small logo on a square ground
@@ -182,6 +183,10 @@ PAPER, LETTER_RULE, LETTERS = GROUPS["queen"]
 LINE_PAPER, LINE_RULE, LINE = GROUPS["message-queue"]
 Q, LINE = LETTERS[0], "".join(LINE)
 
+# The rainbow: seven petals, seven colours, red on the top petal and violet on the bottom one. The
+# third is the drawing's own yellow; the others are bright enough to be seen on the dark ground too.
+RAINBOW = ("#f13936", "#fa8927", YELLOW, "#4cc157", "#17bac8", "#4a78ea", "#a95dda")
+
 
 def shape(d, fill, rule="nonzero"):
     paint = fill if fill.startswith("class=") else f'fill="{fill}"'
@@ -219,15 +224,36 @@ def png(src, out, size):
     return out
 
 
+def eye():
+    """The centre of the q's counter: the flower's eye."""
+    x0, y0, x1, y1 = extent(Q[Q.index("M", 1):])
+    return (x0 + x1) / 2, (y0 + y1) / 2
+
+
+def each_petal():
+    """The petals one by one, from the top one round the flower to the bottom one."""
+    cx, cy = eye()
+
+    def turn(d):                                                      # from the stem's side, clockwise
+        x0, y0, x1, y1 = extent(d)
+        return math.atan2((x0 + x1) / 2 - cx, cy - (y0 + y1) / 2) % math.tau
+
+    petals = sorted(re.findall(r"M[^M]+", PETALS), key=lambda d: (turn(d) - math.pi / 2) % math.tau, reverse=True)
+    assert len(petals) == len(RAINBOW), f"the rainbow has {len(RAINBOW)} colours, the flower {len(petals)} petals"
+    return petals
+
+
 def lockup(name):
-    """One of the three forms of the logo: its frame, and its shapes given the colour of the petals,
-    of the letters and of the line."""
+    """One of the three forms of the logo: its frame, and its shapes given the colour of the petals
+    (one for all, or one for each from the top one down), of the letters and of the line."""
     letters = {"queen-tagline": LETTERS, "queen": LETTERS, "q": [Q]}[name]
     line = LINE if name == "queen-tagline" else ""
     view = tight(extent(PETALS, *letters, *([line] if line else [])))
 
     def shapes(petals, ink, line_ink):
-        return ([shape(PETALS, petals, PETAL_RULE), shape("".join(letters), ink, LETTER_RULE)]
+        flower = ([shape(PETALS, petals, PETAL_RULE)] if isinstance(petals, str)
+                  else [shape(d, fill, PETAL_RULE) for d, fill in zip(each_petal(), petals)])
+        return (flower + [shape("".join(letters), ink, LETTER_RULE)]
                 + ([shape(line, line_ink, LINE_RULE)] if line else []))
 
     return view, shapes
@@ -236,8 +262,7 @@ def lockup(name):
 def badge():
     """The badge: a disc round the flower, with the q and its petals cut out of it. Even-odd does the
     cutting: the q's counter, inside the cut, is the disc again."""
-    x0, y0, x1, y1 = extent(Q[Q.index("M", 1):])                     # the counter: the flower's eye
-    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    cx, cy = eye()
     r = BADGE * reach((cx, cy), PETALS, Q)
     disc = (f"M{num(cx - r)} {num(cy)}A{num(r)} {num(r)} 0 1 0 {num(cx + r)} {num(cy)}"
             f"A{num(r)} {num(r)} 0 1 0 {num(cx - r)} {num(cy)}Z")
@@ -254,6 +279,7 @@ def main():
         for suffix, ink, line_ink, _ in tones:
             write(doc(view, title, *shapes(YELLOW, ink, line_ink)), f"{name}{suffix}.svg")
             write(doc(view, title, *shapes(ink, ink, ink)), f"{name}-mono{suffix}.svg")
+            write(doc(view, title, *shapes(RAINBOW, ink, line_ink)), f"{name}-rainbow{suffix}.svg")
 
     # the small logo in a square: icons, a tile with a ground, and the one that follows the colour scheme
     _, shapes = lockup("q")
@@ -349,6 +375,9 @@ def overview():
         ("one colour",
          [panel("queen-tagline-mono-on-dark.svg", quarter, 320, dark), panel("queen-tagline-mono.svg", quarter, 320, light),
           panel("q-mono-on-dark.svg", quarter, 320, dark), panel("q-mono.svg", quarter, 320, light)]),
+        ("the rainbow",
+         [panel("queen-tagline-rainbow-on-dark.svg", quarter, 320, dark), panel("queen-tagline-rainbow.svg", quarter, 320, light),
+          panel("q-rainbow-on-dark.svg", quarter, 320, dark), panel("q-rainbow.svg", quarter, 320, light)]),
         ("the badge, and the small logo on a ground",
          [panel("q-badge-on-dark.svg", quarter, 320, "#0b0a0a"), panel("q-badge.svg", quarter, 320, "#f2f0ec"),
           panel("q-tile-on-dark.svg", quarter, 320, page, fill=0.86), panel("q-tile.svg", quarter, 320, page, fill=0.86)]),
