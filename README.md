@@ -70,6 +70,14 @@ Three 16-vCPU nodes, every write fsynced on two of them before the answer, with 
 same machines (Redpanda 26.2.3 and Pulsar 4.2.4 were last run in September, beside Queen
 2.0.0-beta.2). Each row links to the run and its conditions.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/bench-partitions-p99-dark.svg">
+  <img src="assets/bench-partitions-p99-light.svg" alt="End to end p99 as one queue grows from 10 to 10 million partitions: 7 to 8 ms at 100k msg/s, 18 to 38 ms at 1M, 59 to 100 ms at 2M, and 36 to 51 ms at 1.5M with deduplication and deletes on" width="820">
+</picture>
+
+<sub>End to end p99, the worst load process in seconds 30-60 of 70. With deduplication and deletes after 60 s: the
+last 60 s of 200, pooled; not carried at 10 and 10M partitions.</sub>
+
 | | Result |
 |---|---|
 | [Partitions](https://queenmq.com/benchmarks/partitions/) | 1,000,000 msg/s in and out of one queue at every count from 10 to **10,000,000 partitions**, e2e p99 **18 to 38 ms**; 2,000,000 msg/s at 59 to 100 ms. At 2,000,000 msg/s Kafka reads 25 ms at 1,000 partitions, 134 ms at 10,000, and falls behind at 100,000. |
