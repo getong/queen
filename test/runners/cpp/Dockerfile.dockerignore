@@ -10,3 +10,6 @@ server/target
 **/__pycache__
 **/*.log
 benchmark-queen
+# Binaries built on the host: make would take them for up to date and leave
+# them in the image, where a macOS one cannot run.
+clients/client-cpp/bin

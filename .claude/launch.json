@@ -205,6 +205,24 @@
         "QUEEN_RAFT_DIR=/private/tmp/claude-502/-Users-alice-Work-queen/3ba6babf-2328-4585-9f20-fc4e91d42b69/scratchpad/broker-6714 QUEEN_RAFT_DISK_HIGH_PCT=99.5 QUEEN_RAFT_DISK_LOW_PCT=99 PORT=6714 QUEEN_PROXY_EMBEDDED=true QUEEN_PROXY_PORT=6715 QUEEN_PROXY_OPERATOR_ENABLED=true QUEEN_PROXY_JWT_SECRET=dev-only-secret-not-for-production QUEEN_PROXY_SPOOL_DIR=/private/tmp/claude-502/-Users-alice-Work-queen/3ba6babf-2328-4585-9f20-fc4e91d42b69/scratchpad/broker-6714-proxy-spool exec server/target/debug/queen"
       ],
       "port": 6715
+    },
+    {
+      "name": "queen-broker-menu",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "QUEEN_RAFT_DIR=/private/tmp/claude-502/-Users-alice-Work-queen/88e36f8f-5003-49fc-ad83-45fcec444433/scratchpad/broker-6649 QUEEN_RAFT_DISK_HIGH_PCT=99.5 QUEEN_RAFT_DISK_LOW_PCT=99 PORT=6649 exec server/target/debug/queen"
+      ],
+      "port": 6649
+    },
+    {
+      "name": "queen-app-menu",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd app && PATH=/Users/alice/.nvm/versions/node/v24.15.0/bin:$PATH QUEEN_DEV_UPSTREAM=http://localhost:6649 exec npx vite --port 4009 --strictPort"
+      ],
+      "port": 4009
     }
   ]
 }

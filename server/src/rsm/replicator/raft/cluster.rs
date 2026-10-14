@@ -61,6 +61,12 @@ pub struct ClusterConfig {
     /// cluster's own token: a standby holds this one and can read, and
     /// nothing more. `None`: this node serves no link.
     pub link_token: Option<String>,
+    /// Which raft group of how many this node's log is, and how the cluster
+    /// places its tenants over them: what a standby's group must state to
+    /// read it ([`crate::rsm::link::wire::Placement`]). The facade sets it
+    /// ([`crate::rsm::facade::real::RaftFacade::open_group`]); a cluster of
+    /// one group keeps the default.
+    pub link_placement: crate::rsm::link::wire::Placement,
 }
 
 pub const TOKEN_HEADER: &str = "x-queen-raft-token";
@@ -139,6 +145,7 @@ impl ClusterConfig {
             token,
             preferred_leader: None,
             link_token: None,
+            link_placement: Default::default(),
         })
     }
 
@@ -162,6 +169,7 @@ impl ClusterConfig {
             token: self.token.clone(),
             preferred_leader: (ids.len() > 1).then(|| ids[group % ids.len()]),
             link_token: self.link_token.clone(),
+            link_placement: self.link_placement.clone(),
         })
     }
 }

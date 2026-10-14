@@ -14,6 +14,7 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/groups.rs
 # changes what /health answers (raft.quorumAckMs; ready needs the leader's majority within
 # QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/groups.rs now also answers the cluster link's two routes for every group and computes the placement a link call states. A tenant still lives in one raft group and one leader still orders its writes: nothing this page states changes.
 ---
 
 Two questions separate these systems more than any feature list: how you keep order per entity when
@@ -41,8 +42,9 @@ Kafka join an external two-phase commit, is accepted but not released), and Kafk
 delivery.
 
 Kafka is better at throughput and latency at modest partition counts, and at the cost of getting
-them. In our runs (below) it kept up with 4,000,000 messages a second on 200 partitions, where
-Queen kept up with 1,000,000, at a lower p99 and with about half the CPU. Kafka acknowledges a
+them. In our runs (below) it kept up with 4,000,000 messages a second on 100 partitions, where
+Queen carried 2,000,000 and not 2,500,000, at a lower p99 and with two thirds of the CPU at a
+million. Kafka acknowledges a
 write once its replicas hold it in the page cache, without waiting for an fsync, which is part of
 that difference. Then there is the ecosystem (Connect and its connectors, Streams, schema
 registries) and log compaction. Queen's [Kafka facade](/guides/kafka/) lets existing producers and
@@ -143,27 +145,32 @@ shape described here.
 
 ## Measured side by side
 
-We ran Queen, Kafka and Pulsar on the same three DigitalOcean nodes (16 vCPU, 31 GB each, one VPC),
-with the same loaders: 256-byte JSON messages in batches of 100, one topic or queue, 1,000,000
-messages a second offered, latencies over the last 30 seconds, CPU summed over the three nodes
-(Kafka 4.3.1 on 2026-09-30, Pulsar 4.2.4 and Queen 2.0.0-beta.2 on 2026-10-01; the harness and
-every run are in `benchmark-queen/2026-09-30-kafka-pulsar/` and
-`benchmark-queen/2026-09-30-stage03-3node/`). Queen and Pulsar acknowledge after two of three
-fsyncs; Kafka acknowledges from the page cache.
+We ran Queen 2.3.0 and Kafka 4.3.1 on the same three DigitalOcean nodes (16 vCPU, 31 GB each, one
+VPC), with the same kind of loader: 256-byte JSON messages in batches of 100, one topic or queue,
+2,000,000 messages a second offered, latencies over seconds 30 to 60 of the load, CPU summed over
+the three nodes (2026-10-12 and 13; pre-release builds of 2.3.0 with the binary wire forms its
+clients turn on; the harness and the runs are in
+`benchmark-queen/2026-10-12-three-node-new-forms/` and `benchmark-queen/2026-09-30-kafka-pulsar/`).
+Queen acknowledges after two of three fsyncs; Kafka acknowledges from the page cache.
 
-| Partitions | Kafka: e2e p99, cores | Pulsar: e2e p99, cores | Queen: e2e p99, cores |
-|---|---|---|---|
-| 200 | 18 ms, 9.7 | 21 ms, 7.1 | 146 ms, 17.2 |
-| 10,000 | 46 ms, 28.3 | 32 ms, 10.1 | 144 ms, 18.4 |
-| 50,000 | 1.5 s, 29.2 | fell behind (311k msg/s in) | 103 ms, 18.0 |
-| 100,000 | fell behind (p99 10.9 s) | fell behind (238k msg/s in) | 163 ms, 18.3 |
+| Partitions | Kafka: e2e p99, cores | Queen: e2e p99, cores |
+|---|---|---|
+| 100 | 43 ms, 15.8 | 63 ms, 19.9 |
+| 1,000 | 25 ms, 19.5 | 70 ms, 20.1 |
+| 10,000 | 134 ms, 29.8 | 63 ms, 20.2 |
+| 100,000 | not carried (1.67M of 2M consumed, p99 15 s) | 59 ms, 20.2 |
+| 10,000,000 | not run | 73 ms, 20.6 |
 
-Queen's cost stays flat as partitions grow, because a partition is a few rows of state; Kafka and
-Pulsar pay per partition. On 200 partitions, Kafka kept up to 4,000,000 messages a second and
-Pulsar to 2,000,000 (higher rates were not run); Queen kept up at 1,000,000, and at 1,500,000
-offered it took everything in but delivered about 1,340,000. With 10 messages per transaction on
-200 partitions at 9,000 messages a second, a Queen commit took 3 ms at p50 and 4 ms at p99,
-Kafka's 12 and 34 ms, Pulsar's 22 and 32 ms. These runs measure the brokers; your shape
+Queen's cost stays flat as partitions grow, because a partition is a few rows of state; Kafka pays
+per partition. On 100 partitions Kafka kept up to 4,000,000 messages a second (higher rates were
+not run), and at 1,000,000 it read a p99 of 11 ms against Queen's 19 ms; Queen carried 2,000,000
+and, at 2,500,000 offered, took everything in and delivered about 2,350,000.
+
+Pulsar was last run in September, on other machines of the same size and beside Queen
+2.0.0-beta.2: at 1,000,000 messages a second it read a p99 of 21 ms on 200 partitions and 32 ms on
+10,000, on 7 to 10 cores, and fell behind from 50,000 partitions. In those runs, with 10 messages
+per transaction on 200 partitions at 9,000 messages a second, a Queen commit took 3 ms at p50 and
+4 ms at p99, Kafka's 12 and 34 ms, Pulsar's 22 and 32 ms. These runs measure the brokers; your shape
 decides which of them matters. The full set, Redpanda included, is on [benchmarks](/benchmarks/):
 [partition count](/benchmarks/partitions/), [throughput](/benchmarks/throughput/) and
 [transactions](/benchmarks/transactions/).

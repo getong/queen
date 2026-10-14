@@ -979,6 +979,28 @@ pub fn delete_partition_chunk<W: Writes + ?Sized>(
 /// Bits per expected hash a generation is sized for (its filter is
 /// `cap × 2` bytes).
 const FRONT_BITS_PER_HASH: usize = 16;
+/// Bits per expected hash of a generation of [`FRONT_HOT_GEN_CAP`] hashes or
+/// more. A "maybe" costs a scan of the generation's whole band of txns rows,
+/// so a false positive is dearer the more a generation holds: on 200
+/// partitions at 9,500 msg/s each (2026-10-12) a band was about 1,400 rows,
+/// 0.4% of the messages paid one, and those scans were 62% of the lanes' time,
+/// the planner's ceiling. Twice the bits makes them rare where they are dear;
+/// the small generations of a wide queue keep their size.
+const FRONT_BITS_PER_HASH_HOT: usize = 32;
+/// The capacity, in hashes, from which a generation is sized at
+/// [`FRONT_BITS_PER_HASH_HOT`]: a partition past about 500 msg/s with the
+/// default window.
+const FRONT_HOT_GEN_CAP: usize = 8192;
+
+/// The 512-bit blocks of a generation of `cap` hashes.
+fn front_gen_blocks(cap: usize) -> usize {
+    let bits = if cap >= FRONT_HOT_GEN_CAP {
+        FRONT_BITS_PER_HASH_HOT
+    } else {
+        FRONT_BITS_PER_HASH
+    };
+    (cap * bits / 512).max(1)
+}
 /// A generation's fixed overhead (boxed words + counters + deque slot).
 const FRONT_BYTES_PER_GEN: usize = 64;
 /// Smallest generation capacity, in hashes (a 512 B filter). Powers of two are
@@ -990,7 +1012,7 @@ const FRONT_BYTES_PER_GEN: usize = 64;
 /// 60% of the lanes' time); a busy partition still tiers up by
 /// [`FRONT_GEN_TIER`] per full generation.
 const FRONT_GEN_CAP_MIN: usize = 256;
-/// Largest generation capacity (a 2 MiB filter), tiering ×8 from the minimum so
+/// Largest generation capacity (a 4 MiB filter), tiering ×8 from the minimum so
 /// an idle partition pays one tiny filter and a hot one settles at a few big
 /// generations.
 const FRONT_GEN_CAP_MAX: usize = 1 << 20;
@@ -1019,10 +1041,13 @@ const FRONT_SHARDS: usize = 1024;
 const FRONT_SWEEP_TICK: std::time::Duration = std::time::Duration::from_millis(10);
 const FRONT_SWEEP_SHARDS_PER_TICK: usize = FRONT_SHARDS / 100;
 
-/// Default global cap in MiB (`QUEEN_RAFT_DEDUP_FRONT_MB`). 2 GiB fronts ~1 G
-/// in-window hashes at 2 B each, or 500,000 quiet partitions with a few
-/// minimum generations each, before any partition falls back.
-pub const FRONT_DEFAULT_CAP_MB: usize = 2048;
+/// Default global cap in MiB (`QUEEN_RAFT_DEDUP_FRONT_MB`). 4 GiB fronts ~1 G
+/// in-window hashes of hot partitions at 4 B each
+/// ([`FRONT_BITS_PER_HASH_HOT`]), or a million quiet partitions with a few
+/// minimum generations each, before any partition falls back. It was 2 GiB
+/// while every generation was sized at 2 B per hash: the cap went up with the
+/// hot generations' bits so that it is met at the same number of hashes.
+pub const FRONT_DEFAULT_CAP_MB: usize = 4096;
 /// The most hashes one first-touch seed scan of a pre-existing partition will
 /// read before giving up and marking it FALLBACK. Bounds the one-off planning
 /// stall a large preloaded partition can cause; fresh partitions are born
@@ -1055,7 +1080,7 @@ struct FrontGen {
 impl FrontGen {
     fn new(cap: usize) -> FrontGen {
         let cap = cap.max(32); // at least one 512-bit block
-        let nblocks = cap / 32; // cap × 16 bits ÷ 512 bits per block
+        let nblocks = front_gen_blocks(cap);
         FrontGen {
             words: vec![0u64; nblocks * 8].into_boxed_slice(),
             nblocks: nblocks as u64,
@@ -1240,9 +1265,8 @@ impl PartFront {
 
     fn next_gen_bytes(&self) -> usize {
         let cap = self.next_gen_cap();
-        // `cap × 16 bits`, rounded to whole 512-bit blocks, plus the header.
-        let cap = cap.max(32);
-        (cap / 32) * 8 * 8 + FRONT_BYTES_PER_GEN
+        // Its bits, rounded to whole 512-bit blocks, plus the header.
+        front_gen_blocks(cap.max(32)) * 8 * 8 + FRONT_BYTES_PER_GEN
     }
 
     /// Insert `h` (from append `base_off`, at message offset `msg_off`), opening

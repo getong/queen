@@ -30,6 +30,11 @@ sidebar:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): config.rs gains
 # QUEEN_RAFT_READY_QUORUM_MS (5000), the window of /health's new majority test. Nothing this page
 # states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): handlers/fetch.rs asks the broker for the response's
+# whole max_bytes as one ceiling (a third larger, as records are stored in base64) and
+# kafka_inproc.rs carries that ceiling to the in-process read, which reads the partitions in order
+# while any of it is left. What a client sees is as the page says; Performance and the last overload
+# limit follow the 2.3.0-beta.1 measurement of 2026-10-13.
 ---
 
 Your Kafka producers, consumers and admin tools can use Queen as they are: change
@@ -364,13 +369,15 @@ outside cluster mode.
 
 ## Performance
 
-We measured the facade on 2026-10-01 on the benchmark rig: three 16-vCPU nodes and three load
-machines running franz-go with `acks=all`, idempotence and lz4, on the builds that became
-2.0.0-beta.5. At 1,000,000 msg/s into one topic of 200 partitions, records reached their consumers
-in 35 ms at the median and 91 ms at p99. Kafka 4.3.1 on the same machines is faster at that shape,
-with a p99 of 18 ms. At 100,000 partitions the order reverses: the facade held a p99 of 251 ms at
-the same rate, while Kafka fell behind, at 10.9 s. The full matrix, the CPU it cost and what is still
-open are on [Kafka clients](/benchmarks/kafka-clients/) in the benchmarks.
+We measured the facade on 2026-10-13 on the benchmark rig: three 16-vCPU nodes and three load
+machines running franz-go with `acks=all`, idempotence and lz4, on 2.3.0-beta.1. At 1,000,000
+msg/s into one topic of 200 partitions, records reached their consumers in 12 ms at the median and
+48 ms at p99, and into 10,000 partitions in 13 and 26 ms. Kafka 4.3.1 on the same machines is
+faster with few partitions, with a p99 of 11 ms at that rate on 100. At 100,000 partitions the
+order reverses: on 2.0.0-beta.5, the last build measured there (2026-10-02, other machines), the
+facade held a p99 of 251 ms at the same rate, while Kafka fell behind, at 10.9 s. The full matrix,
+the CPU it cost and what is still open are on [Kafka clients](/benchmarks/kafka-clients/) in the
+benchmarks.
 
 ## Limits
 
@@ -388,9 +395,10 @@ open are on [Kafka clients](/benchmarks/kafka-clients/) in the benchmarks.
 - On a topic with `retention.ms` set, a partition that retention has emptied and that nobody has
   written to for 30 days (`PARTITION_CLEANUP_DAYS`) is removed, and the next record written to it
   starts again at offset 0.
-- Past the cluster's ceiling (about 1.5M msg/s on the benchmark rig), Kafka producers can keep being
-  admitted while Kafka consumers fall behind. Queen's own clients kept consuming at the same offered
-  rate, and we have not found the cause yet.
+- Near the cluster's ceiling (2M msg/s on the benchmark rig) consumption as a whole keeps the
+  rate, and some consumers fall steadily behind: two of nine load processes ended 18 and 25
+  seconds late in a one-minute run. We have not found the cause yet. Before 2.3.0 the consumers
+  starved at that rate.
 - A queue created by a Queen client shows up in Kafka metadata within about 3 seconds, which is how
   often the facade re-reads the catalog. A Kafka consumer that subscribed inside that window saw no
   partitions and read nothing for about 30 seconds in our test, so create the topic first or

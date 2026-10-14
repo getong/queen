@@ -221,7 +221,12 @@ pub(super) fn spawn_ticker(engine: Arc<Engine>, cmd_tx: &CommandTx) {
         every.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         let mut ticked = Instant::now();
         loop {
-            every.tick().await;
+            // The tick, or sooner when an answer waits on a change and no
+            // checkpoint is in flight ([`Engine::want_checkpoint`]).
+            tokio::select! {
+                _ = every.tick() => {}
+                _ = engine.checkpoint_wanted() => {}
+            }
             let Some(tx) = weak.upgrade() else {
                 break;
             };

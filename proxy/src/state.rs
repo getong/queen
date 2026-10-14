@@ -23,13 +23,14 @@ pub enum ClusterStatus {
 pub struct EffectiveLimits {
     pub max_req_per_sec: Option<i64>,
     pub req_burst: Option<i64>,
-    pub max_msgs_per_sec: Option<i64>,
-    pub msgs_burst: Option<i64>,
+    /// Uncompressed bytes a second: produce bodies on the way in, pop answers
+    /// on the way out (`wire.rs` says what each weighs). The burst is also
+    /// the heaviest single request the plan takes.
+    pub max_bytes_per_sec: Option<i64>,
+    pub bytes_burst: Option<i64>,
     pub max_queues: Option<i64>,
     pub max_partitions_per_queue: Option<i64>,
     pub max_parked_pops: Option<i64>,
-    pub max_payload_bytes: Option<i64>,
-    pub max_batch_items: Option<i64>,
     pub max_retained_bytes: Option<i64>,
     pub max_retention_seconds: Option<i64>,
 }

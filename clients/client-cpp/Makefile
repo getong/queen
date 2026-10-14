@@ -48,8 +48,25 @@ else
     $(info SSL support disabled. Set USE_SSL=1 to enable)
 endif
 
+# zstd (optional): the push_compression and framed_pop client options need it,
+# and the header takes it only when QUEEN_CLIENT_ZSTD is defined. Only the wire
+# forms suite is built with it; without the library that suite still builds and
+# runs, and skips what needs zstd. USE_ZSTD=0 leaves it out.
+USE_ZSTD ?= 1
+ZSTD_FLAGS =
+ZSTD_LIBS =
+ifeq ($(USE_ZSTD),1)
+    ZSTD_PATHS = /opt/homebrew/include /usr/local/include /usr/include
+    ZSTD_FOUND = $(foreach path,$(ZSTD_PATHS),$(wildcard $(path)/zstd.h))
+    ifneq ($(ZSTD_FOUND),)
+        ZSTD_DIR := $(patsubst %/include/,%,$(dir $(firstword $(ZSTD_FOUND))))
+        ZSTD_FLAGS = -DQUEEN_CLIENT_ZSTD -I$(ZSTD_DIR)/include
+        ZSTD_LIBS = -L$(ZSTD_DIR)/lib -lzstd
+    endif
+endif
+
 # Targets
-.PHONY: all test retry429 run-retry429 kvtimers run-kvtimers locks run-locks conflation run-conflation buffer run-buffer ephemeral run-ephemeral autopilot run-autopilot consumer run-consumer unit run-unit clean help
+.PHONY: all test retry429 run-retry429 kvtimers run-kvtimers locks run-locks conflation run-conflation buffer run-buffer ephemeral run-ephemeral autopilot run-autopilot consumer run-consumer wireforms run-wireforms unit run-unit clean help
 
 all: test
 
@@ -192,10 +209,27 @@ bin/test_consumer: test_consumer.cpp queen_client.hpp ../server/vendor/json.hpp 
 run-consumer: bin/test_consumer
 	./bin/test_consumer
 
-# Every suite that needs no broker, in one command.
-unit: retry429 kvtimers locks conflation buffer ephemeral autopilot consumer
+# Build the wire forms suite: the binary push body and the framed pop answer
+# (ClientConfig::binary_push, push_compression, framed_pop). Broker-free like its
+# siblings: what it pins -- that a client which sets none of the options sends
+# the JSON requests every released broker knows, and that a framed pop hands a
+# consumer exactly the messages of the JSON answer -- is about the bytes on the
+# socket. Built with zstd when the library is there (see USE_ZSTD above).
+wireforms: bin/test_wire_forms
+	@echo "Wire forms test suite built successfully!"
+	@echo "Run with: ./bin/test_wire_forms"
 
-run-unit: run-retry429 run-kvtimers run-locks run-conflation run-buffer run-ephemeral run-autopilot run-consumer
+bin/test_wire_forms: test_wire_forms.cpp queen_client.hpp ../server/vendor/json.hpp ../server/include/threadpool.hpp
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(ZSTD_FLAGS) $(INCLUDES) test_wire_forms.cpp -o bin/test_wire_forms $(LIBS) $(ZSTD_LIBS)
+
+run-wireforms: bin/test_wire_forms
+	./bin/test_wire_forms
+
+# Every suite that needs no broker, in one command.
+unit: retry429 kvtimers locks conflation buffer ephemeral autopilot consumer wireforms
+
+run-unit: run-retry429 run-kvtimers run-locks run-conflation run-buffer run-ephemeral run-autopilot run-consumer run-wireforms
 
 # Run tests (requires Queen server running)
 run-test: bin/test_client
@@ -261,6 +295,8 @@ help:
 	@echo "  make run-autopilot - Build and run pop autopilot wire tests (no server needed)"
 	@echo "  make consumer     - Build consume path contract tests (ack/renew results, consume loop)"
 	@echo "  make run-consumer - Build and run consume path contract tests (no server needed)"
+	@echo "  make wireforms    - Build binary push / framed pop wire tests"
+	@echo "  make run-wireforms - Build and run binary push / framed pop wire tests (no server needed)"
 	@echo "  make unit         - Build every suite that needs no broker"
 	@echo "  make run-unit     - Build and run every suite that needs no broker"
 	@echo "  make clean        - Remove build artifacts"
@@ -268,6 +304,7 @@ help:
 	@echo ""
 	@echo "Options:"
 	@echo "  USE_SSL=1         - Enable SSL support (default: 1)"
+	@echo "  USE_ZSTD=1        - Build the wire forms suite with zstd when it is installed (default: 1)"
 	@echo "  SERVER_URL=...    - Custom server URL for tests"
 	@echo ""
 	@echo "Examples:"
@@ -280,6 +317,7 @@ help:
 	@echo "  - C++17 compiler (g++ or clang++)"
 	@echo "  - cpp-httplib (header-only HTTP client)"
 	@echo "  - OpenSSL (optional, for HTTPS support)"
+	@echo "  - zstd (optional, for the push_compression and framed_pop options)"
 	@echo ""
 	@echo "Install cpp-httplib:"
 	@echo "  macOS:   brew install cpp-httplib"

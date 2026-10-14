@@ -39,6 +39,9 @@ pub struct Hit {
     /// Header names lowercased; a repeated header keeps the last value.
     pub headers: HashMap<String, String>,
     pub body: String,
+    /// The body as it arrived: `body` is its text, which a binary push body
+    /// does not survive.
+    pub raw: Vec<u8>,
     /// When the request arrived, for asserting on backoff gaps.
     pub at: Instant,
 }
@@ -75,6 +78,8 @@ pub enum Action {
         headers: Vec<(String, String)>,
         body: String,
     },
+    /// 200 with a body that is not text: the framed pop answer.
+    Bytes { content_type: String, body: Vec<u8> },
     /// Read the request and never answer. For client-side timeouts.
     Hang,
     /// Close the connection without answering, like a proxy dropping a
@@ -122,6 +127,14 @@ impl Reply {
         Reply(Action::Respond {
             status,
             headers: vec![("Content-Type".into(), "text/html".into())],
+            body: body.into(),
+        })
+    }
+
+    /// 200 with these bytes under this `Content-Type`.
+    pub fn bytes(content_type: &str, body: impl Into<Vec<u8>>) -> Self {
+        Reply(Action::Bytes {
+            content_type: content_type.into(),
             body: body.into(),
         })
     }
@@ -309,7 +322,8 @@ async fn serve(
                 Ok(n) => buf.extend_from_slice(&chunk[..n]),
             }
         }
-        let body = String::from_utf8_lossy(&buf[..want]).to_string();
+        let raw = buf[..want].to_vec();
+        let body = String::from_utf8_lossy(&raw).to_string();
         buf.drain(..want);
 
         let hit = Hit {
@@ -317,6 +331,7 @@ async fn serve(
             path,
             headers,
             body,
+            raw,
             at: Instant::now(),
         };
 
@@ -331,6 +346,18 @@ async fn serve(
                 std::future::pending::<()>().await;
             }
             Action::Close => return,
+            Action::Bytes { content_type, body } => {
+                let head = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n\r\n",
+                    body.len()
+                );
+                if stream.write_all(head.as_bytes()).await.is_err()
+                    || stream.write_all(&body).await.is_err()
+                {
+                    return;
+                }
+                let _ = stream.flush().await;
+            }
             Action::Truncate { status, body } => {
                 let head = format!(
                     "HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\n\

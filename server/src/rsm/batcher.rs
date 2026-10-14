@@ -136,6 +136,19 @@ const STRANDED_AFTER: Duration = Duration::from_secs(5);
 /// How often a driver that may be stranded looks again.
 const STRANDED_POLL: Duration = Duration::from_millis(250);
 
+/// How many recorded outcomes must have left the request-id window before the
+/// look between two ticks asks for an expiry step
+/// ([`BatcherConfig::request_expire_fast_ms`]); fewer wait for the tick.
+///
+/// A step is an entry, and its own minted id is an outcome like any other: it
+/// leaves the window a minute later. Asked for as soon as ONE outcome had
+/// left, each outcome of an idle cluster bought a step and each step the
+/// next, for good: a staging cluster with 5 commands a second wrote 37
+/// entries a second, a few more every minute, and twice the CPU of the
+/// release before (2026-10-13). Under the load the look is for, this many
+/// leave the window in a few milliseconds.
+pub(crate) const REQUEST_EXPIRE_FAST_MIN: usize = 256;
+
 // ---------------------------------------------------------------------------
 // Configuration (Appendix H)
 // ---------------------------------------------------------------------------
@@ -176,6 +189,23 @@ pub struct BatcherConfig {
     /// full [`crate::rsm::apply::REQUEST_EXPIRE_LIMIT`] past the cutoff runs
     /// again in the next cycle rather than at the next tick.
     pub request_expire_every_ms: u64,
+    /// `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` (10 when the settings are read from
+    /// the environment; `0` = off): this often, between two ticks of
+    /// [`Self::request_expire_every_ms`], look whether
+    /// [`REQUEST_EXPIRE_FAST_MIN`] recorded outcomes have left the window, and
+    /// if they have, run the expiry step in the next cycle. Only the leader's
+    /// cadence changes; what a step retires does not (I2).
+    ///
+    /// Why: with the tick alone, ten seconds of outcomes left the window
+    /// together. The steps then ran back to back, 4,096 rows each
+    /// ([`crate::rsm::apply::REQUEST_EXPIRE_LIMIT`]), and the apply thread did
+    /// little else until they were gone: at 1.5M msg/s (15,000 pushes a
+    /// second) its longest stall went from 7 ms to 50-86 ms and the end to end
+    /// p99 from 35 ms to 95 ms, from the 70th second of every load (the 60 s
+    /// window plus the tick) on (three machines, 2026-10-12). Asked every few
+    /// milliseconds, a step retires the few hundred rows that left the window
+    /// since the last one.
+    pub request_expire_fast_ms: u64,
     /// The channel depth the facade feeds (§9.1). Back-pressure lands on the
     /// receiver, which holds or refuses per D13.
     pub command_queue_depth: usize,
@@ -276,6 +306,8 @@ impl Default for BatcherConfig {
             propose_ms: 5000,
             request_id_window_s: 60,
             request_expire_every_ms: 10_000,
+            // Off by default: the tests drive the expiry step themselves.
+            request_expire_fast_ms: 0,
             // The channel is only the hand-off: admission bounds what waits
             // (and the drain is by bytes and commands). At 1024 the facade's
             // senders blocked once a cycle's worth was queued, capping intake
@@ -421,6 +453,11 @@ impl BatcherConfig {
             propose_ms: num("QUEEN_RAFT_PROPOSE_MS", d.propose_ms),
             request_id_window_s: num("QUEEN_RAFT_REQUEST_ID_WINDOW_S", d.request_id_window_s),
             request_expire_every_ms: d.request_expire_every_ms,
+            // Read without `num`'s floor: `0` is this setting's off.
+            request_expire_fast_ms: std::env::var("QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS")
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+                .unwrap_or(10),
             command_queue_depth: num(
                 "QUEEN_RAFT_COMMAND_QUEUE_DEPTH",
                 d.command_queue_depth as u64,
@@ -1970,6 +2007,13 @@ impl<S: Store + 'static, R: Replicator> Batcher<S, R> {
         // The first tick fires immediately; swallow it so the driver does not
         // propose an expiry step before it has done any work.
         expire.tick().await;
+        // The look between two ticks ([`BatcherConfig::request_expire_fast_ms`]).
+        let expire_fast_on = self.cfg.request_expire_fast_ms > 0;
+        let mut expire_fast = tokio::time::interval(Duration::from_millis(
+            self.cfg.request_expire_fast_ms.max(1),
+        ));
+        expire_fast.set_missed_tick_behavior(MissedTickBehavior::Delay);
+        expire_fast.tick().await;
         // WP-2.2: the KV expiry sweep's cadence, on the same pattern.
         let mut kv_sweep =
             tokio::time::interval(Duration::from_millis(self.cfg.kv_sweep_every_ms.max(1)));
@@ -2205,6 +2249,12 @@ impl<S: Store + 'static, R: Replicator> Batcher<S, R> {
                 _ = expire.tick() => {
                     st.note_wake("expire");
                     st.expire_due = true;
+                }
+                _ = expire_fast.tick(), if expire_fast_on => {
+                    if !st.expire_due && st.outcomes_past_window() {
+                        st.note_wake("expire");
+                        st.expire_due = true;
+                    }
                 }
                 _ = kv_sweep.tick() => {
                     st.note_wake("kv_sweep");
@@ -4118,6 +4168,26 @@ impl<S: Store + 'static, R: Replicator> RunState<S, R> {
             // source's, replayed.
             scan.set_leading(!self.paused && !self.stopped && !self.closing && self.link_primary());
         }
+    }
+
+    /// Whether [`REQUEST_EXPIRE_FAST_MIN`] recorded outcomes have left the
+    /// request-id window: an expiry step now would retire that many
+    /// ([`BatcherConfig::request_expire_fast_ms`]). One read of the expiry
+    /// index's first keys, which stops at the first outcome still inside.
+    fn outcomes_past_window(&self) -> bool {
+        let cutoff = now_micros().saturating_sub(self.cfg.request_id_window_s as i64 * 1_000_000);
+        let mut past = 0usize;
+        let _ = self.store.read(|r| {
+            r.scan_request_expiry(REQUEST_EXPIRE_FAST_MIN, &mut |at, _| {
+                if at >= cutoff {
+                    return false;
+                }
+                past += 1;
+                true
+            })?;
+            Ok(())
+        });
+        past >= REQUEST_EXPIRE_FAST_MIN
     }
 
     fn note_wake(&mut self, reason: &'static str) {

@@ -3041,3 +3041,102 @@ fn an_entry_written_after_a_cut_below_an_empty_files_first_seq_is_found() {
     assert_eq!(seqs(&q), [7, 8, 9], "after a reopen");
     assert_eq!(q.durable_tail(), 9);
 }
+
+/// Write one record of `count` messages into `log` through the set (no fsync).
+fn write_some(set: &mut super::set::QLogSet, log: u64, seq: u64, pid: u64, base: u64, count: u32) {
+    let h = hashes(seq, count);
+    let p = payload(seq, 200);
+    set.write_group_for_qid(
+        log,
+        &[RecordInput {
+            seq,
+            pid,
+            base_offset: base,
+            count,
+            created_at_us: 10_000 + seq as i64,
+            txn: None,
+            hashes: &h,
+            payload: &p,
+        }],
+    )
+    .unwrap();
+}
+
+/// A fetch reads a partition through [`super::set::QLogReader::read_owned_ahead`].
+/// From every offset, in order across sealed files and the active one, with
+/// every read taken for a cold one or none, it answers what the plain read
+/// answers, an offset no record holds included. Only what the kernel is asked
+/// for differs: the record and the ones after it, up to the walk's end and to
+/// the bytes allowed, and nothing a second time.
+#[test]
+fn the_fetch_read_answers_what_the_plain_read_answers() {
+    use super::set::{QLogSet, ReadAhead};
+    use std::time::Duration;
+    const LOG: u64 = 31;
+    let td = TmpDir::new("read-ahead");
+    // Small files: each partition's records are in many of them.
+    let mut set = QLogSet::new(td.path().join("qlog"), QLogOptions::testing(2_000));
+    // Two partitions in one log, a record of each in turn: three messages a
+    // record in partition 7, one in partition 8.
+    let mut seq = 0;
+    for i in 0..40u64 {
+        seq += 1;
+        write_some(&mut set, LOG, seq, 7, i * 3, 3);
+        seq += 1;
+        write_some(&mut set, LOG, seq, 8, i, 1);
+    }
+    let files = set.log(LOG).expect("the log").read().unwrap().file_count();
+    assert!(files > 8, "the fixture needs several files, got {files}");
+    let reader = set.reader();
+
+    let never = Duration::MAX;
+    let always = Duration::ZERO;
+    // Partition 9 was never written; 60 is an end below what partition 7
+    // holds (a fetch stops at what is applied, and the log may hold more).
+    for (pid, end) in [(7u64, 120u64), (7, 60), (8, 40), (9, 0)] {
+        for (cold, bytes) in [
+            (never, 1 << 20),
+            (always, 1 << 20),
+            (always, 600),
+            (always, 0),
+        ] {
+            let mut ahead = ReadAhead::default();
+            let mut asked = Vec::new();
+            for off in 0..end + 2 {
+                let plain = reader.read_owned(LOG, pid, off).unwrap();
+                let got = reader
+                    .read_owned_ahead_at(LOG, pid, off, end, &mut ahead, cold, bytes)
+                    .unwrap();
+                assert_eq!(got, plain, "pid {pid} offset {off} of {end}");
+                assert!(ahead.asked_to() <= end, "asked past the walk's end");
+                if asked.last() != Some(&ahead.asked_to()) {
+                    asked.push(ahead.asked_to());
+                }
+            }
+            let records = if pid == 7 { end / 3 } else { end } as usize;
+            match (cold == always && bytes > 0, bytes) {
+                // Nothing waited, or nothing may be asked for.
+                (false, _) => assert_eq!(asked, [0], "pid {pid}"),
+                // Room for everything: one request, at the first record.
+                (true, 1048576) if end > 0 => assert_eq!(asked, [end], "pid {pid}"),
+                // Room for a few records: a request each time the walk
+                // passes what it asked for, and every record asked once.
+                (true, _) if end > 0 => {
+                    assert_eq!(asked.last(), Some(&end), "pid {pid}");
+                    assert!(
+                        asked.len() > 3 && asked.len() < records,
+                        "pid {pid}: {} requests for {records} records",
+                        asked.len()
+                    );
+                }
+                (true, _) => assert_eq!(asked, [0], "nothing to ask for"),
+            }
+        }
+    }
+    // The reader as a fetch calls it.
+    let mut ahead = ReadAhead::default();
+    assert_eq!(
+        reader.read_owned_ahead(LOG, 7, 4, 120, &mut ahead).unwrap(),
+        reader.read_owned(LOG, 7, 4).unwrap()
+    );
+}

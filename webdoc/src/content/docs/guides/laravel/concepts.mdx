@@ -102,6 +102,14 @@ sourceOfTruth:
 # boot's cache stores before forking, so the fork server holds no connection, as this page says;
 # TuningAdvisor uses no null offset; the QueenQueue, QueenConnector, SupervisorConfiguration and
 # prefork.rs fixes change nothing this page states.
+# sourceOfTruth re-read 2026-10-13 (2.3.0, PHP client 2.5.0): config/queen.php gains three keys,
+# binary_push, push_compression and framed_pop, all false by default and read from no environment
+# variable; QueenConnector validates them as booleans and gives them to the driver's client,
+# QueenServiceProvider to the container's client. With all three off a job is pushed, popped, acked
+# and handed back as this page describes, byte for byte; with them on the same calls travel in the
+# binary forms. On the broker, facade/real.rs reads the binary bodies and renders framed pops only
+# for a client that asks, planner/timers.rs only converts a frame's type, and phase2.rs and
+# phase2/reads.rs give a fetch call a ceiling for the whole call. Nothing this page states changes.
 ---
 
 Your job classes do not change: they implement `ShouldQueue` and keep their middleware, `tries`,

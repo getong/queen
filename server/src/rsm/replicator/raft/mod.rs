@@ -1196,7 +1196,8 @@ async fn quorum_step<S: Store + 'static>(
 /// member has every entry but a few (at most one attempt per 10 s, so a
 /// preferred node that keeps failing does not keep the group without a
 /// leader). Never to a member that stopped answering, or that just handed
-/// leadership away.
+/// leadership away, or that is not a voter yet, and never between the two
+/// steps of a membership change.
 async fn prefer_step<S: Store + 'static>(
     raft: &RaftHandle<S>,
     members: &members::MembersState,
@@ -1208,6 +1209,23 @@ async fn prefer_step<S: Store + 'static>(
         return;
     };
     if pref == m.id || m.state != ServerState::Leader {
+        return;
+    }
+    // Only to a voter. A node being added is a learner first, and the one a
+    // group prefers answers and is nearly caught up the moment it has loaded
+    // its snapshot. It cannot be elected, and a leader that hands it
+    // leadership no longer hears its learners while nothing is written:
+    // their last acknowledgement only ages, so the promotion that would make
+    // them voters is refused (`learner_behind`) for as long as the group is
+    // idle.
+    //
+    // And only once it is a voter of ONE voter set. A promotion makes it one
+    // of the new set first, beside the old set, and the leader that began the
+    // change makes the second step: handing leadership over between the two
+    // leaves the group with both sets (`in_flight`) until an operator
+    // finishes the change.
+    let membership = m.membership_config.membership();
+    if membership.get_joint_config().len() != 1 || !membership.voter_ids().any(|v| v == pref) {
         return;
     }
     if last.is_some_and(|t| t.elapsed() < Duration::from_secs(10)) {
@@ -1713,6 +1731,7 @@ impl<S: Store + 'static> RaftReplicator<S> {
                             source: link::LinkSource::new(log.clone(), shared.clone()),
                             snap,
                             token: Arc::<str>::from(t),
+                            placement: c.link_placement.clone(),
                         }),
                 ))
             }

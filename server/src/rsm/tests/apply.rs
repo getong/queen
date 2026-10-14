@@ -177,6 +177,7 @@ pub fn cfg() -> ApplyConfig {
         store_commit_entries: 256,
         durable_every_ms: 1000,
         durable_every_bytes: 256 << 20,
+        durable_phase_ms: None,
         gc_per_pass: 32,
         idle_tick_ms: 2,
         durable_async: true,

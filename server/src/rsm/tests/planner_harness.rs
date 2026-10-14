@@ -151,7 +151,7 @@ fn frame(txn: &str) -> Vec<u8> {
 pub fn item(txn: &str) -> PushItem {
     PushItem {
         hash: crate::util::txn_hash128(txn),
-        frame: frame(txn),
+        frame: frame(txn).into(),
     }
 }
 

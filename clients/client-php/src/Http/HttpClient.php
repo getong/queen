@@ -66,6 +66,14 @@ class HttpClient
     private ?string $bearerToken;
     private array $headers;
     private array $retry429;
+    /**
+     * The binary push body and the framed pop answer (PushBinary, PopFrames).
+     * All three off by default: the client then sends and reads the JSON every
+     * broker knows.
+     */
+    private bool $binaryPush;
+    private bool $pushCompression;
+    private bool $framedPop;
     private Client $guzzle;
     private bool $customHandler;
     private ?CurlMultiHandler $detachedHandler = null;
@@ -89,6 +97,24 @@ class HttpClient
         // retryAttempts above: ['maxAttempts' => int, 'baseMs' => int,
         // 'capMs' => int], all optional. See Retry429Policy.
         $this->retry429 = $options['retry429'] ?? [];
+        // binaryPush: a push to /api/v1/push goes out as the binary push body
+        // instead of JSON; it needs a broker that accepts that body, and items
+        // with a trace id stay JSON. pushCompression (with binaryPush): the
+        // messages are framed as the broker stores them and each partition's
+        // batch is zstd-compressed once, here; a transaction that pushes sends
+        // its pushes the same way through post(). framedPop: pops ask for the
+        // messages as the stored records (frames=true) and unpack them here;
+        // a broker that does not know the parameter answers JSON.
+        $this->binaryPush = ($options['binaryPush'] ?? false) === true;
+        $this->pushCompression = ($options['pushCompression'] ?? false) === true;
+        $this->framedPop = ($options['framedPop'] ?? false) === true;
+        // Both need zstd: say so now, not at the first compressed record.
+        if ($this->binaryPush && $this->pushCompression) {
+            Zstd::require('pushCompression');
+        }
+        if ($this->framedPop) {
+            Zstd::require('framedPop');
+        }
 
         // 'handler' overrides Guzzle's handler stack, the seam tests use to
         // drive the retry/failover paths without a live server.
@@ -130,12 +156,28 @@ class HttpClient
      */
     public function get(string $path, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null): mixed
     {
-        return $this->requestWithFailover('GET', $path, null, $requestTimeoutMillis, $affinityKey, $retryKind);
+        return $this->requestWithFailover('GET', $this->popPath($path), null, $requestTimeoutMillis, $affinityKey, $retryKind);
     }
 
     public function post(string $path, ?array $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null): mixed
     {
-        return $this->requestWithFailover('POST', $path, $body, $requestTimeoutMillis, $affinityKey, $retryKind);
+        if ($this->binaryPush && $this->pushCompression && $path === '/api/v1/transaction' && $body !== null) {
+            // The pushes of a bundle as frames built and compressed here, the
+            // rest of it as the JSON head in front of them. Null = no push,
+            // or one the binary body does not carry: the bundle stays JSON.
+            $framed = PushBinary::transactionFrames($body);
+            if ($framed !== null) {
+                // The broker answers the head's operations before the pushes:
+                // the caller gets the results in the order of its own
+                // operations.
+                return PushBinary::restoreResultOrder(
+                    $this->requestWithFailover('POST', $path, $framed[0], $requestTimeoutMillis, $affinityKey, $retryKind, $body),
+                    $framed[1],
+                );
+            }
+        }
+
+        return $this->requestWithFailover('POST', $path, $this->wireBody($path, $body), $requestTimeoutMillis, $affinityKey, $retryKind, $body);
     }
 
     public function put(string $path, ?array $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null): mixed
@@ -161,7 +203,7 @@ class HttpClient
 
     public function getAsync(string $path, ?int $requestTimeoutMillis = null, ?string $affinityKey = null): PromiseInterface
     {
-        return $this->requestAsyncReportingHealth('GET', $path, null, $requestTimeoutMillis, $affinityKey);
+        return $this->requestAsyncReportingHealth('GET', $this->popPath($path), null, $requestTimeoutMillis, $affinityKey);
     }
 
     /**
@@ -171,6 +213,7 @@ class HttpClient
      */
     public function getAsyncWithFailover(string $path, ?int $requestTimeoutMillis = null, ?string $affinityKey = null): PromiseInterface
     {
+        $path = $this->popPath($path);
         if ($this->loadBalancer === null || !$this->enableFailover) {
             return $this->requestAsyncWithRetry('GET', $path, null, $requestTimeoutMillis, $affinityKey);
         }
@@ -188,7 +231,7 @@ class HttpClient
 
     public function postAsync(string $path, ?array $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null): PromiseInterface
     {
-        return $this->requestAsyncReportingHealth('POST', $path, $body, $requestTimeoutMillis, $affinityKey);
+        return $this->requestAsyncReportingHealth('POST', $path, $this->wireBody($path, $body), $requestTimeoutMillis, $affinityKey);
     }
 
     public function putAsync(string $path, ?array $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null): PromiseInterface
@@ -211,7 +254,7 @@ class HttpClient
     private function requestAsyncReportingHealth(
         string $method,
         string $path,
-        ?array $body,
+        array|string|null $body,
         ?int $requestTimeoutMillis,
         ?string $affinityKey,
     ): PromiseInterface {
@@ -250,22 +293,22 @@ class HttpClient
 
     public function postDetached(string $path, array $body, ?string $affinityKey = null): PromiseInterface
     {
-        return $this->sendDetached('POST', $path, $body, $affinityKey);
+        return $this->sendDetached('POST', $path, $this->wireBody($path, $body), $affinityKey);
     }
 
     public function getDetached(string $path, ?string $affinityKey = null): PromiseInterface
     {
-        return $this->sendDetached('GET', $path, null, $affinityKey);
+        return $this->sendDetached('GET', $this->popPath($path), null, $affinityKey);
     }
 
-    private function sendDetached(string $method, string $path, ?array $body, ?string $affinityKey): PromiseInterface
+    private function sendDetached(string $method, string $path, array|string|null $body, ?string $affinityKey): PromiseInterface
     {
         if ($this->transport !== null) {
             $request = $this->transport->start(
                 $method,
                 $this->resolveUrl($affinityKey) . $path,
-                $this->requestHeaders(),
-                $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR),
+                $this->requestHeaders($body),
+                $this->encodeBody($body),
             );
             // wait() settles like settleDetached(). The promise reaches itself
             // weakly, so dropping it still frees the request.
@@ -446,10 +489,50 @@ class HttpClient
         return $this->baseUrl;
     }
 
-    /** @return array<string, string|list<string>> */
-    private function requestHeaders(): array
+    /**
+     * The body of a push to /api/v1/push as the binary push body when
+     * binaryPush is on: a string, sent as it is. Encoded once, before any
+     * retry: every attempt sends the same bytes (with pushCompression, the
+     * same message ids). Everything else, and a push with an item the binary
+     * body does not carry, stays the array that is sent as JSON.
+     */
+    private function wireBody(string $path, ?array $body): array|string|null
     {
-        $headers = ['Content-Type' => 'application/json'];
+        if ($this->binaryPush && $path === '/api/v1/push' && is_array($body['items'] ?? null)) {
+            return PushBinary::body($body['items'], $this->pushCompression) ?? $body;
+        }
+
+        return $body;
+    }
+
+    /** A pop route asks for the stored records when framedPop is on. */
+    private function popPath(string $path): string
+    {
+        if ($this->framedPop && str_starts_with($path, '/api/v1/pop')) {
+            return $path . (str_contains($path, '?') ? '&' : '?') . 'frames=true';
+        }
+
+        return $path;
+    }
+
+    /**
+     * The request body as it goes on the wire, encoded once before any
+     * attempt: an array as JSON, a string as it is (a binary push or
+     * transaction body, already encoded). A body json_encode() refuses (a
+     * string that is not UTF-8, say) is the caller's error. Nothing is sent,
+     * so it must neither be retried nor count against the health of a backend.
+     *
+     * @throws JsonException
+     */
+    private function encodeBody(array|string|null $body): ?string
+    {
+        return is_array($body) ? json_encode($body, JSON_THROW_ON_ERROR) : $body;
+    }
+
+    /** @return array<string, string|list<string>> */
+    private function requestHeaders(array|string|null $body = null): array
+    {
+        $headers = ['Content-Type' => is_string($body) ? PushBinary::CONTENT_TYPE : 'application/json'];
         foreach ($this->headers as $name => $value) {
             // An explicitly configured bearer token is authoritative. This is
             // especially important for the supervisor's read-only token: a
@@ -466,12 +549,12 @@ class HttpClient
         return $headers;
     }
 
-    private function buildRequestOptions(string $method, ?array $body, ?int $requestTimeoutMillis): array
+    private function buildRequestOptions(string $method, array|string|null $body, ?int $requestTimeoutMillis): array
     {
         $effectiveTimeout = $requestTimeoutMillis ?? $this->timeoutMillis;
 
         $options = [
-            'headers' => $this->requestHeaders(),
+            'headers' => $this->requestHeaders($body),
             'timeout' => $effectiveTimeout / 1000,
             'connect_timeout' => 5,
             'http_errors' => false,
@@ -480,7 +563,9 @@ class HttpClient
             'allow_redirects' => false,
         ];
 
-        if ($body !== null) {
+        if (is_string($body)) {
+            $options['body'] = $body;
+        } elseif ($body !== null) {
             $options['json'] = $body;
         }
 
@@ -610,6 +695,13 @@ class HttpClient
             return null;
         }
 
+        // The framed pop answer: unpacked into the array the JSON answer
+        // decodes to, so its readers do not tell the two apart. A damaged one
+        // throws UnexpectedValueException, as a malformed JSON body does below.
+        if ($this->framedPop && PopFrames::isFrames($responseBody)) {
+            return PopFrames::decode($responseBody);
+        }
+
         try {
             return json_decode($responseBody, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
@@ -639,25 +731,16 @@ class HttpClient
     }
 
     /**
-     * The request body as JSON, encoded once before any attempt: a body
-     * json_encode() refuses (a string that is not UTF-8, say) is the caller's
-     * error. Nothing is sent, so it must neither be retried nor count against
-     * the health of a backend.
-     *
-     * @throws JsonException
+     * $payload is the body as encodeBody() made it. $binary says it is a
+     * binary body and not JSON, so that it is announced as one.
      */
-    private function encodeBody(?array $body): ?string
-    {
-        return $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR);
-    }
-
-    private function executeRequest(string $url, string $method, ?string $payload = null, ?int $requestTimeoutMillis = null): mixed
+    private function executeRequest(string $url, string $method, ?string $payload = null, ?int $requestTimeoutMillis = null, bool $binary = false): mixed
     {
         if ($this->transport !== null) {
             $answer = $this->transport->request(
                 $method,
                 $url,
-                $this->requestHeaders(),
+                $this->requestHeaders($binary ? $payload : null),
                 $payload,
                 $requestTimeoutMillis ?? $this->timeoutMillis,
             );
@@ -665,10 +748,10 @@ class HttpClient
             return $this->parseAnswer($answer['status'], $answer['body'], $answer['retryAfter'], $url);
         }
 
-        $options = $this->buildRequestOptions($method, null, $requestTimeoutMillis);
+        $options = $this->buildRequestOptions($method, $binary ? $payload : null, $requestTimeoutMillis);
         if ($payload !== null) {
-            // The bytes Guzzle's 'json' option would send; the Content-Type
-            // header is already set.
+            // The bytes Guzzle's 'json' option would send, or the binary
+            // body; the Content-Type header is already set for either.
             $options['body'] = $payload;
         }
         $response = $this->guzzle->request($method, $url, $options);
@@ -683,7 +766,7 @@ class HttpClient
      * only status this layer retries, and 5xx/network retry plus
      * cross-backend failover stay with the callers below.
      */
-    private function executeRequestWithRetry429(string $url, string $method, ?string $payload, ?int $requestTimeoutMillis, ?string $retryKind): mixed
+    private function executeRequestWithRetry429(string $url, string $method, ?string $payload, ?int $requestTimeoutMillis, ?string $retryKind, bool $binary = false): mixed
     {
         $policy = Retry429Policy::forKind($this->retry429, $retryKind);
         $tries = 0;
@@ -692,7 +775,7 @@ class HttpClient
             $tries++;
 
             try {
-                return $this->executeRequest($url, $method, $payload, $requestTimeoutMillis);
+                return $this->executeRequest($url, $method, $payload, $requestTimeoutMillis, $binary);
             } catch (HttpException $error) {
                 if ($error->statusCode !== 429 || $policy->isExhausted($tries)) {
                     throw $error;
@@ -706,7 +789,7 @@ class HttpClient
     private function executeRequestAsync(
         string $url,
         string $method,
-        ?array $body = null,
+        array|string|null $body = null,
         ?int $requestTimeoutMillis = null,
         int $delayMillis = 0,
     ): PromiseInterface
@@ -726,7 +809,7 @@ class HttpClient
     private function requestAsyncWithRetry(
         string $method,
         string $path,
-        ?array $body,
+        array|string|null $body,
         ?int $requestTimeoutMillis,
         ?string $affinityKey,
         int $attempt = 0,
@@ -765,7 +848,7 @@ class HttpClient
         int $index,
         string $method,
         string $path,
-        ?array $body,
+        array|string|null $body,
         ?int $requestTimeoutMillis,
     ): PromiseInterface
     {
@@ -908,17 +991,25 @@ class HttpClient
         return $elapsed + $pause <= $budget ? $pause : null;
     }
 
-    private function requestWithRetry(string $method, string $path, ?array $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null): mixed
+    /**
+     * $body: an array goes out as JSON, a string as it is (a binary push or
+     * transaction body). $asked is the array a binary body was built from,
+     * read for one thing: whether the request may be sent again while the
+     * cluster elects a leader. The same bytes go out at every attempt, so a
+     * binary push is deduplicated as its JSON form would be.
+     */
+    private function requestWithRetry(string $method, string $path, array|string|null $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null, ?array $asked = null): mixed
     {
         $payload = $this->encodeBody($body);
-        $resendableCodes = self::resendableCodes($method, $path, $body);
+        $binary = is_string($body);
+        $resendableCodes = self::resendableCodes($method, $path, is_array($body) ? $body : $asked);
         $startedNanos = hrtime(true);
         $attempt = 0;
 
         while (true) {
             try {
                 $url = $this->resolveUrl($affinityKey) . $path;
-                return $this->executeRequestWithRetry429($url, $method, $payload, $requestTimeoutMillis, $retryKind);
+                return $this->executeRequestWithRetry429($url, $method, $payload, $requestTimeoutMillis, $retryKind, $binary);
             } catch (\Throwable $error) {
                 $statusCode = $this->getStatusCode($error);
                 if (self::isTerminalStatus($statusCode) || self::isUnknownPopOutcome($path, $error)) {
@@ -946,14 +1037,16 @@ class HttpClient
         }
     }
 
-    private function requestWithFailover(string $method, string $path, ?array $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null): mixed
+    /** $body and $asked: as in requestWithRetry(). */
+    private function requestWithFailover(string $method, string $path, array|string|null $body = null, ?int $requestTimeoutMillis = null, ?string $affinityKey = null, ?string $retryKind = null, ?array $asked = null): mixed
     {
         if ($this->loadBalancer === null || !$this->enableFailover) {
-            return $this->requestWithRetry($method, $path, $body, $requestTimeoutMillis, $affinityKey, $retryKind);
+            return $this->requestWithRetry($method, $path, $body, $requestTimeoutMillis, $affinityKey, $retryKind, $asked);
         }
 
         $payload = $this->encodeBody($body);
-        $resendableCodes = self::resendableCodes($method, $path, $body);
+        $binary = is_string($body);
+        $resendableCodes = self::resendableCodes($method, $path, is_array($body) ? $body : $asked);
         // A read or a deduplicated push may be sent again after any failure;
         // a pop or an ACK only after a 503 that says it did not run.
         $resendsHarmlessly = in_array(self::REFUSED_CODE, $resendableCodes, true);
@@ -988,7 +1081,7 @@ class HttpClient
                     // would answer the same, and spraying the fleet only makes the
                     // limiter angrier). An exhausted 429 is a 4xx and therefore
                     // leaves the loop below without a second server being tried.
-                    $result = $this->executeRequestWithRetry429($url . $path, $method, $payload, $requestTimeoutMillis, $retryKind);
+                    $result = $this->executeRequestWithRetry429($url . $path, $method, $payload, $requestTimeoutMillis, $retryKind, $binary);
                     $this->loadBalancer->markHealthy($url);
                     return $result;
                 } catch (\Throwable $error) {

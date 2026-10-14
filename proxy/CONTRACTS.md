@@ -38,8 +38,10 @@ agents work inside this crate. **Read both before writing code.**
   tick, `drain()` at shutdown); `spawn_reconciler()` (scoped
   broker inventory sync + retained-bytes -> `limits.set_push_blocked`, writes
   only rows whose count changed).
-- `limits::Limits` — `check_req`, `check_msgs(n)`, `debit_deliveries(n)`,
-  `parked_slot -> ParkedGuard (RAII)`, `enforcing()`. Shadow mode: when
+- `limits::Limits` — `check_req`, `check_bytes(n)`, `debit_bytes(n)`,
+  `parked_slot -> ParkedGuard (RAII)`, `enforcing()`. The bytes are
+  UNCOMPRESSED ones: `wire::request_bytes` / `wire::pop_answer_bytes` read
+  what a body weighs off its headers, JSON or binary, and inflate nothing. Shadow mode: when
   `!enforcing()`, compute+log the Deny (target `limits`, field `would_block`)
   and allow. Buckets: capacity=burst, refill=sustained (rev 2.3 T4a), sharded
   `Mutex<HashMap<Uuid, Bucket>>` (16 shards), never one global lock.

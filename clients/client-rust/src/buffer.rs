@@ -131,15 +131,6 @@ pub struct BufferStats {
     pub flushes_performed: u64,
 }
 
-/// The push body, borrowing the batch instead of owning it: the drain keeps
-/// ownership of the chunk so it can put it back when the request fails — or
-/// when the flush future is dropped mid-request. Same wire shape as
-/// `queen_protocol::PushRequest`.
-#[derive(Serialize)]
-struct PushBatch<'a> {
-    items: &'a [PushItem],
-}
-
 /// The ephemeral push body (EPHEMERAL_QUEUES.md §3.1), borrowing the same way.
 ///
 /// The two families disagree about where the identity lives, and that
@@ -210,13 +201,10 @@ impl Sink {
     async fn send(&self, dest: &Destination, items: &[PushItem]) -> Result<Vec<PushResult>> {
         match self {
             Self::Http(http) => match dest {
-                Destination::Durable => {
-                    let body = PushBatch { items };
-                    let results: Option<Vec<PushResult>> = http
-                        .post_json("/api/v1/push", &body, &Opts::default())
-                        .await?;
-                    Ok(results.unwrap_or_default())
-                }
+                // The items are borrowed: the drain keeps ownership of the
+                // chunk so it can put it back when the request fails — or when
+                // the flush future is dropped mid-request.
+                Destination::Durable => http.push(items, &Opts::default()).await,
                 Destination::Ephemeral { queue, partition } => {
                     let body = EphemeralBatch {
                         queue,

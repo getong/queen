@@ -80,6 +80,15 @@ digest: >-
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): a node without its
 # majority answers 503 five seconds later, so the survivor's paragraphs say that; F8 and F2 leave
 # the table of gaps, and F1's row says what /health answers for that node.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): replicator/raft/mod.rs, cluster.rs and network.rs let
+# each raft group of a standby replay the source's group of the same number, read on the raft port
+# plus the group's number, and a group's leader hands leadership only to a voter and not during a
+# membership change; apply.rs writes the durable point every 250 ms, so a restart replays less log
+# than before and the steps on this page are the same; qlog/set.rs reads a record for a fetch with
+# the log's lock released. facade/real.rs, facade/mod.rs and handlers/raft.rs read a binary push and
+# transaction body, answer an ack with counts and a pop with the stored records, only for a client
+# that asks; a JSON request is served as before. The rollback paragraph says 2.3.0 does not raise
+# the cluster version. Nothing else this page states changes.
 ---
 
 Most failures need nothing from you. A node that crashes starts again on its own directory and
@@ -501,7 +510,7 @@ release on the same directory, which works until the leader raises the cluster v
 that only once every member runs a release that reads the new version, and from then on an older
 build refuses to boot with `this build reads effect catalogue version N, and the cluster this store
 belongs to writes version M ... never an older one`. 2.0.1 is the first release that raises it,
-from 3 to 4, 2.1.0 raises it from 4 to 5, and 2.2.0 from 5 to 6; to keep a rollback possible
+from 3 to 4, 2.1.0 raises it from 4 to 5, and 2.2.0 from 5 to 6 (2.3.0 does not raise it); to keep a rollback possible
 while a release bakes, run it with `QUEEN_RAFT_CLUSTER_VERSION_MS=0` and remove that setting once
 you stay. On Kubernetes, a rolling update stalls on a pod
 that cannot become Ready: fix that pod, or change only it with `OnDelete`.

@@ -118,7 +118,6 @@ explicitly and name what to run instead:
 
 | command | blocked route | use instead |
 |---|---|---|
-| `status` (no queue) | `/api/v1/status` | `queue list`, or `status <queue>` |
 | `metrics [--prometheus]` | `/metrics`, `/metrics/prometheus` | `analytics queue-ops` / `queue-lag` |
 | `analytics system\|worker` | `/api/v1/analytics/*-metrics` | `analytics queue-ops` / `queue-lag` |
 | `cg refresh-stats` | `/api/v1/stats/refresh` | nothing - the broker refreshes on its own interval |

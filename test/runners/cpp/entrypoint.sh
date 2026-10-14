@@ -39,6 +39,12 @@ cd /src/clients/client-cpp
 # after expiry whose old holder commits nothing, a semaphore at its limit.
 ./bin/test_locks "$QUEEN_HTTP_URL"
 
+# The binary push body and the framed pop answer (ClientConfig::binary_push,
+# push_compression, framed_pop). Broker-free: the bytes a client sends with the
+# options off and on, and a framed pop read into the messages of the JSON
+# answer.
+./bin/test_wire_forms
+
 # Broker URL is argv[1] (there is no env override); default would be localhost.
 # The KV/timer INTEGRATION tests inside this binary run unconditionally: every
 # broker carries both surfaces, so a failure there is a failure and not a

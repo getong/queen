@@ -63,6 +63,12 @@ sourceOfTruth:
 # start waits for the circuit; the PHP stop signal reaches the workers once; the Rust master handles
 # SIGTERM during its configuration export and drops a log line it cannot write. Nothing this page
 # states changes.
+# sourceOfTruth re-read 2026-10-12 (binary push, push compression, framed pop): the client that
+# QueenServiceProvider builds from config/queen.php, the one this command uses, also takes binary_push,
+# push_compression and framed_pop; Queen.php checks them and HttpClient sends and reads the binary
+# forms when they are on. Off, the default, the requests are the ones this page describes, and on, the
+# consumer returns the same messages. QueenConnector only gains the three checks. Nothing this page
+# states changes.
 ---
 
 `php artisan queen:consume` reads a Queen queue and passes each message to a class of yours. Use it

@@ -20,6 +20,7 @@ Welcome to Queen client! This is your friendly guide to mastering message queues
 - [Part 12: Message Tracing - Debug Your Workflows](#part-12-message-tracing---debug-your-workflows)
 - [Part 13: Callbacks & Error Handling](#part-13-callbacks--error-handling)
 - [Part 14: Graceful Shutdown](#part-14-graceful-shutdown)
+- [Part 15: Binary Push, Compression & Framed Pop](#part-15-binary-push-compression--framed-pop)
 - [Cheat Sheet](#cheat-sheet)
 
 ---
@@ -1607,6 +1608,67 @@ await queen.close()
 
 ---
 
+## Part 15: Binary Push, Compression & Framed Pop
+
+Everything so far travels as JSON. For a high message rate, the client has three
+opt-in forms of the push, pop and transaction requests. They change how the
+messages travel and nothing else: your calls, their results, deduplication and
+the delivery guarantees stay the same. All three are off by default.
+
+```javascript
+const queen = new Queen({
+  url: 'http://localhost:6632',
+  binaryPush: true,       // a push travels as a binary body
+  pushCompression: true,  // with binaryPush: framed and compressed here
+  framedPop: true         // a pop returns the stored records, unpacked here
+})
+
+// The rest of your code does not change.
+await queen.queue('events').partition('device-7').push([{ data: { n: 1 } }])
+await queen.queue('events').group('workers').consume(async (message) => {
+  console.log(message.data)
+})
+```
+
+### What Each Option Does
+
+| Option | What it does |
+| --- | --- |
+| `binaryPush` | A push, direct or buffered, sends its items as one length-prefixed binary body instead of a JSON document. The answer is the same list, one entry per item. |
+| `pushCompression` | Needs `binaryPush`. The client frames each partition's batch the way the broker stores it, mints the message ids (UUIDv7) and compresses the batch with zstd, once. The broker checks the frames and, when it has nothing to add to them, stores those bytes without compressing them again. A transaction that pushes sends its pushes the same way, with the rest of the bundle as JSON in front of them. |
+| `framedPop` | `pop()` and `consume()` ask for the stored records (`frames=true`) and unpack them here into the same message objects, instead of a JSON answer that the broker renders message by message. |
+
+Turn them on when the broker's CPU or the network limits a high message rate:
+the framing, the compression and the unpacking then run in the clients, and the
+batches cross the network compressed. zstd is the one of Node.js (`node:zlib`),
+so there is nothing to install.
+
+### What Stays JSON
+
+The client falls back by itself in these cases:
+
+- A push with a `traceId` on one of its items.
+- A transaction with no push, or with a `traceId` on one of its pushes.
+- A pop the broker cannot answer in frames: a pop of a conflating group, and
+  every pop on a broker that runs with an encryption key
+  (`QUEEN_ENCRYPTION_KEY`). The client reads the JSON answer as always.
+- Acks, KV, timers, locks and the admin calls. Ephemeral queues have their own
+  routes and do not change either.
+
+A transaction's `results` come back in the order you added the operations, as
+with JSON. The broker answers a binary transaction with the acks first and the
+pushes after them, and the client puts them back.
+
+### Which Broker
+
+`binaryPush` and `pushCompression` need broker 2.3.0 or later. A broker up
+to 2.2.0 answers 400 to the binary bodies and the client does not fall back to
+JSON, so turn the two on after every broker of the cluster is upgraded.
+`framedPop` is safe against any broker: an older one ignores the parameter and
+answers JSON.
+
+---
+
 ## Cheat Sheet
 
 ### Connection
@@ -1883,7 +1945,10 @@ await queen.close()
   loadBalancingStrategy: 'affinity',     // 'affinity' | 'round-robin' | 'session'
   affinityHashRing: 128,
   enableFailover: true,
-  healthRetryAfterMillis: 5000
+  healthRetryAfterMillis: 5000,
+  binaryPush: false,                     // a push as a binary body
+  pushCompression: false,                // with binaryPush: frames compressed in the client
+  framedPop: false                       // a pop as the stored records
 }
 ```
 

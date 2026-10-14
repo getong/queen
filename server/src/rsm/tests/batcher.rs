@@ -30,7 +30,7 @@ use crate::rsm::apply::{
     self, state_digest, Applier, Committed as ApplyCommitted, NoNotify, SystemClock,
 };
 use crate::rsm::batcher::{
-    Batcher, BatcherConfig, Command, CommandTx, LinkBoot, Reply, Submission,
+    self, Batcher, BatcherConfig, Command, CommandTx, LinkBoot, Reply, Submission,
 };
 use crate::rsm::effect::Effect;
 use crate::rsm::entry::{decode_entry, Outcome, PushVerdict};
@@ -987,6 +987,112 @@ async fn a_request_id_expiry_backlog_clears_after_one_tick() {
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
+
+    drop(tx);
+    let _ = handle.await;
+    drop(repl);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The look between two ticks does not feed itself. An expiry step is an
+/// entry, and its own minted id is an outcome that leaves the window later:
+/// asked for as soon as ONE outcome had left, a step bought the next one for
+/// good, and an idle staging cluster with 5 commands a second wrote 37 entries
+/// a second (2026-10-13). The look waits for `REQUEST_EXPIRE_FAST_MIN`
+/// outcomes: a handful stay for the tick, and the driver is quiet again after
+/// the step that many bring.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn the_expiry_look_between_ticks_does_not_feed_itself() {
+    let dir = scratch("expire-look");
+    let store = Arc::new(HeedStore::open(&dir.join("store"), &store_opts()).expect("store"));
+    let repl = Arc::new(open_repl(&dir, store.clone()));
+    let bcfg = BatcherConfig {
+        pipeline: 4,
+        propose_ms: 60_000,
+        // Every logged outcome is past the cutoff as soon as it is logged, and
+        // the tick never comes: only the look can ask for a step.
+        request_id_window_s: 0,
+        request_expire_every_ms: 3_600_000,
+        request_expire_fast_ms: 5,
+        ..BatcherConfig::default()
+    };
+    let (tx, handle) = Batcher::new(store.clone(), repl.clone(), bcfg).spawn();
+    let logged = |store: &HeedStore| {
+        store
+            .read(|r| {
+                let mut c = 0usize;
+                r.scan_request_expiry(usize::MAX, &mut |_, _| {
+                    c += 1;
+                    true
+                })?;
+                Ok(c)
+            })
+            .expect("read")
+    };
+    let min = batcher::REQUEST_EXPIRE_FAST_MIN;
+    let sixty_looks = Duration::from_millis(300);
+
+    // A handful of outcomes, all past the window: no look asks for a step.
+    let few = 8;
+    for i in 0..few {
+        let txn = format!("f{i}");
+        let reply = submit(&tx, push(20_000 + i as u64, "q", "p0", &[txn.as_str()])).await;
+        let _ = done(&reply);
+    }
+    settle(&store, repl.applied_index()).await;
+    let (index, count) = (repl.applied_index(), logged(&store));
+    assert!(count >= few, "every push logged its outcome");
+    tokio::time::sleep(sixty_looks).await;
+    assert_eq!(
+        (repl.applied_index(), logged(&store)),
+        (index, count),
+        "a step ran for fewer than {min} outcomes"
+    );
+
+    // Enough of them: the look asks for the step, without a tick.
+    let mut replies = Vec::with_capacity(min);
+    for i in 0..min {
+        let txn = format!("m{i}");
+        let (sub, rx) = Submission::new(push(30_000 + i as u64, "q", "p0", &[txn.as_str()]));
+        tx.send(sub).await.expect("send command");
+        replies.push(rx);
+    }
+    for rx in replies {
+        let reply = rx.await.expect("await reply");
+        let _ = done(&reply);
+    }
+    let end = Instant::now() + Duration::from_secs(10);
+    while logged(&store) >= min {
+        assert!(
+            Instant::now() < end,
+            "{min} outcomes past the window and no step"
+        );
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+
+    // Steps asked for while the first was in flight land first: a pipeline's
+    // worth at most.
+    let mut index = repl.applied_index();
+    let end = Instant::now() + Duration::from_secs(2);
+    loop {
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let now = repl.applied_index();
+        if now == index || Instant::now() >= end {
+            break;
+        }
+        index = now;
+    }
+
+    // And a step's own outcome, past the window too, buys no other.
+    settle(&store, repl.applied_index()).await;
+    let (index, count) = (repl.applied_index(), logged(&store));
+    assert!(count >= 1, "the step logged its own outcome");
+    tokio::time::sleep(sixty_looks).await;
+    assert_eq!(
+        (repl.applied_index(), logged(&store)),
+        (index, count),
+        "a step's own outcome bought another step"
+    );
 
     drop(tx);
     let _ = handle.await;

@@ -2,9 +2,19 @@
 //!
 //! The replicated store is deliberately not used for per-replica samples.
 //! Each RSM directory instead owns `local.db`, a small checksum-framed journal.
-//! A torn final record is discarded on reopen, the in-memory window is bounded,
-//! and the journal rewrites itself at twice that bound. This is an observability
-//! store: losing its unflushed tail may lose a graph point, never queue state.
+//! A torn final record is discarded on reopen and the in-memory window is
+//! bounded. This is an observability store: losing its unflushed tail may lose
+//! a graph point, never queue state.
+//!
+//! Retention steps are kept in RAM by apply and written to the file by
+//! [`LocalMetrics::persist`]: the metrics collector calls it every interval
+//! and the store calls it when dropped. Apply used to append every step
+//! itself — a JSON record, the file opened, three writes, closed — and to
+//! rewrite the journal with two fsyncs every 8,192 records. With retention
+//! moving 15,000 partitions a second the apply thread spent up to 37 ms at a
+//! time in here, several times in a row, and every push waited behind it (a
+//! million partitions at 1.5M msg/s, 2026-10-13: apply's longest entry 80-140
+//! ms, end to end p99 120 ms against 34 without retention).
 
 use std::collections::{HashMap, VecDeque};
 use std::fs::{File, OpenOptions};
@@ -45,7 +55,8 @@ const CHURN_KEEP_US: i64 = 24 * 3600 * 1_000_000;
 
 struct State {
     retention: VecDeque<RetentionEvent>,
-    appended: usize,
+    /// Something here is not in the file yet ([`LocalMetrics::persist`]).
+    dirty: bool,
     /// `(minute, tenant, queue)` → (created, deleted). Minutes before
     /// `churn_journaled_to` are in the journal; the open minute is not yet.
     churn: std::collections::BTreeMap<(i64, String, String), (i64, i64)>,
@@ -58,6 +69,14 @@ struct State {
 pub struct LocalMetrics {
     path: PathBuf,
     state: Mutex<State>,
+    /// One rewrite of the file at a time ([`LocalMetrics::persist`]).
+    io: Mutex<()>,
+}
+
+impl Drop for LocalMetrics {
+    fn drop(&mut self) {
+        self.persist();
+    }
 }
 
 static REGISTRY: LazyLock<Mutex<HashMap<PathBuf, Weak<LocalMetrics>>>> =
@@ -93,7 +112,6 @@ impl LocalMetrics {
             std::fs::create_dir_all(parent)?;
         }
         let mut events = VecDeque::with_capacity(RETENTION_CAP);
-        let mut appended = 0usize;
         let mut churn = std::collections::BTreeMap::new();
         let mut churn_to = 0i64;
         match File::open(&path) {
@@ -121,7 +139,6 @@ impl LocalMetrics {
                                 events.pop_front();
                             }
                             events.push_back(event);
-                            appended += 1;
                         } else if let Ok(rec) = serde_json::from_slice::<ChurnRecord>(payload) {
                             for c in rec.churn {
                                 let e = churn
@@ -131,7 +148,6 @@ impl LocalMetrics {
                                 e.1 += c.deleted;
                                 churn_to = churn_to.max(c.bucket_us + 60_000_000);
                             }
-                            appended += 1;
                         }
                         at += len;
                         valid = at;
@@ -164,11 +180,31 @@ impl LocalMetrics {
             path,
             state: Mutex::new(State {
                 retention: events,
-                appended,
+                dirty: false,
                 churn,
                 churn_journaled_to: churn_to,
             }),
+            io: Mutex::new(()),
         })
+    }
+
+    /// Write what is only in RAM to the file: the retention steps, and any
+    /// churn minute whose own record a rewrite raced. The state lock is held
+    /// for the copy alone, never across the write, so apply waits for
+    /// neither the disk nor the encoding.
+    pub fn persist(&self) {
+        let (events, churn) = {
+            let mut state = self.state.lock_unpoisoned();
+            if !state.dirty {
+                return;
+            }
+            state.dirty = false;
+            (state.retention.clone(), state.churn.clone())
+        };
+        let _one = self.io.lock_unpoisoned();
+        if rewrite(&self.path, &events, &churn).is_err() {
+            self.state.lock_unpoisoned().dirty = true;
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -196,23 +232,13 @@ impl LocalMetrics {
             txns_from,
             txns_to,
         };
-        let Ok(payload) = serde_json::to_vec(&event) else {
-            return;
-        };
+        // RAM only: this runs on the apply thread, once per watermark.
         let mut state = self.state.lock_unpoisoned();
-        if append_record(&self.path, &payload).is_err() {
-            return;
-        }
         if state.retention.len() == RETENTION_CAP {
             state.retention.pop_front();
         }
         state.retention.push_back(event);
-        state.appended += 1;
-        if state.appended >= RETENTION_CAP * 2
-            && rewrite(&self.path, &state.retention, &state.churn).is_ok()
-        {
-            state.appended = state.retention.len() + 1;
-        }
+        state.dirty = true;
     }
 
     /// Count partitions created / deleted in `queue` at `at_us` (the applied
@@ -238,9 +264,10 @@ impl LocalMetrics {
                 .collect();
             if !done.is_empty() {
                 if let Ok(payload) = serde_json::to_vec(&ChurnRecord { churn: done }) {
-                    if append_record(&self.path, &payload).is_ok() {
-                        state.appended += 1;
-                    }
+                    // A rewrite in flight may replace the file under this
+                    // record: the next one writes the minute again.
+                    let _ = append_record(&self.path, &payload);
+                    state.dirty = true;
                 }
             }
             state.churn_journaled_to = bucket;
@@ -258,34 +285,37 @@ impl LocalMetrics {
     /// Journal every churn minute that ended before `now_us` and is not in
     /// the journal yet. [`LocalMetrics::record_churn`] journals a minute only
     /// when a later minute's first event arrives; this closes the last one
-    /// when no further event comes (called by the metrics collector).
+    /// when no further event comes (called by the metrics collector). Then
+    /// the file takes whatever else is only in RAM ([`LocalMetrics::persist`]).
     pub fn flush_churn(&self, now_us: i64) {
         use crate::rsm::dashboard::model::{trunc_us, ChurnRow, US_PER_MIN};
         let open = trunc_us(now_us, US_PER_MIN);
-        let mut state = self.state.lock_unpoisoned();
-        if open <= state.churn_journaled_to {
-            return;
-        }
-        let done: Vec<ChurnRow> = state
-            .churn
-            .range((state.churn_journaled_to, String::new(), String::new())..)
-            .take_while(|((b, _, _), _)| *b < open)
-            .map(|((b, t, q), (c, d))| ChurnRow {
-                bucket_us: *b,
-                tenant: t.clone(),
-                queue: q.clone(),
-                created: *c,
-                deleted: *d,
-            })
-            .collect();
-        if !done.is_empty() {
-            if let Ok(payload) = serde_json::to_vec(&ChurnRecord { churn: done }) {
-                if append_record(&self.path, &payload).is_ok() {
-                    state.appended += 1;
+        {
+            let mut state = self.state.lock_unpoisoned();
+            if open > state.churn_journaled_to {
+                let done: Vec<ChurnRow> = state
+                    .churn
+                    .range((state.churn_journaled_to, String::new(), String::new())..)
+                    .take_while(|((b, _, _), _)| *b < open)
+                    .map(|((b, t, q), (c, d))| ChurnRow {
+                        bucket_us: *b,
+                        tenant: t.clone(),
+                        queue: q.clone(),
+                        created: *c,
+                        deleted: *d,
+                    })
+                    .collect();
+                if !done.is_empty() {
+                    if let Ok(payload) = serde_json::to_vec(&ChurnRecord { churn: done }) {
+                        let _ = append_record(&self.path, &payload);
+                        state.dirty = true;
+                    }
                 }
+                state.churn_journaled_to = open;
             }
         }
-        state.churn_journaled_to = open;
+        // The retention steps apply kept in RAM since the last interval.
+        self.persist();
     }
 
     /// The tenant's partition churn in `[from_us, to_us)`, the open minute
@@ -466,6 +496,47 @@ mod tests {
         assert!(after < before);
         let value = store.retention_json("t");
         assert_eq!(value["totals"]["totalMsgs"], 4);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn retention_steps_are_written_by_the_flush_and_never_by_the_step() {
+        let root = std::env::temp_dir().join(format!(
+            "queen-local-metrics-flush-{}-{}",
+            std::process::id(),
+            crate::util::now_epoch_ms()
+        ));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("local.db");
+        let len = || std::fs::metadata(&path).unwrap().len();
+
+        let store = LocalMetrics::load(path.clone()).unwrap();
+        let empty = len();
+        for pid in 0..100 {
+            store.record_retention(1, "t", "q", pid, 0, 4, 0, 2);
+        }
+        assert_eq!(len(), empty, "a step touches no file: it runs on apply");
+        // The dashboard reads the steps from RAM, at once.
+        assert_eq!(store.retention_json("t")["totals"]["eventCount"], 100);
+        store.persist();
+        let written = len();
+        assert!(written > empty);
+        store.persist();
+        assert_eq!(len(), written, "nothing new, nothing rewritten");
+
+        // A crash after one more step: what the last flush wrote is there,
+        // the step after it is not (a graph point, never queue state).
+        store.record_retention(2, "t", "q", 100, 0, 1, 0, 1);
+        std::mem::forget(store);
+        let again = LocalMetrics::load(path.clone()).unwrap();
+        assert_eq!(again.retention_json("t")["totals"]["eventCount"], 100);
+        // A clean stop writes the tail.
+        again.record_retention(3, "t", "q", 101, 0, 1, 0, 1);
+        drop(again);
+        let last = LocalMetrics::load(path.clone()).unwrap();
+        assert_eq!(last.retention_json("t")["totals"]["eventCount"], 101);
+        drop(last);
         let _ = std::fs::remove_dir_all(root);
     }
 }

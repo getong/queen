@@ -46,12 +46,20 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (completed retention no longer holds a row): maintenance.rs
 # computes a push's row time from the dedup window and the node's floor alone; the retention steps
 # say so.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): raft/mod.rs tells each group's link routes which group of the cluster they serve, and a group's leader hands leadership to its preferred member only once that member is a voter. A seeded standby of several groups takes one snapshot per group and keeps a `link.seed` in each group's directory, which the layout's last line already covers; the sentence on a standby's snapshot now says one for each group. Nothing else this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): qlog/dirx.rs hands a directory file to the disk 8 MB at
+# a time while it is written; retention_scan.rs spreads a round over a small store across its
+# interval in 100 steps; qlog/set.rs and qlog/mod.rs read a record for a fetch with the log's lock
+# released and ask the kernel to read ahead (QUEEN_QLOG_READ_AHEAD_MB). The directory and retention
+# paragraphs say the first two; the opening now says the store is checkpointed four times a second
+# (QUEEN_RAFT_DURABLE_EVERY_MS is 250). The files, their layout and what makes a write durable are
+# unchanged.
 ---
 
 A node keeps three things on its own disk. The queue log files hold every message, and they are
 also the write-ahead log: a message is written once, in its queue's log, and that write is the one
 that makes it durable. The store holds everything else (queues, partitions, cursors, dedup rows,
-KV, timers) in RAM, and checkpoints it to an LMDB file once a second; no write waits for the
+KV, timers) in RAM, and checkpoints it to an LMDB file four times a second; no write waits for the
 checkpoint. Since 2.0.1 (cluster version 4), message traces live in a second LMDB file of their
 own, `traces/` in the data directory, read from disk and never loaded into RAM.
 
@@ -124,7 +132,8 @@ holds a given partition's offset. Each log therefore keeps a directory beside it
 file asks the directory for the file and then that file's own `.qidx` for the record, so it costs
 a few lookups whatever the log retains, where it used to ask the sealed files one by one. The
 node's maintenance builds a directory file for every 16 sealed files that have none and merges 8
-of a size into one, with sequential I/O only and never on the log writer; the files it has not
+of a size into one, with sequential I/O only and never on the log writer, and hands a file to the
+disk 8 MB at a time while it writes it, so the raft log's sync never waits behind a whole merge; the files it has not
 covered yet are asked directly. A directory file is derived data: one that is missing or damaged
 is removed at boot and built again from the `.qidx` files (`QUEEN_QLOG_DIRX=0` stops building
 them).
@@ -147,7 +156,7 @@ single node, in its own.**
 <Figure id="internals/storage-write" />
 
 The store is not on that path. Its keyspaces live in RAM, loaded whole at boot. Every
-`QUEEN_RAFT_DURABLE_EVERY_MS` (1000) or `QUEEN_RAFT_DURABLE_EVERY_BYTES` (256 MiB), a checkpoint
+`QUEEN_RAFT_DURABLE_EVERY_MS` (250) or `QUEEN_RAFT_DURABLE_EVERY_BYTES` (256 MiB), a checkpoint
 writes the rows that changed into `store/data.mdb`, commits and syncs it, and records the applied
 index in the same transaction. That checkpoint bounds what a restart replays. No answer ever waits
 for it, which is why a store write costs a push nothing.
@@ -179,7 +188,8 @@ In a cluster a restarted node then catches up from the leader. A node that was a
 `QUEEN_RAFT_PURGE_HOLD_S` (600), or a new one, receives a snapshot instead: a copy of the leader's
 store checkpoint, its trace file and its queue log files. The node stages it under `snapshots/`, exits, and swaps
 it in at the next boot, never while it serves. The first node of a
-[standby cluster](/operate/standby/) takes the same snapshot from a node of its source, once. That
+[standby cluster](/operate/standby/) takes the same snapshot from a node of its source, once, and
+one for each raft group when the clusters run several. That
 node keeps its log from the snapshot's position on from the moment it is asked, and the source's
 other nodes from wherever the standby has got to once it reads, as they do for a follower that is
 behind.
@@ -208,7 +218,9 @@ boot is restored by wiping its data directory, so it rejoins from a peer. See
 Retention is decided once, on the leader, and executed on every node, like every other change.
 
 1. **Decide.** A scanner on the leader walks every partition at `QUEEN_RAFT_RETENTION_SCAN_PER_S`
-   (50,000), at most one round per `RETENTION_INTERVAL` (5000 ms). The planner checks each proposal
+   (50,000), at most one round per `RETENTION_INTERVAL` (5000 ms). A store it could walk in a
+   fraction of that interval is walked over the whole of it, in 100 steps, so that its
+   watermarks do not all reach the planner in the same instant. The planner checks each proposal
    against the current state and logs three watermarks per partition: `log_start`, below which the
    payloads are gone; `rows_start`, below which the store holds no index row; and `txns_start`,
    the lower of the two, below which a record has neither and its file can be reclaimed. A push's

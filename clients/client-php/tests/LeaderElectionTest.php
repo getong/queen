@@ -46,6 +46,61 @@ final class LeaderElectionTest extends TestCase
         $this->assertSame(5, $handler->count(), 'the election used up the retry attempts');
     }
 
+    /**
+     * The binary push body is built once and the same bytes go out at every
+     * attempt, so the broker deduplicates a second run as it would the JSON
+     * form: a binary push whose every item has a transactionId waits the
+     * election out too.
+     */
+    public function testABinaryPushWaitsOutAnElectionAndSendsTheSameBytes(): void
+    {
+        $handler = new PlanHandler([
+            self::unavailable('no_leader'),
+            self::unavailable('retry'),
+            self::unavailable('no_leader'),
+            self::unavailable('no_leader'),
+            ['status' => 201, 'json' => [['status' => 'queued', 'transactionId' => 't-1']]],
+        ]);
+        $client = new HttpClient([
+            'baseUrl' => 'http://queen.test:6632',
+            'retryDelayMillis' => 0,
+            'binaryPush' => true,
+            'handler' => HandlerStack::create($handler),
+        ]);
+
+        $result = $client->post('/api/v1/push', ['items' => [['queue' => 'q', 'payload' => [], 'transactionId' => 't-1']]]);
+
+        $this->assertSame('queued', $result[0]['status']);
+        $this->assertSame(5, $handler->count(), 'the election used up the retry attempts');
+        $bodies = [];
+        foreach ($handler->requests as $request) {
+            $this->assertSame('application/x-queen-push', $request->getHeaderLine('Content-Type'));
+            $bodies[] = (string) $request->getBody();
+        }
+        $this->assertStringStartsWith('QPB1', $bodies[0]);
+        $this->assertCount(1, array_unique($bodies), 'an attempt sent other bytes');
+    }
+
+    /** Without a transactionId on every item the broker mints them, and a second run would store the messages again. */
+    public function testABinaryPushTheBrokerDoesNotDeduplicateKeepsItsRetryAttempts(): void
+    {
+        $handler = new PlanHandler([], self::unavailable('no_leader'));
+        $client = new HttpClient([
+            'baseUrl' => 'http://queen.test:6632',
+            'retryDelayMillis' => 0,
+            'binaryPush' => true,
+            'handler' => HandlerStack::create($handler),
+        ]);
+
+        try {
+            $client->post('/api/v1/push', ['items' => [['queue' => 'q', 'payload' => []]]]);
+            $this->fail('A 503 was taken for an answer.');
+        } catch (HttpException) {
+        }
+        $this->assertSame(3, $handler->count());
+        $this->assertStringStartsWith('QPB1', (string) $handler->requests[0]->getBody());
+    }
+
     public function testFailoverWaitsOutAnElectionThatAnswers503OnEveryBackend(): void
     {
         $handler = new PlanHandler([

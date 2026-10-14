@@ -38,6 +38,8 @@ sidebar:
 # sourceOfTruth re-read 2026-10-07 (optional client supervision): QueueBuilder and ConsumerManager add off-by-default observations; the webhook handler, retries and partition behavior described here are unchanged.
 # sourceOfTruth re-read 2026-10-09 (rows leave the store at the dedup window): consume/pop.rs reads
 # messages whose rows are gone from the queue log. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): phase2/reads.rs gives POST /api/v1/fetch a ceiling for
+# the whole call and phase2/admin.rs only converts a frame's type. Nothing this page states changes.
 ---
 
 Put every delivery in the partition of the endpoint it is for, let the broker's retry budget do the

@@ -28,13 +28,79 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (completed retention no longer holds a row): maintenance.rs
 # computes a push's row time from the dedup window and QUEEN_RAFT_TXN_WINDOW_MIN_S alone; the
 # settings table describes that setting as before, and the runs on this page predate the change.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): qlog/set.rs reads a record for a fetch of an old offset
+# with the log's lock released and asks the kernel to read ahead once a record waits for the disk
+# (QUEEN_QLOG_READ_AHEAD_MB); the write path and the durability these runs measure are as they
+# were. The page gains the machines, settings and commands of the 2.3.0 runs of 2026-10-12 and 13.
 ---
 
 Every number in this section comes from a folder of logs, and most can be produced again with one
 command. This page is how: the machines, the load generators and what they count, the settings
 each system ran with, and the scripts.
 
-## The machines
+## Two sets of machines
+
+The section has two generations of runs. The 2.3.0 figures (2026-10-12 and 13: Queen's matrix,
+Kafka at 1,000,000 to 4,000,000 msg/s, the transactions against 2.2.0, five Kafka-client points)
+come from the second set below. Everything measured in September and on 2026-10-01 and 02 (Queen
+2.0.0-beta builds with Kafka, Redpanda and Pulsar, the soak, the first Kafka-client runs) comes
+from the first. Both are six DigitalOcean droplets of the same size; they are not the same
+machines, so no page compares a number across the two.
+
+## The 2.3.0 runs
+
+| Role | Machine | CPU | 32 KB write and fdatasync, p50 / p99 |
+|---|---|---|---|
+| Broker, the leader | `queen` | Xeon Gold 6548N | 0.08 / 0.29 ms |
+| Broker | `queen-02` | Xeon Platinum 8358 | 0.10 / 0.40 ms |
+| Broker | `queen-03` | Xeon Platinum 8358 | 0.09 / 0.37 ms |
+| Load | `queen-04` | Xeon Gold 6548N | 0.72 to 0.94 / 6.3 to 14.4 ms |
+| Load | `queen-05` | Xeon Gold 6548N | 0.76 to 0.95 / 2.6 to 3.2 ms |
+| Load | `queen-06` | Xeon Platinum 8358 | 0.20 / 1.17 ms |
+
+Each has 16 vCPU and 31 GB, Ubuntu 24.04 and one ext4 disk. The roles follow the disks: two of the
+three faster CPUs sync ten times slower than the others, and the first runs, with those two as
+followers, read a push p99 of 242 ms at 300,000 msg/s that belonged to one follower's clients
+alone. With the three fast disks as brokers the same build read 5 ms. Measure every disk before
+giving roles (`scripts/fsync.py` in the archive).
+
+Queen ran as release builds (`cargo build --release --locked`, the profile of the published
+image) of the commits that became 2.3.0, three voters, one tenant and one raft group, every
+broker setting at its default. Three things differ from a default installation, and each is named
+where it applies: the brokers' kernel keeps 512 MB free (`vm.min_free_kbytes`, with
+`vm.watermark_scale_factor` 200), which the ten-million-partition points need;
+`QUEEN_CONSUME_IDLE_UNLOAD_S=30` on those points; and the load generator turns on the wire forms
+that are off by default in every client (`-push-wire bin -push-zstd -ack-counts -pop-frames`: the
+binary push, a client-compressed group, acks answered with counts, framed pops).
+
+The load generator is `qload`, nine processes on the three load machines, open loop with the
+rules [below](#the-load-generators): 100 messages of 256 bytes a push to one partition, an
+in-flight cap of 5,000 pushes a process, leases of 30 seconds, asynchronous acks with up to 256 in
+flight. A point is a fresh cluster with its partitions prefilled and drained, 90 seconds of load
+with a 10-second ramp in them, and its figure is seconds 30 to 60: rates summed over the processes, a
+latency the worst process's worst 10-second window, cores and memory sampled over the same
+seconds. A point is carried when nothing is shed, nothing errs and 99% of what is pushed is
+consumed. The clean matrix has deduplication off, completed messages kept 1,800 seconds and the
+rows window at its 900-second default, so nothing is deleted during a point; the runs with
+deduplication and retention on set a 60-second window for each and say so. Kafka ran with
+September's harness and settings pointed at these machines, 70 seconds of load, and the same
+seconds 30 to 60.
+
+```bash
+# from benchmark-queen/2026-10-12-three-node-new-forms/scripts, hosts.env filled in;
+# QBIN names a broker binary copied to the three brokers with bins.sh
+QBIN=p5 ./grid3.sh 10 100 1000 10000 100000 1000000 10000000   # the matrix, a fresh cluster per point
+python3 finaltable.py ../runs/grid-final.jsonl                 # its tables
+QBIN=p7 RATE=1500000 DUR=200 ./real.sh 100 1000 10000 100000 1000000   # deduplication and retention on
+./txnrun.sh txn-bin-10 bin 10 40 60000 120000 180000            # transactions of 10, binary body
+QBIN=220 ./txnrun.sh txn-220-10 json 10 40 60000 120000 180000  # the same on 2.2.0
+```
+
+The folder's `README.md` has the runs of 2026-10-12 (2.2.0 against the new wire forms, what stops
+one raft group, the transactions) and `NIGHT.md` the log of the night that followed: each stall,
+its cause, the build that removed it and the tables of every matrix.
+
+## The machines of the September runs
 
 | Role | Count | Shape |
 |---|---|---|
@@ -53,7 +119,7 @@ and Pulsar spread partition leadership over all three brokers, the older one inc
 
 ## The load generators
 
-Queen's native runs used `goload`, a Go program built on Queen's Go client. Kafka, Redpanda and
+Queen's native runs of September used `goload`, a Go program built on Queen's Go client. Kafka, Redpanda and
 Pulsar used `kload` (franz-go) and `pload` (pulsar-client-go), and the transactional runs added
 `qload` for Queen. The three share one core copied from `goload`, so all four systems are driven
 and measured the same way.
@@ -80,7 +146,7 @@ process's. CPU is the system's own processes, from 2-second samples over the loa
 over the three brokers. A system fell behind when it consumed under 97% of the offered rate or its
 e2e p99 passed 5 seconds.
 
-## Queen's settings
+## Queen's settings in the September runs
 
 Each benchmark binary was built with Cargo's `fastrel` profile, which is `release` without link-time
 optimization and with 16 codegen units, so it builds in minutes between runs; the published images
@@ -163,8 +229,9 @@ txn/deploy.sh && txn/grid.sh && report/report.py --txn runs/txn/*/*
 
 | Folder under `benchmark-queen/` | What it holds |
 |---|---|
+| `2026-10-12-three-node-new-forms/` | the 2.3.0 runs: harness, `README.md`, `NIGHT.md`, the matrix rows (`runs/grid-final.jsonl`), the runs with deduplication and retention on, 2.2.0 on the same machines, the transactions, and the probes that found each stall |
 | `2026-09-30-stage03-3node/` | Queen's harness for 2026-09-30 and 10-01 and every Queen run on these pages: the 2.0.0-beta.2 matrix (`runs/mb2c-*`) and the soaks (`runs/soak1` to `soak5`), with the `goload` source |
-| `2026-09-30-kafka-pulsar/` | `SPEC.md`, the runbook, the `mqload` loaders, each system's install and configuration scripts, `report/report.py`, and the Kafka, Redpanda, Pulsar, transaction and Kafka-client runs |
+| `2026-09-30-kafka-pulsar/` | `SPEC.md`, the runbook, the `mqload` loaders (`qload` among them), each system's install and configuration scripts, `report/report.py`, and the Kafka, Redpanda, Pulsar, transaction and Kafka-client runs; the folders tagged `-oct13` and `b1-` are the 2026-10-13 runs on the second set of machines |
 | `2026-09-29-1m-3node/` | the 2026-09-29 runs at 1M msg/s on 500,000 partitions, deduplication on and off, and their harness |
 | `2026-09-27-jepsen-archive/` | Jepsen P8 to P10: every run, the Jepsen stores and the binaries they tested |
 

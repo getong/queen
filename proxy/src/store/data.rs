@@ -591,13 +591,11 @@ fn ctx_from_docs(c: &ClusterDoc, t: &TenantDoc, ce: &CellDoc, p: &PlanDoc) -> Cl
     let base = EffectiveLimits {
         max_req_per_sec: p.max_req_per_sec,
         req_burst: p.req_burst,
-        max_msgs_per_sec: p.max_msgs_per_sec,
-        msgs_burst: p.msgs_burst,
+        max_bytes_per_sec: p.max_bytes_per_sec,
+        bytes_burst: p.bytes_burst,
         max_queues: p.max_queues,
         max_partitions_per_queue: p.max_partitions_per_queue,
         max_parked_pops: p.max_parked_pops,
-        max_payload_bytes: p.max_payload_bytes,
-        max_batch_items: p.max_batch_items,
         max_retained_bytes: p.max_retained_bytes,
         max_retention_seconds: p.max_retention_seconds,
     };
@@ -2508,32 +2506,40 @@ async fn kv_delete_tenant_once(kv: &dyn KvBackend, tenant_id: Uuid, force: bool)
 // so every writer here is idempotent: a retry of a call that already took
 // effect writes nothing and answers the same ids.
 
-/// The limit keys a cluster's `limit_overrides` may carry: the eleven
+/// The limit keys a cluster's `limit_overrides` may carry: the nine
 /// [`crate::cache::merge_limits`] reads, and the monthly allowance the quota
 /// pass reads (store/usage.rs).
-pub const OVERRIDE_KEYS: [&str; 12] = [
+pub const OVERRIDE_KEYS: [&str; 10] = [
     "max_req_per_sec",
     "req_burst",
-    "max_msgs_per_sec",
-    "msgs_burst",
+    "max_bytes_per_sec",
+    "bytes_burst",
     "max_queues",
     "max_partitions_per_queue",
     "max_parked_pops",
-    "max_payload_bytes",
-    "max_batch_items",
     "max_retained_bytes",
     "max_retention_seconds",
     "monthly_msgs_quota",
 ];
 
+/// The message caps, limits until 2026-10-12: what a tenant could send was
+/// counted in messages, which the proxy could only do by reading the body.
+/// The byte rate replaced them. A control plane older than that still sends
+/// them with a provision, so an overrides document that carries one is taken
+/// and stored as it came, and nothing reads the key: refusing it would turn a
+/// signup into a 400 over a limit that no longer exists.
+pub const RETIRED_OVERRIDE_KEYS: [&str; 4] =
+    ["max_msgs_per_sec", "msgs_burst", "max_payload_bytes", "max_batch_items"];
+
 /// An overrides document the control plane may store: an object of
-/// [`OVERRIDE_KEYS`], each a non-negative integer or `null` (unlimited).
+/// [`OVERRIDE_KEYS`] (and, read by nothing, [`RETIRED_OVERRIDE_KEYS`]), each a
+/// non-negative integer or `null` (unlimited).
 pub fn check_overrides(v: &Value) -> Result<(), DataError> {
     let Some(o) = v.as_object() else {
         return Err(DataError::Invalid("overrides must be an object".into()));
     };
     for (k, val) in o {
-        if !OVERRIDE_KEYS.contains(&k.as_str()) {
+        if !OVERRIDE_KEYS.contains(&k.as_str()) && !RETIRED_OVERRIDE_KEYS.contains(&k.as_str()) {
             return Err(DataError::Invalid(format!("overrides: unknown limit {k}")));
         }
         if !(val.is_null() || val.as_i64().is_some_and(|n| n >= 0)) {
@@ -3706,7 +3712,6 @@ pub async fn delete_s3_sinks(store: &Store, clusters: &[Uuid]) -> Result<usize, 
 
 /// The four default plans and their feature families.
 pub fn default_plans() -> Vec<PlanDoc> {
-    const KIB: i64 = 1024;
     const GIB: i64 = 1024 * 1024 * 1024;
     const DAY: i64 = 86_400;
     let fam = |extra: bool| {
@@ -3717,21 +3722,20 @@ pub fn default_plans() -> Vec<PlanDoc> {
         }
         f
     };
-    let plan = |code: &str, class: &str, r: [i64; 4], q: [i64; 3], p: [i64; 4], features: Value| PlanDoc {
+    let plan = |code: &str, class: &str, r: [i64; 2], q: [i64; 3], p: [i64; 2], features: Value| PlanDoc {
         id: Uuid::new_v4(),
         code: code.to_string(),
         cell_class: class.to_string(),
         max_req_per_sec: Some(r[0]),
         req_burst: Some(r[1]),
-        max_msgs_per_sec: Some(r[2]),
-        msgs_burst: Some(r[3]),
+        // No byte rate by default: see store/seed.rs.
+        max_bytes_per_sec: None,
+        bytes_burst: None,
         max_queues: Some(q[0]),
         max_partitions_per_queue: Some(q[1]),
         max_parked_pops: Some(q[2]),
-        max_payload_bytes: Some(p[0]),
-        max_batch_items: Some(p[1]),
-        max_retained_bytes: Some(p[2]),
-        max_retention_seconds: Some(p[3]),
+        max_retained_bytes: Some(p[0]),
+        max_retention_seconds: Some(p[1]),
         monthly_msgs_quota: None,
         features,
         created_at_us: now_us(),
@@ -3740,33 +3744,33 @@ pub fn default_plans() -> Vec<PlanDoc> {
         plan(
             "free",
             "shared",
-            [5, 25, 20, 100],
+            [5, 25],
             [20, 8, 50],
-            [256 * KIB, 1000, GIB, 7 * DAY],
+            [GIB, 7 * DAY],
             fam(false),
         ),
         plan(
             "dev",
             "shared",
-            [10, 50, 40, 200],
+            [10, 50],
             [50, 16, 150],
-            [512 * KIB, 2000, 3 * GIB, 14 * DAY],
+            [3 * GIB, 14 * DAY],
             fam(false),
         ),
         plan(
             "pro",
             "shared",
-            [50, 200, 200, 800],
+            [50, 200],
             [200, 32, 1000],
-            [1024 * KIB, 5000, 20 * GIB, 30 * DAY],
+            [20 * GIB, 30 * DAY],
             fam(true),
         ),
         plan(
             "dedicated-s",
             "dedicated",
-            [200, 800, 600, 2000],
+            [200, 800],
             [1000, 64, 5000],
-            [4096 * KIB, 10000, 200 * GIB, 90 * DAY],
+            [200 * GIB, 90 * DAY],
             fam(true),
         ),
     ]
@@ -4332,11 +4336,11 @@ mod tests {
     async fn statuses_overrides_and_plans_reach_the_ctx() {
         let (s, _) = store();
         let (t, c, _, _) = world(&s).await;
-        set_limit_override(&s, c, Some(&json!({"max_queues": 5, "max_payload_bytes": null})))
+        set_limit_override(&s, c, Some(&json!({"max_queues": 5, "max_parked_pops": null})))
             .await
             .unwrap();
         let ctx = found(lookup_cluster(&s, &ClusterKey::Id(c)).await);
-        assert_eq!((ctx.limits.max_queues, ctx.limits.max_payload_bytes), (Some(5), None));
+        assert_eq!((ctx.limits.max_queues, ctx.limits.max_parked_pops), (Some(5), None));
         assign_plan(&s, c, "free").await.unwrap();
         set_limit_override(&s, c, None).await.unwrap();
         let ctx = found(lookup_cluster(&s, &ClusterKey::Id(c)).await);
@@ -4941,25 +4945,24 @@ mod tests {
         );
     }
 
-    /// `OVERRIDE_KEYS` names what the merge reads: each of the eleven limit
-    /// keys moves exactly one effective limit; the twelfth is the quota pass's.
+    /// `OVERRIDE_KEYS` names what the merge reads: each of the nine limit
+    /// keys moves exactly one effective limit; the tenth is the quota pass's.
+    /// The retired message caps are still taken, and move nothing.
     #[test]
     fn override_keys_are_the_limits_the_merge_reads() {
         let one = Some(1);
         let base = EffectiveLimits {
             max_req_per_sec: one,
             req_burst: one,
-            max_msgs_per_sec: one,
-            msgs_burst: one,
+            max_bytes_per_sec: one,
+            bytes_burst: one,
             max_queues: one,
             max_partitions_per_queue: one,
             max_parked_pops: one,
-            max_payload_bytes: one,
-            max_batch_items: one,
             max_retained_bytes: one,
             max_retention_seconds: one,
         };
-        for k in &OVERRIDE_KEYS[..11] {
+        for k in &OVERRIDE_KEYS[..9] {
             let mut o = serde_json::Map::new();
             o.insert(k.to_string(), json!(7));
             let merged = format!(
@@ -4968,7 +4971,13 @@ mod tests {
             );
             assert_eq!(merged.matches("Some(7)").count(), 1, "{k}: {merged}");
         }
-        assert_eq!(OVERRIDE_KEYS[11], "monthly_msgs_quota");
+        assert_eq!(OVERRIDE_KEYS[9], "monthly_msgs_quota");
+        // What a control plane from before the byte rate still sends with a
+        // provision: taken, and no effective limit moves.
+        let retired = json!({"max_msgs_per_sec": 40, "msgs_burst": 200, "max_payload_bytes": 7, "max_batch_items": null});
+        assert!(check_overrides(&retired).is_ok());
+        let merged = format!("{:?}", crate::cache::merge_limits(base.clone(), &retired));
+        assert_eq!(merged.matches("Some(1)").count(), 9, "{merged}");
         assert!(check_overrides(&json!({})).is_ok());
         assert!(check_overrides(&json!({"max_queues": 0, "monthly_msgs_quota": null})).is_ok());
         for bad in [

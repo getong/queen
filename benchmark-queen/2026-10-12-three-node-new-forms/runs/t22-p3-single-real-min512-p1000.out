@@ -1,0 +1,4 @@
+[21:53:44] run t22-p3-single-real-min512-p1000: binary p3, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 120s at: 100000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_APPLY_SHARD_MIN=512 | QEXTRA=-push-wire bin -ack-counts -pop-frames -tail 30s
+[21:54:08] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[21:56:47]   100,000: last 30 s: offered 99,998 pushed 99,986 consumed 100,013 | run: shed 0 errors 0 | push p50 14.8 p99 34.3 | e2e p50 241.7 p99 294.9 worst 294.9 | cores 9.5 / 7.3 / 6.9 | mem GB 4.3 / 3.7 / 3.7 | loaders 12.9c  OK 

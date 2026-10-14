@@ -29,6 +29,10 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): config.rs gains
 # QUEEN_RAFT_READY_QUORUM_MS (5000), the window of /health's new majority test. Nothing this page
 # states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): raft/cluster.rs and raft/network.rs serve a standby's
+# reads of group N on the raft port plus N, under the same QUEEN_LINK_TOKEN, and carry the placement
+# a link call states; the standby paragraph names those ports. phase2/streams.rs only converts a
+# frame's type. Nothing else this page states changes.
 ---
 
 Out of the box a node authenticates nobody: its HTTP port is plain HTTP, and every route answers
@@ -135,7 +139,8 @@ A [standby cluster](/operate/standby/) reads its source on the same port with a 
 `QUEEN_LINK_TOKEN`, sent in `x-queen-link-token`. It opens two routes under `/link/v1/`, the log
 and the snapshot, and nothing else: its holder cannot vote, append or change the membership. But
 the log and the snapshot are everything the cluster holds, every payload and every KV value, so
-guard that token as you guard the data, and open the raft port only to the standby's nodes. A node
+guard that token as you guard the data, and open the raft port only to the standby's nodes (with
+several raft groups, that port plus each group's number). A node
 without `QUEEN_LINK_TOKEN` answers `404` on those routes whatever is presented, and a wrong token
 gets `401`.
 

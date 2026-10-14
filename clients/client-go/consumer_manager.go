@@ -203,7 +203,7 @@ func (cm *ConsumerManager) worker(
 			getOpts = append(getOpts, WithLongPollRetry())
 		}
 
-		result, err := cm.httpClient.Get(ctx, fullPath, clientTimeout, affinityKey, getOpts...)
+		result, framed, isFramed, err := cm.httpClient.popRequest(ctx, fullPath, clientTimeout, affinityKey, getOpts...)
 		if err != nil {
 			// Check if context was cancelled
 			if ctx.Err() != nil {
@@ -310,7 +310,10 @@ func (cm *ConsumerManager) worker(
 		}
 
 		// Parse messages
-		messages := parseMessages(result)
+		messages := framed
+		if !isFramed {
+			messages = parseMessages(result)
+		}
 		if len(messages) == 0 {
 			if opts.Wait {
 				continue // Long polling timeout, retry

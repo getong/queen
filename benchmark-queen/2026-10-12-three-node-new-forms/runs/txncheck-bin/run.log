@@ -1,0 +1,19 @@
+[13:29:13] run txncheck-bin: binary txn, transactions as bin, 10 messages each, 30000 msg/s for 30s | roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+  [warm] one message (no "ts") into each of 200 partitions of bench-in, bench-out in 0.0s; drained in 0.1s
+[create] done: bench-in, bench-out x 200 partitions
+[txn] 13:29:49 txn=    1380/s msgs=    13804/s avg= 10.00 msg/txn | commit p50=1.50 p99=2.32 p999=2.74 ms | aborts=0 errs=0 open=4 | in=    13808/s | total txns=33057 msgs=330570 aborts=0 errs=0
+[final] offered=2749 achieved=2749 shed=0 (msgs: offered=274900 achieved=274900 shed=0) pushErr=0 | pushed=274900 popped=315460 lag=-40560 | popErr=0 empty=30 | overall p50=2.86 p99=4.83 p999=7.52 ms | acked=315460 ackErr=0 ackLag=-40560 ackAvg=4.80ms | e2e p50=193.54 p99=2277.38 p999=2473.98 ms
+[txn] 13:29:49 txn=     863/s msgs=     8627/s avg= 10.00 msg/txn | commit p50=1.82 p99=2.80 p999=3.38 ms | aborts=0 errs=0 open=7 | in=     8631/s | total txns=26579 msgs=265790 aborts=0 errs=0
+[final] offered=2750 achieved=2750 shed=0 (msgs: offered=275000 achieved=275000 shed=0) pushErr=0 | pushed=275000 popped=256600 lag=18400 | popErr=0 empty=28 | overall p50=3.34 p99=6.50 p999=11.46 ms | acked=256600 ackErr=0 ackLag=18400 ackAvg=4.93ms | e2e p50=110.08 p99=2277.38 p999=2473.98 ms
+[txn] 13:29:49 txn=     804/s msgs=     8036/s avg= 10.00 msg/txn | commit p50=2.48 p99=3.28 p999=4.13 ms | aborts=0 errs=0 open=0 | in=     8032/s | total txns=22759 msgs=227590 aborts=0 errs=0
+[final] offered=2750 achieved=2750 shed=0 (msgs: offered=275000 achieved=275000 shed=0) pushErr=0 | pushed=275000 popped=252840 lag=22160 | popErr=0 empty=32 | overall p50=3.95 p99=5.60 p999=9.02 ms | acked=252840 ackErr=0 ackLag=22160 ackAvg=4.86ms | e2e p50=173.06 p99=2277.38 p999=2473.98 ms
+[13:29:52] verifier
+verifier exit 0
+duplicates=0 dup_records=0 missing=0 pending_in=0 in_and_out=0 extra=0
+[verify] waiting 6s until every worker lease (10s) ran out before reading the rest of bench-in
+[verify] rest of bench-in: 0 records, idle 5s: scan complete after 5.0s
+[verify] system=queen ledgers=3 produced=824900 ambiguous=0 out_records=825100 out_unique=824900 duplicates=0 dup_records=0 missing=0 pending_in=0 in_and_out=0 extra=0 ambiguous_in_out=0 rereads=0 unparsed=0 warm=200 scan=17.1s | VERDICT PASS
+queen_raft_qlog_early_codec_hits_total 90739 | n1 "role":"leader" warn+error 7893
+queen_raft_qlog_early_codec_hits_total 0 | n2 "role":"follower" warn+error 3
+queen_raft_qlog_early_codec_hits_total 0 | n3 "role":"follower" warn+error 7375
+RUN_DONE

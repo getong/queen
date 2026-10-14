@@ -15,6 +15,9 @@ sourceOfTruth:
   - clients/client-php/src/Support/Defaults.php
   - clients/client-php/src/Support/PopAutopilot.php
   - clients/client-php/src/Http/HttpClient.php
+  - clients/client-php/src/Http/PushBinary.php
+  - clients/client-php/src/Http/PopFrames.php
+  - clients/client-php/src/Http/Zstd.php
   - clients/client-php/src/Http/LoadBalancer.php
   - clients/client-php/src/Http/Retry429Policy.php
   - clients/client-php/src/Laravel/Queue/QueenQueue.php
@@ -78,6 +81,13 @@ sourceOfTruth:
 # start waits for the circuit; the PHP stop signal reaches the workers once; the Rust master handles
 # SIGTERM during its configuration export and drops a log line it cannot write. Nothing this page
 # states changes.
+# sourceOfTruth re-read 2026-10-12 (binary push, push compression, framed pop): config/queen.php adds
+# binary_push, push_compression and framed_pop, plain values that are off by default. QueenConnector
+# refuses a value that is not a boolean and gives them to the driver's client, QueenServiceProvider
+# gives them to the container's client, ApplicationSettings lists them, Queen.php and Defaults.php
+# carry the client's binaryPush, pushCompression and framedPop, and HttpClient sends and reads the
+# binary forms through PushBinary, PopFrames and Zstd, which join the list. The queue driver table,
+# its notes and the refused-at-start table say so; the 20 environment variables are unchanged.
 ---
 
 Every setting of the Laravel integration lives in `config/queen.php`. Since PHP client 2.1.0 the
@@ -238,6 +248,9 @@ container), not only in `.env`.
 | `pop_ahead` | `false` | Pop the next batch while the last job of a full batch runs. |
 | `autopilot` | `false` | Let the broker choose how many partitions a pop sweeps; the batch stays `prefetch`. |
 | `bulk_batch` | `100` | Jobs in one push request of `Queue::bulk()`, 1 to 1,000. |
+| `binary_push` | `false` | Send a dispatched job as a binary push body instead of JSON. |
+| `push_compression` | `false` | With `binary_push`: frame each pushed batch the way the broker stores it and compress it with zstd in the dispatching process. |
+| `framed_pop` | `false` | Ask for the popped jobs as the stored records and unpack them in the worker. |
 | `after_commit` | `false` | Dispatch a job only after the open database transaction commits. |
 
 `retry_after` must be longer than the worker's `--timeout` and than the slowest job, unless lease
@@ -248,6 +261,23 @@ stripes](/guides/laravel/concepts/#queues-and-stripes)). `prefetch` above 1 and 
 `lease_renewal`, and `ack_async` needs `ack_batch` 1
 ([prefetch](/guides/laravel/concepts/#prefetch-ack_async-and-pop_ahead),
 [delivery profiles](/guides/laravel/#choose-a-delivery-profile)).
+
+`binary_push`, `push_compression` and `framed_pop` change how the jobs travel between the driver
+and the broker, and nothing else: the jobs, their order and their delivery stay the same. Turn
+them on when the broker's CPU or the network limits a high job rate, because the framing, the
+compression and the unpacking then run in the PHP processes.
+
+- With `binary_push` and `push_compression`, a job released without a delay, or handed back by a
+  worker that stops, travels the same way inside its transaction. A delayed job is a timer and
+  stays JSON.
+- `push_compression` and `framed_pop` need the zstd PHP extension (`pecl install zstd`) in the
+  workers and in every process that dispatches or resolves the `Queen` client.
+- `binary_push` and `push_compression` need broker 2.3.0 or later. A broker up to 2.2.0
+  answers a binary body with 400, so turn the two on after every broker of the cluster is
+  upgraded. `framed_pop` is safe against any broker: an older one ignores the request and answers
+  JSON.
+- The three are plain values with no environment variable. Add an `env()` call of your own to
+  switch them per environment.
 
 ## Lease renewal
 
@@ -444,6 +474,8 @@ checks when either engine starts, and `php artisan queen:supervisor-config` show
 | A pool's connection with `prefetch` above 1 has `lease_renewal` | supervisor | `Queen supervisor [default] connection prefetch [4] requires lease_renewal.` |
 | `pop_ahead` needs `lease_renewal` | connector | `Queen Laravel pop_ahead requires lease_renewal so the batch it pops ahead remains fenced.` |
 | `ack_async` needs `ack_batch` 1 | connector | `Queen Laravel ack_async requires ack_batch 1: a batch already defers its ACKs.` |
+| `binary_push`, `push_compression` and `framed_pop` are `true` or `false` | connector | `Queen Laravel binary_push must be a boolean.` |
+| `framed_pop`, or `binary_push` with `push_compression`, has the zstd extension | connector, as a `RuntimeException` | `framedPop needs the zstd extension (pecl install zstd)` |
 | The renewal timing fits in `retry_after` | connector | `Queen Laravel lease_renewal timing is unsafe: interval + two request budgets + retry + kill grace + safety margin must be shorter than retry_after.` |
 | The same rule for a pool, where a renewal may try every broker URL | supervisor | `Queen supervisor [default] lease renewal timing budget [44 s] must be shorter than retry_after [30 s]. It is the renewal interval [10 s], twice a renewal that tries every broker URL [5 s x 3 URLs], the kill grace [2 s], the safety margin [1 s] and 1 s. Raise retry_after, or lower lease_renewal_timeout or lease_renewal_interval.` (three URLs; the budget and its parts since PHP client 2.4.4) |
 | A pool's `retry_after` exceeds its `timeout` | supervisor | `Queen supervisor [default] retry_after must be longer than timeout.` |

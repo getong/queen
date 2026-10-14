@@ -86,6 +86,103 @@ fn idle_parts_go_and_an_append_brings_its_part_back() {
     assert_eq!(s.loaded_total, before.loaded_total + 1, "{s:?}");
 }
 
+/// The unloader works in turns, each on a slice of one shard, and a pass made
+/// of small turns does what one whole pass does: a turn holds its shard's lock,
+/// and with millions of partitions a whole shard under the lock was a pause of
+/// tens of milliseconds for everything that needed it.
+#[test]
+fn the_unloader_works_in_short_turns_that_add_up_to_a_pass() {
+    if aggressive_unload() {
+        return;
+    }
+    let mut h = H::with("unload-turns", unloading());
+    drained(&mut h, "q", "g", 200);
+    assert_eq!(h.e.engine_stats().parts, 200);
+
+    // The engine's own clock work has taken turns already: end that pass, so
+    // that the next one begins at the first shard.
+    for _ in 0..10_000 {
+        if h.e.unload_turn_for_test(h.now, 4).1 {
+            break;
+        }
+    }
+    // A whole pass, four partitions a turn: every part's idle clock starts,
+    // nothing goes. 200 partitions over 16 shards: several turns a shard.
+    let mut turns = 0;
+    loop {
+        let (gone, pass_done) = h.e.unload_turn_for_test(h.now, 4);
+        assert_eq!(gone, 0, "nothing is idle yet");
+        turns += 1;
+        assert!(turns < 10_000, "the pass ends");
+        if pass_done {
+            break;
+        }
+    }
+    assert!(turns >= 40, "200 partitions at 4 a turn: {turns} turns");
+    assert_eq!(h.e.engine_stats().parts, 200);
+    assert_eq!(h.e.unload_cursor_for_test(), (0, None), "the pass ended");
+
+    // One part gets work in between: it alone stays. (The window and some: an
+    // append the serve thread took over is stamped by the engine's own clock,
+    // a few milliseconds past the test's.)
+    h.advance(IDLE + 5_000_000);
+    let busy = h.push("q", "p77", &["again"]);
+
+    // The next pass, the window later: every idle part goes, turn by turn, and
+    // no turn drops more than it looked at.
+    let mut turns = 0;
+    loop {
+        let (n, pass_done) = h.e.unload_turn_for_test(h.now, 4);
+        assert!(n <= 4, "a turn looks at 4 partitions: {n} went");
+        turns += 1;
+        assert!(turns < 10_000, "the pass ends");
+        if pass_done {
+            break;
+        }
+    }
+    let s = h.e.engine_stats();
+    assert_eq!(s.parts, 1, "{s:?}");
+    assert_eq!(s.partitions, 200, "the partitions keep their watchers");
+    assert_eq!(s.unloaded_total, 199);
+
+    // The part that stayed and one that went both answer as before.
+    let claims = h.wildcard("q", "g", "w2");
+    assert_eq!(claims.len(), 1, "{claims:?}");
+    assert_eq!(claims[0].pid, busy);
+    let other = h.push("q", "p3", &["back"]);
+    let claims = h.wildcard("q", "g", "w3");
+    assert!(claims.iter().any(|c| c.pid == other), "{claims:?}");
+}
+
+/// The same from the engine's own clock work, which takes a turn every few
+/// milliseconds ([`super::Engine::tick`]): idle parts go without anyone
+/// asking, a window after their last change.
+#[test]
+fn the_clock_work_unloads_idle_parts_by_itself() {
+    if aggressive_unload() {
+        return;
+    }
+    let mut h = H::with("unload-clock", unloading());
+    drained(&mut h, "q", "g", 40);
+    h.e.unload
+        .auto_off
+        .store(false, std::sync::atomic::Ordering::Release);
+    // A pass to start every part's idle clock (a turn every 5 ms of the
+    // engine's clock, a pass at most every 16 s), the window, a pass to drop.
+    for _ in 0..40 {
+        h.advance(5_000);
+        h.e.tick(h.now);
+    }
+    assert_eq!(h.e.engine_stats().parts, 40, "nothing is idle yet");
+    h.advance(IDLE + 5_000_000);
+    for _ in 0..40 {
+        h.advance(5_000);
+        h.e.tick(h.now);
+    }
+    let s = h.e.engine_stats();
+    assert_eq!((s.parts, s.unloaded_total), (0, 40), "{s:?}");
+}
+
 #[test]
 fn a_part_that_holds_anything_stays() {
     if aggressive_unload() {
@@ -528,7 +625,7 @@ fn sweep_cost_at_one_million_parts() {
             .entry(g.id)
             .or_insert_with(|| GroupShard::new(g.clone()));
         for i in 0..per_shard as u64 {
-            gs.parts.insert(i * 16, Part::new(Cur::fresh(5, 0), true));
+            gs.parts.insert(i * 16, Box::new(Part::new(Cur::fresh(5, 0), true)));
         }
         for i in 0..per_shard as u64 {
             sh.pids.insert(

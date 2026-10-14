@@ -48,35 +48,33 @@ var queueListCmd = &cobra.Command{
 			return err
 		}
 		defer cleanup()
-		data, err := c.A.ListQueues(context.Background(), queen.ListQueuesParams{
-			Namespace: queueListNamespace,
-			Task:      queueListTask,
-			Limit:     queueListLimit,
-			Offset:    queueListOffset,
-		})
+		// No query: GET /api/v1/resources/queues answers every queue of the
+		// tenant whatever it says, so the four flags are applied below.
+		data, err := c.A.ListQueues(context.Background(), queen.ListQueuesParams{})
 		if err != nil {
 			return clierr.Server(err)
 		}
+		// A row carries its partition count and its labels at the top level
+		// and its configuration under `options`. JSON prints the rows as they
+		// came.
 		view := output.View{
 			Columns: []output.Column{
 				{Header: "NAME", Path: "name"},
 				{Header: "NAMESPACE"},
 				{Header: "TASK"},
-				{Header: "PARTITIONS", Path: "partitionCount", Format: output.HumanInt},
-				{Header: "PRIORITY"},
-				{Header: "LEASE", Path: "leaseTime"},
-				{Header: "RETRY", Path: "retryLimit", Wide: true},
-				{Header: "MAXSIZE", Path: "maxSize", Format: output.HumanInt, Wide: true},
-				{Header: "ENCRYPTED", Path: "encryptionEnabled", Wide: true},
+				{Header: "PARTITIONS", Path: "partitions", Format: output.HumanInt},
+				{Header: "PRIORITY", Path: "options.priority"},
+				{Header: "LEASE", Path: "options.leaseTime"},
+				{Header: "RETRY", Path: "options.retryLimit", Wide: true},
+				{Header: "MAXSIZE", Path: "options.maxSize", Format: output.HumanInt, Wide: true},
+				{Header: "ENCRYPTED", Path: "options.encryptionEnabled", Format: output.Flag, Wide: true},
 			},
 			RowsFrom: func(d any) []any {
-				if rows := output.AsArray(d, "queues"); rows != nil {
-					return rows
+				rows := output.AsArray(d, "queues")
+				if rows == nil {
+					rows = output.AsArray(d, "data")
 				}
-				if rows := output.AsArray(d, "data"); rows != nil {
-					return rows
-				}
-				return nil
+				return queuePage(rows, queueListNamespace, queueListTask, queueListLimit, queueListOffset)
 			},
 		}
 		r, err := rendererFor(view, stdout())
@@ -85,6 +83,33 @@ var queueListCmd = &cobra.Command{
 		}
 		return r.Render(data)
 	},
+}
+
+// queuePage is what `queue list` keeps of the listing's rows: the queues that
+// carry the --namespace and --task labels, then the --offset and --limit page
+// of those, in the listing's order (newest queue first).
+func queuePage(rows []any, namespace, task string, limit, offset int) []any {
+	out := make([]any, 0, len(rows))
+	for _, r := range rows {
+		m := output.AsMap(r)
+		if m == nil {
+			continue
+		}
+		if ns, _ := m["namespace"].(string); namespace != "" && ns != namespace {
+			continue
+		}
+		if t, _ := m["task"].(string); task != "" && t != task {
+			continue
+		}
+		out = append(out, r)
+	}
+	if offset > 0 {
+		out = out[min(offset, len(out)):]
+	}
+	if limit > 0 && limit < len(out) {
+		out = out[:limit]
+	}
+	return out
 }
 
 var queueDescribeCmd = &cobra.Command{

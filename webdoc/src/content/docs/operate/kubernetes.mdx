@@ -45,6 +45,14 @@ sourceOfTruth:
 # paragraph names the third condition and what a rolling update waits for (minReadySeconds between
 # the pods of a Parallel StatefulSet from Kubernetes 1.34 only), the limits say what Ready proves,
 # and two sentences point to the operator.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): replicator/raft/mod.rs, cluster.rs and network.rs let
+# each raft group of a standby replay the source's group of the same number, read on the raft port
+# plus the group's number, and a group's leader hands leadership only to a voter and not during a
+# membership change; the network paragraph names the extra ports of a standby of several groups.
+# facade/real.rs, facade/mod.rs and handlers/raft.rs read a binary push and transaction body, answer
+# an ack with counts and a pop with the stored records, only for a client that asks; a JSON request
+# is served as before. proxy/src/config.rs no longer reads QUEEN_PROXY_MAX_BATCH_ITEMS, which this
+# page never set. The manifests, probes and the shutdown sequence are unchanged.
 ---
 
 On Kubernetes a Queen cluster is a StatefulSet of three (or five) pods. Each pod gets its own
@@ -305,5 +313,6 @@ which the owner trusts only with the same `QUEEN_RAFT_TOKEN` on every pod
 
 Port 7400 belongs to the pods. Keep it off the client Service and close it to everything else with
 a NetworkPolicy ([security](/operate/security/)). The one other caller it may need is a
-[standby cluster](/operate/standby/): the standby's pods read this cluster's pods on 7400, each by
-its own address, so the policy lets them in and nobody else.
+[standby cluster](/operate/standby/): the standby's pods read this cluster's pods on 7400, and on
+7400 plus N for raft group N when there are several, each by its own address, so the policy lets
+them in and nobody else.

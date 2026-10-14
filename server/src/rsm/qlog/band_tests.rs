@@ -604,7 +604,7 @@ mod planner_e2e {
                 .iter()
                 .map(|t| PushItem {
                     hash: crate::util::txn_hash128(t),
-                    frame: format!("{{\"t\":\"{t}\"}}").into_bytes(),
+                    frame: format!("{{\"t\":\"{t}\"}}").into_bytes().into(),
                 })
                 .collect(),
             create_cfg: qcfg(),

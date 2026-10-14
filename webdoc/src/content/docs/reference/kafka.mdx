@@ -26,6 +26,10 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): config.rs gains
 # QUEEN_RAFT_READY_QUORUM_MS (5000), the window of /health's new majority test. Nothing this page
 # states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): handlers/fetch.rs and kafka_inproc.rs make the 32 MiB of
+# one fetch answer the ceiling of what the broker reads for it, where every partition was read to
+# its own budget before. The answer is as the page says: partitions filled in request order up to 32
+# MiB, the rest empty with their watermarks, the first batch at least one whole record.
 ---
 
 This is the contract a Kafka client gets from Queen, in the form you check things against: the

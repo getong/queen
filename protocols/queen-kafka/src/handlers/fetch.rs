@@ -69,12 +69,12 @@
 //! A Fetch answer goes out as ONE length-prefixed frame, and `conn::codec()`
 //! refuses to ENCODE one above `conn::MAX_FRAME_BYTES` — the connection is then
 //! dropped with no response at all, the client retries the same fetch, and it is
-//! dropped again. Nothing on the request side prevents that on its own: Kafka's
-//! request-level `max_bytes` has no counterpart in C2 (see [`budget`]), C2's own
-//! 64 MiB ceiling is per CALL and a wide assignment is several calls, and every
-//! budget on the way in is spent in COMPRESSED segment bytes, which say nothing
-//! about the records that come out. So the only place the answer can be counted
-//! is here, on the bytes this handler itself produces, and that is what
+//! dropped again. Nothing on the request side prevents that on its own: the
+//! budgets on the way in, an entry's ([`budget`]) and the ceiling each call is
+//! given ([`read_all`]), are spent in the payload bytes Queen stores and not in
+//! the bytes of the frame, an entry's first record is read whatever it weighs,
+//! and a wide assignment is several calls. So the only place the answer can be
+//! counted is here, on the bytes this handler itself produces, and that is what
 //! [`MAX_RESPONSE_BYTES`] does: partitions are filled in request order until the
 //! budget is gone and the rest are answered as empty reads with their real
 //! watermarks. That is a Kafka broker's own behaviour — `max_bytes` is a soft
@@ -231,10 +231,11 @@ async fn fetch(facade: &Facade, req: &FetchRequest, token: Option<&str>) -> Fetc
     }
 
     let budget = response_budget(request_max_bytes);
+    let asked = entries.len();
     let upstream = std::time::Instant::now();
     let read = read_all(
         facade,
-        &entries,
+        entries,
         i64::from(req.max_wait_ms).clamp(0, queen::MAX_FETCH_WAIT_MS),
         i64::from(req.min_bytes).max(0),
         budget,
@@ -242,7 +243,7 @@ async fn fetch(facade: &Facade, req: &FetchRequest, token: Option<&str>) -> Fetc
     )
     .await;
     crate::stats::FETCH_UPSTREAM.record(upstream.elapsed());
-    crate::stats::FETCH_ENTRIES.add(entries.len() as u64);
+    crate::stats::FETCH_ENTRIES.add(asked as u64);
     let records: usize = read
         .iter()
         .filter_map(|r| r.as_ref().ok())
@@ -351,20 +352,27 @@ fn stage(
 /// sends.
 ///
 /// `partition_max_bytes` is per partition and `max_bytes` is for the whole
-/// response; a partition can never be allowed more than either. C2 has no
-/// request-level knob to forward the second to — its whole-response budget is a
-/// fixed 64 MiB server-side ceiling (`MAX_TOTAL_BYTES`) that a caller cannot
-/// raise or lower — so the request-level number is folded into the per-entry
-/// one, which is the only place it can have any effect at all.
+/// response; a partition can never be allowed more than either. The second is
+/// also the ceiling each call is given ([`read_all`]), which is what ends the
+/// read once the response is full; folded in here, it says the same of one
+/// partition.
 ///
-/// Both are spent by C2 in COMPRESSED segment bytes rather than in record
-/// bytes, so the budget buys an unknown and usually larger number of the bytes
-/// Kafka is counting. That is a documented property of the field on Kafka's own
-/// brokers, not a liberty taken here: `max_bytes` is a soft limit (KIP-74), a
-/// fetch response always carries at least one whole batch however large, and
-/// every client is written to handle a response bigger than it asked for.
-/// C2 keeps the same promise from the other end (its first segment escapes
-/// every bound), which is what stops an over-large record stalling a consumer.
+/// Kafka counts both in RECORD bytes. C2 spends its budget on the payloads it
+/// stores, and a Kafka record is stored as its JSON envelope
+/// ([`crate::records`]), key and value in base64: four bytes for every three.
+/// Asked for the client's number as it stands, C2 stopped a quarter short of
+/// it, so a consumer catching up got three quarters of each fetch it asked for
+/// and made a third more round trips. The ask is therefore the client's number
+/// in stored bytes ([`stored_bytes`]). What comes back still holds no more key
+/// and value bytes than the client named: the envelope's own names and
+/// punctuation only add to what C2 counts.
+///
+/// It stays a soft limit, as it is on Kafka's own brokers: `max_bytes` is one
+/// by definition (KIP-74), a fetch response always carries at least one whole
+/// batch however large, and every client is written to handle a response
+/// bigger than it asked for. C2 keeps the same promise from the other end (its
+/// first record escapes every bound), which is what stops an over-large record
+/// stalling a consumer.
 fn budget(partition_max_bytes: i32, request_max_bytes: i32) -> i64 {
     let ceilings = [partition_max_bytes, request_max_bytes];
     ceilings
@@ -372,8 +380,14 @@ fn budget(partition_max_bytes: i32, request_max_bytes: i32) -> i64 {
         .filter(|b| **b > 0)
         .map(|b| i64::from(*b))
         .min()
-        .unwrap_or(DEFAULT_MAX_BYTES)
+        .map_or(DEFAULT_MAX_BYTES, stored_bytes)
         .clamp(1, queen::MAX_FETCH_BYTES_PER_ENTRY)
+}
+
+/// What `record_bytes` of keys and values weigh as Queen stores them: base64
+/// writes four bytes for every three, rounded up.
+fn stored_bytes(record_bytes: i64) -> i64 {
+    (record_bytes * 4 + 2) / 3
 }
 
 /// Read every staged entry, in one call to Queen when they fit in one.
@@ -400,41 +414,68 @@ fn budget(partition_max_bytes: i32, request_max_bytes: i32) -> i64 {
 ///
 /// ## And where the response budget goes
 ///
+/// Every call is given the response's budget as its ceiling, in the bytes
+/// Queen counts ([`stored_bytes`]) and less what the chunks before it carried:
+/// C2 reads the entries in order while any of it is left and answers the rest
+/// their bounds. Asked without one, C2 read every entry to its own budget, and
+/// a consumer behind on a thousand partitions had a gigabyte read for the
+/// 32 MiB this response can carry, on every fetch.
+///
 /// Once the chunks already read carry `budget` bytes, nothing a later chunk
 /// returned could be encoded into the answer anyway ([`render`] stops there),
-/// and reading it would mean holding another C2 response — up to 64 MiB of JSON
-/// per call — to throw away. So the remaining chunks are read as BOUNDS ONLY
-/// ([`bounds_only`]): the partitions still report a true high watermark and a
-/// true log start, they carry no records, and the memory a wide assignment costs
-/// stops growing with the width.
+/// and reading it would mean holding another C2 answer to throw away. So the
+/// remaining chunks are read as BOUNDS ONLY ([`bounds_only`]): the partitions
+/// still report a true high watermark and a true log start, they carry no
+/// records, and the memory a wide assignment costs stops growing with the width.
+///
+/// ## Every call takes its entries with it
+///
+/// A chunk is taken out of the list and handed over
+/// ([`queen::QueenApi::fetch_owned`]): nothing here reads an entry after its
+/// call, and in-process the broker's read keeps every queue and partition name
+/// it is given, so a borrowed list is one it has to copy, name by name, on
+/// every fetch of every consumer.
 async fn read_all(
     facade: &Facade,
-    entries: &[FetchEntry],
+    entries: Vec<FetchEntry>,
     max_wait_ms: i64,
     min_bytes: i64,
     budget: usize,
     token: Option<&str>,
 ) -> Vec<queen::Result<RawFetched>> {
-    let mut out = Vec::with_capacity(entries.len());
+    let total = entries.len();
+    let ceiling = stored_bytes(budget as i64);
+    let mut out = Vec::with_capacity(total);
     let mut carried = 0usize;
-    for chunk in entries.chunks(queen::MAX_FETCH_ENTRIES) {
+    let mut rest = entries;
+    while !rest.is_empty() {
+        let tail = rest.split_off(rest.len().min(queen::MAX_FETCH_ENTRIES));
+        let chunk = std::mem::replace(&mut rest, tail);
+        let asked = chunk.len();
         let first = out.is_empty();
         // The first chunk is always read for real: a fetch that read nothing at
         // all would be a consumer that never advances.
         let answers = if !first && carried >= budget {
-            bounds_only(facade, chunk, token).await
+            bounds_only(facade, &chunk, token).await
         } else {
             let (wait, min) = if first {
                 (max_wait_ms, min_bytes)
             } else {
                 (0, 0)
             };
-            call(facade, chunk, wait, min, token).await
+            // What the response can still carry. The check above keeps it
+            // above zero.
+            let left = ceiling.saturating_sub(carried as i64).max(1);
+            let answer = facade
+                .queen
+                .fetch_owned(chunk, wait, min, Some(left), token)
+                .await;
+            per_entry(asked, answer)
         };
         // Counted only while there is a later chunk the count could spare. On
-        // the last one — which is EVERY fetch a consumer of one topic makes — it
-        // would be a walk of every payload for an answer nobody reads.
-        if out.len() + chunk.len() < entries.len() {
+        // the last one, which is the only one of a fetch that fits in a call,
+        // it would be a walk of every payload for an answer nobody reads.
+        if out.len() + asked < total {
             carried += answers
                 .iter()
                 .filter_map(|a| a.as_ref().ok())
@@ -456,24 +497,32 @@ async fn call(
     min_bytes: i64,
     token: Option<&str>,
 ) -> Vec<queen::Result<RawFetched>> {
-    match facade
+    let answer = facade
         .queen
         .fetch_raw(chunk, max_wait_ms, min_bytes, token)
-        .await
-    {
-        Ok(answers) if answers.len() == chunk.len() => answers.into_iter().map(Ok).collect(),
+        .await;
+    per_entry(chunk.len(), answer)
+}
+
+/// One call's answer as one result for each of the `asked` entries it carried:
+/// a call that fails hands its own error to every one of them.
+fn per_entry(
+    asked: usize,
+    answer: queen::Result<Vec<RawFetched>>,
+) -> Vec<queen::Result<RawFetched>> {
+    match answer {
+        Ok(answers) if answers.len() == asked => answers.into_iter().map(Ok).collect(),
         // `queen::align_fetch_results` already refuses a misaligned answer;
         // this is the same refusal at the chunk boundary, so a short answer
         // can never shift one partition's records onto another.
         Ok(answers) => {
             let e = queen::Error::Body(format!(
-                "fetch answered {} entries for {} asked",
-                answers.len(),
-                chunk.len()
+                "fetch answered {} entries for {asked} asked",
+                answers.len()
             ));
-            chunk.iter().map(|_| Err(e.clone())).collect()
+            (0..asked).map(|_| Err(e.clone())).collect()
         }
-        Err(e) => chunk.iter().map(|_| Err(e.clone())).collect(),
+        Err(e) => (0..asked).map(|_| Err(e.clone())).collect(),
     }
 }
 
@@ -1988,15 +2037,57 @@ mod tests {
     #[test]
     fn the_byte_budget_is_the_tighter_of_the_two_ceilings() {
         // The partition's own, when it is the smaller.
-        assert_eq!(budget(1024 * 1024, 50 * 1024 * 1024), 1024 * 1024);
+        assert_eq!(
+            budget(1024 * 1024, 50 * 1024 * 1024),
+            stored_bytes(1024 * 1024)
+        );
         // The request's, when it is.
-        assert_eq!(budget(8 * 1024 * 1024, 4096), 4096);
+        assert_eq!(budget(8 * 1024 * 1024, 4096), stored_bytes(4096));
         // Never above what the broker will accept for one entry.
         assert_eq!(budget(i32::MAX, i32::MAX), queen::MAX_FETCH_BYTES_PER_ENTRY);
         // Never zero: an entry with no budget reads nothing for ever.
-        assert_eq!(budget(0, 4096), 4096);
+        assert_eq!(budget(0, 4096), stored_bytes(4096));
         assert_eq!(budget(-1, -1), DEFAULT_MAX_BYTES);
         assert_eq!(budget(0, 0), DEFAULT_MAX_BYTES);
+    }
+
+    /// The ask is in the bytes Queen counts: a record's key and value are
+    /// stored in base64, so what the client named is asked for a third larger,
+    /// and what that buys is never more key and value bytes than it named.
+    #[test]
+    fn the_budget_is_asked_for_in_stored_bytes() {
+        assert_eq!(stored_bytes(3), 4);
+        assert_eq!(stored_bytes(4096), 5462);
+        assert_eq!(stored_bytes(1024 * 1024), 1_398_102);
+        // Records of every size, as many as the budget buys: their keys and
+        // values together stay within what the client asked for.
+        for (key, value) in [(0usize, 1usize), (8, 100), (0, 300), (16, 5_000)] {
+            let asked = 64 * 1024i64;
+            let envelope = envelope::encode_bytes(
+                &Record {
+                    transactional: false,
+                    control: false,
+                    delete_horizon: false,
+                    partition_leader_epoch: -1,
+                    producer_id: NO_PRODUCER_ID,
+                    producer_epoch: NO_PRODUCER_EPOCH,
+                    timestamp_type: TimestampType::Creation,
+                    offset: 0,
+                    sequence: -1,
+                    timestamp: 1_756_000_000_000,
+                    key: (key > 0).then(|| Bytes::from(vec![b'k'; key])),
+                    value: Some(Bytes::from(vec![b'v'; value])),
+                    headers: IndexMap::new(),
+                },
+                None,
+            );
+            let bought = budget(asked as i32, 0) as usize / envelope.len();
+            assert!(bought > 0, "a {value}-byte record does not fit at all");
+            assert!(
+                bought * (key + value) <= asked as usize,
+                "{bought} records of {key}+{value} bytes for {asked} asked"
+            );
+        }
     }
 
     #[tokio::test]
@@ -2004,7 +2095,60 @@ mod tests {
         let (f, api) = facade(&[("orders", 1)]);
         let req = request(&[("orders", &[(0, 0)])]).with_max_bytes(4096);
         handle(&f, &req, None).await;
-        assert_eq!(api.fetched()[0].max_bytes, 4096);
+        assert_eq!(api.fetched()[0].max_bytes, stored_bytes(4096));
+    }
+
+    /// Kafka's `max_bytes` is for the whole response, and each call to Queen is
+    /// given it as the call's own ceiling, in the bytes Queen counts: without
+    /// one, every partition of a wide assignment was read to its own budget
+    /// for a response that carries a fraction of that.
+    #[tokio::test]
+    async fn the_call_is_given_the_responses_budget_as_its_ceiling() {
+        for (asked, budget) in [
+            (4096, 4096i64),
+            (50 * 1024 * 1024, MAX_RESPONSE_BYTES),
+            (0, MAX_RESPONSE_BYTES),
+            (-1, MAX_RESPONSE_BYTES),
+        ] {
+            let (f, api) = facade(&[("orders", 4)]);
+            let req = request(&[("orders", &[(0, 0), (1, 0)])]).with_max_bytes(asked);
+            handle(&f, &req, None).await;
+            assert_eq!(
+                api.fetch_ceilings.lock().unwrap().as_slice(),
+                [Some(stored_bytes(budget))],
+                "max_bytes {asked}"
+            );
+        }
+    }
+
+    /// A fetch walked in chunks spends ONE ceiling over them: a later chunk is
+    /// given what the response can still carry after the chunks before it.
+    #[tokio::test]
+    async fn a_later_chunk_is_given_what_the_earlier_ones_left() {
+        let (f, api) = facade(&[("orders", 1024), ("clicks", 1024)]);
+        let value = vec![b'x'; 8 * 1024];
+        let payloads: Vec<serde_json::Value> = (0..4)
+            .map(|_| envelope_of(None, &value, 1_756_000_000_000))
+            .collect();
+        api.seed("orders", "0", 0, &payloads);
+        let carried: usize = payloads
+            .iter()
+            .map(|p| serde_json::to_vec(p).unwrap().len())
+            .sum();
+
+        let lanes: Vec<(i32, i64)> = (0..1024).map(|i| (i, 0)).collect();
+        handle(
+            &f,
+            &request(&[("orders", &lanes), ("clicks", &lanes)]),
+            None,
+        )
+        .await;
+
+        let whole = stored_bytes(MAX_RESPONSE_BYTES);
+        assert_eq!(
+            api.fetch_ceilings.lock().unwrap().as_slice(),
+            [Some(whole), Some(whole - carried as i64)]
+        );
     }
 
     #[test]

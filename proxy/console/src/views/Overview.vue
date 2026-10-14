@@ -116,17 +116,15 @@ const maxRetained = computed(() => props.overview?.storage?.max_retained_bytes ?
 const LIMIT_LABELS = {
   max_req_per_sec: 'Requests / sec',
   req_burst: 'Request burst',
-  max_msgs_per_sec: 'Messages / sec',
-  msgs_burst: 'Message burst',
+  max_bytes_per_sec: 'Bytes / sec, uncompressed',
+  bytes_burst: 'Byte burst',
   max_queues: 'Queues',
   max_partitions_per_queue: 'Partitions / queue',
   max_parked_pops: 'Parked consumers',
-  max_payload_bytes: 'Max payload size',
-  max_batch_items: 'Max batch items',
   max_retained_bytes: 'Retained storage',
   max_retention_seconds: 'Retention',
 }
-const BYTE_KEYS = new Set(['max_payload_bytes', 'max_retained_bytes'])
+const BYTE_KEYS = new Set(['max_bytes_per_sec', 'bytes_burst', 'max_retained_bytes'])
 const SECONDS_KEYS = new Set(['max_retention_seconds'])
 
 function fmtLimit(key, value) {

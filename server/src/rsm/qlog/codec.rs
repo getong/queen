@@ -330,6 +330,10 @@ pub fn precompress(raw: Vec<u8>) {
         return;
     }
     let key = xxhash_rust::xxh3::xxh3_128(&raw);
+    if early_shard(key).lock_unpoisoned().contains_key(&key) {
+        // Already there: started by an earlier call, or handed in by `preseed`.
+        return;
+    }
     let slot = Slot::new();
     if pool()
         .send(Job {
@@ -340,6 +344,45 @@ pub fn precompress(raw: Vec<u8>) {
     {
         return;
     }
+    let now = Instant::now();
+    let mut g = early_shard(key).lock_unpoisoned();
+    if g.len() >= EARLY_SWEEP_AT {
+        let before = g.len();
+        g.retain(|_, e| now.duration_since(e.at) < EARLY_TTL);
+        EARLY_LIVE.fetch_sub(before - g.len(), Ordering::Relaxed);
+    }
+    if g.insert(key, Early { slot, at: now }).is_none() {
+        EARLY_LIVE.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+/// Hand in the stored form of `raw` made elsewhere — a push group's frames,
+/// concatenated, as the CLIENT compressed them — under the key [`precompress`]
+/// files its job: the `Append` whose blob is byte-identical takes these bytes
+/// and nothing here compresses. The caller has checked that `z` is one zstd
+/// frame that [`decompress`] turns into exactly `raw`.
+pub fn preseed(raw: &[u8], z: Vec<u8>) {
+    preseed_key(early_key(raw), raw.len(), z);
+}
+
+/// The key the early forms are filed under: `xxh3_128` of the raw blob.
+pub fn early_key(raw: &[u8]) -> u128 {
+    xxhash_rust::xxh3::xxh3_128(raw)
+}
+
+/// [`preseed`] for a blob this node never held raw: a follower sends the
+/// stored forms of a push's groups beside the command it forwards
+/// (`facade::remote`), each under its [`early_key`].
+pub fn preseed_key(key: u128, raw_len: usize, z: Vec<u8>) {
+    if level() == 0
+        || raw_len < MIN_BYTES
+        || z.len() >= raw_len
+        || EARLY_LIVE.load(Ordering::Relaxed) >= EARLY_MAX
+    {
+        return;
+    }
+    let slot = Slot::new();
+    slot.put(Some(z));
     let now = Instant::now();
     let mut g = early_shard(key).lock_unpoisoned();
     if g.len() >= EARLY_SWEEP_AT {

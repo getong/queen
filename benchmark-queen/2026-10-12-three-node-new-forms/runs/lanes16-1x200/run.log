@@ -1,0 +1,7 @@
+[11:49:18] run lanes16-1x200: binary new, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 22 per process, retention completed, steps of 60s at: 2500000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 QUEEN_LANES=16 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[11:49:34] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 200 partitions
+[11:51:08] 2,500,000: offered 2,500,044 pushed 1,993,034 consumed 1,992,894 shed 22,244,900 errors 0 lag 0 | push p50 254.0 p99 2916.4 | e2e p50 340.0 p99 2981.9 | n1 10.6c apply 39% raft 110%; n2 4.9c apply 37% raft 35%; n3 4.7c apply 35% raft 32% | loaders 16.7c  NOT CARRIED 
+RUN_DONE

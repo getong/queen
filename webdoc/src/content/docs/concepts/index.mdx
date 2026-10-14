@@ -37,6 +37,11 @@ digest: >-
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/groups.rs,
 # facade/real.rs change what /health answers (raft.quorumAckMs; ready needs the leader's majority
 # within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs and the handlers read a binary push body
+# and a binary transaction body on the routes of the JSON ones, answer an ack with counts when its
+# body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
+# forms is planned, committed and answered as before. facade/groups.rs answers the cluster link's
+# routes for every group of a standby. The model on this page is unchanged.
 ---
 
 Queen has one idea, and every concept page zooms into a part of it. Every entity gets an ordered

@@ -16,6 +16,9 @@ sourceOfTruth:
   - clients/client-cli/cmd/apply.go
   - clients/client-cli/cmd/seek_helper.go
   - clients/client-cli/cmd/messages.go
+  - clients/client-cli/cmd/status.go
+  - clients/client-cli/cmd/lag.go
+  - clients/client-cli/cmd/queue.go
   - clients/client-cli/internal/config/config.go
   - clients/client-cli/internal/errors/exit.go
   - clients/client-cli/Makefile
@@ -25,7 +28,13 @@ sourceOfTruth:
   - go.work
 verifiedBy:
   - clients/client-cli/cmd/supervision_test.go
+  - clients/client-cli/cmd/status_test.go
+  - clients/client-cli/cmd/lag_test.go
+  - clients/client-cli/cmd/queue_list_test.go
 # sourceOfTruth re-read 2026-10-06 (commitOnDelivery): tail.go's --auto-ack help now says the client acks each message after printing it, which is what this page already said. pop and ephemeral pop gain --commit-on-delivery, described below.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): clients/client-go/consumer_manager.go asks for a pop's stored records (frames=true) only when the client's FramedPop option is on; queenctl turns none of the three wire options on, so tail and pop read the JSON answers this page describes. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (status): status.go joins the list; the command reads the queue listing and the consumer-group listing, described below. consumer_manager.go changed on 10-12 (it can read framed pops, off by default, and the CLI does not turn them on): nothing on this page depends on it.
+# sourceOfTruth re-read 2026-10-13 (lag, queue list): lag.go and queue.go join the list; what lag prints with and without --min-seconds and where queue list applies its flags are described below.
 ---
 
 `queenctl` is a single static binary over the HTTP API, built on the Go SDK. It is what we reach
@@ -97,6 +106,10 @@ cat events.ndjson | queenctl push events --batch 500 --partition-key user_id
 # Follow a queue as consumer group "debug", acking what it prints
 queenctl tail orders --cg debug --follow --auto-ack | jq '.data'
 
+# Depth and lag of every queue, then of one
+queenctl status
+queenctl status orders
+
 # Rewind a consumer group fifteen minutes, then check who is lagging
 queenctl replay orders --cg analyzer --to '15m ago'
 queenctl lag --min-seconds 30
@@ -114,6 +127,21 @@ config:
   retryLimit: 5
 EOF
 ```
+
+`status` prints one row per queue, counted from its slowest consumer group: `PENDING` waits for a
+consumer, `PROCESSING` is leased, `COMPLETED` is consumed and still retained, `DLQ` is
+dead-lettered. `LAG` is the largest time lag among the groups reading the queue, queue mode
+included, and `-` for a queue no group has read; `lag` lists the groups one by one. If the group
+listing fails, `status` still prints the counts, leaves `LAG` empty and says so on stderr.
+`--namespace` and `--task` keep the queues with that label, and `status <queue>` prints the row of
+one queue with its partition count.
+
+`lag` prints one row per consumer group and queue: `MESSAGES` is what the group has not consumed
+and `LAG` the age of the oldest of those messages. With `--min-seconds N` the rows are partitions
+instead, one for each partition a group is more than N seconds behind on, oldest first, and the
+table has no `CONFLATION` column. `queue list` prints each queue's labels, partition count,
+priority and lease time in seconds. Its `--namespace`, `--task`, `--offset` and `--limit` are
+applied by `queenctl` to the whole listing, which the broker sends newest queue first.
 
 `tail` acks nothing unless you pass `--auto-ack`: without it the messages it prints stay leased to
 its group (`queenctl-tail` when you name none) and are delivered again when the lease expires.
@@ -178,6 +206,6 @@ terminal. `-o table|wide|json|ndjson|yaml|jsonpath=<expr>` overrides it. `tail`,
   and answers 404. `cg refresh-stats` changes nothing on 2.0, whose counters are kept at apply.
   `metrics` without `--prometheus` prints `{}` on 2.0; use `--prometheus`.
 - `--insecure` affects only `login`. The broker calls of every other command verify TLS.
-- Through the proxy, the routes that cannot be scoped to one tenant answer 404: `status` without a
-  queue, `metrics`, `analytics system|worker`, `cg refresh-stats`, and `pop --namespace/--task`
-  without a queue. They work against a node's own port.
+- Through the proxy, the routes that cannot be scoped to one tenant answer 404: `metrics`,
+  `analytics system|worker`, `cg refresh-stats`, and `pop --namespace/--task` without a queue. They
+  work against a node's own port.

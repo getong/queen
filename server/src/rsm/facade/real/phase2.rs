@@ -379,6 +379,9 @@ impl RaftFacade {
                 request_id: crate::util::uuidv7_bytes(),
                 deadline: ctx.deadline,
                 producer_sub: ctx.producer_sub.clone(),
+                stored_forms: None,
+                pop_frames: false,
+                fetch_max_bytes: None,
             };
             self.submit_effects(
                 &chunk_ctx,

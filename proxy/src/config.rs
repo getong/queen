@@ -475,7 +475,6 @@ pub struct Config {
     /// Send the Track B tenant header upstream.
     pub send_tenant_header: bool,
     pub max_body_bytes: usize,
-    pub default_max_batch_items: u64,
     pub upstream_connect_timeout_ms: u64,
     pub upstream_request_timeout_ms: u64,
     pub longpoll_margin_ms: u64,
@@ -598,7 +597,6 @@ impl Config {
             shared_hosts,
             send_tenant_header: env_bool("QUEEN_PROXY_TENANT_HEADER", true),
             max_body_bytes: env_u64("QUEEN_PROXY_MAX_BODY_BYTES", 16 * 1024 * 1024) as usize,
-            default_max_batch_items: env_u64("QUEEN_PROXY_MAX_BATCH_ITEMS", 10_000),
             upstream_connect_timeout_ms: env_u64("QUEEN_PROXY_UPSTREAM_CONNECT_TIMEOUT_MS", 5_000),
             upstream_request_timeout_ms: env_u64("QUEEN_PROXY_UPSTREAM_TIMEOUT_MS", 35_000),
             longpoll_margin_ms: env_u64("QUEEN_PROXY_LONGPOLL_MARGIN_MS", 10_000),
@@ -649,7 +647,6 @@ pub(crate) fn test_config(hosts: &[&str]) -> Config {
         shared_hosts: normalize_shared_hosts(hosts.iter().map(|h| h.to_string()).collect()),
         send_tenant_header: true,
         max_body_bytes: 1024,
-        default_max_batch_items: 100,
         upstream_connect_timeout_ms: 1000,
         upstream_request_timeout_ms: 1000,
         longpoll_margin_ms: 1000,

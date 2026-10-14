@@ -1,0 +1,13 @@
+[10:05:56] run smoke: binary new, groups 1, sync, checkpoint 5 ms, tenants 3, retention completed, steps of 20s at: 300000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=1 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[10:06:11] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[10:07:14]   300,000: offered 299,958 pushed 300,038 consumed 299,941 shed 0 errors 0 lag 0 | push p50 4.0 p99 647.2 | e2e p50 9.5 p99 311.3 | n1 2.8c apply 16% raft 81%; n2 0.7c apply 8% raft 16%; n3 1.1c apply 11% raft 27% | loaders 3.5c  OK 
+RUN_DONE

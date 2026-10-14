@@ -2562,3 +2562,346 @@ async fn the_backlog_sample_is_what_the_overview_reports() {
     facade.shutdown().await;
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// ---------------------------------------------------------------------------
+// The bodies made of client-built frames: the framed push and the binary
+// transaction
+// ---------------------------------------------------------------------------
+
+/// One group of a framed body, as a client writes it: the messages in the
+/// storage layout (`crate::frames`), compressed once. Returns the group's bytes
+/// and the message ids the "client" minted.
+fn frames_group_raw(queue: &str, partition: &str, msgs: &[(&str, &[u8])]) -> (Vec<u8>, Vec<String>) {
+    let mut raw = Vec::new();
+    let mut ids = Vec::new();
+    for (txn, payload) in msgs {
+        let id = crate::util::uuidv7_bytes();
+        ids.push(crate::frames::uuid_bytes_to_string(&id));
+        raw.extend_from_slice(&crate::frames::pack_frames(&[crate::frames::FrameIn {
+            message_id: id,
+            txn,
+            trace_id: None,
+            producer_sub: None,
+            payload,
+            encrypted: false,
+        }]));
+    }
+    (group_of(queue, partition, msgs.len(), &raw), ids)
+}
+
+fn group_of(queue: &str, partition: &str, count: usize, raw: &[u8]) -> Vec<u8> {
+    let z = zstd::bulk::compress(raw, 1).expect("zstd");
+    let mut g = Vec::new();
+    g.extend_from_slice(&(queue.len() as u16).to_le_bytes());
+    g.extend_from_slice(queue.as_bytes());
+    g.extend_from_slice(&(partition.len() as u16).to_le_bytes());
+    g.extend_from_slice(partition.as_bytes());
+    g.extend_from_slice(&(count as u32).to_le_bytes());
+    g.extend_from_slice(&(z.len() as u32).to_le_bytes());
+    g.extend_from_slice(&z);
+    g
+}
+
+fn frames_group(queue: &str, partition: &str, msgs: &[(&str, Value)]) -> (Vec<u8>, Vec<String>) {
+    let payloads: Vec<String> = msgs.iter().map(|(_, v)| v.to_string()).collect();
+    let refs: Vec<(&str, &[u8])> = msgs
+        .iter()
+        .zip(&payloads)
+        .map(|((t, _), p)| (*t, p.as_bytes()))
+        .collect();
+    frames_group_raw(queue, partition, &refs)
+}
+
+/// `"QTB1" | flags | u32 len, head | u32 groups | the groups`.
+fn txn_binary(flags: u8, head: &Value, groups: &[Vec<u8>]) -> Vec<u8> {
+    let head = head.to_string();
+    let mut b = b"QTB1".to_vec();
+    b.push(flags);
+    b.extend_from_slice(&(head.len() as u32).to_le_bytes());
+    b.extend_from_slice(head.as_bytes());
+    b.extend_from_slice(&(groups.len() as u32).to_le_bytes());
+    for g in groups {
+        b.extend_from_slice(g);
+    }
+    b
+}
+
+async fn txn_raw(facade: &RaftFacade, raw: Vec<u8>) -> (u16, Value) {
+    let out = facade
+        .transaction(ctx(), crate::rsm::facade::TxnReq { raw })
+        .await
+        .expect("transaction");
+    (out.status, parse(&out.body))
+}
+
+fn popped(pop: &Value) -> Vec<Value> {
+    pop["messages"].as_array().cloned().unwrap_or_default()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_binary_transaction_acks_and_pushes_what_the_json_one_does() {
+    let dir = scratch("txn-bin");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+    facade
+        .push(
+            ctx(),
+            PushReq {
+                raw: br#"{"items":[
+                    {"queue":"bin-in","payload":{"n":1},"transactionId":"t1"},
+                    {"queue":"bin-in","payload":{"n":2},"transactionId":"t2"}
+                ]}"#
+                .to_vec(),
+            },
+        )
+        .await
+        .expect("push");
+    let pop = pop_q(&facade, "bin-in").await;
+    assert_eq!(popped(&pop).len(), 2, "{pop}");
+    let pid = pop["partitionId"].as_str().expect("partitionId").to_string();
+    let lease = pop["leaseId"].as_str().expect("leaseId").to_string();
+
+    // The acks in the head, the pushes as two groups of client-built frames.
+    let (g1, ids1) = frames_group(
+        "bin-out",
+        "Default",
+        &[
+            ("o1", serde_json::json!({"sum": 3})),
+            ("o2", serde_json::json!({"text": "a \"quoted\"\nline"})),
+            ("o3", serde_json::json!([1, 2, 3])),
+        ],
+    );
+    let (g2, ids2) = frames_group("bin-out", "other", &[("o4", serde_json::json!(4))]);
+    let head = serde_json::json!({"operations": [
+        {"type": "ack", "transactionId": "t1", "partitionId": pid, "leaseId": lease},
+        {"type": "ack", "transactionId": "t2", "partitionId": pid, "leaseId": lease},
+    ]});
+    let (status, ok) = txn_raw(&facade, txn_binary(0, &head, &[g1, g2])).await;
+    assert_eq!(status, 200, "{ok}");
+    assert_eq!(ok["success"], true, "{ok}");
+    // The head's operations first, then the groups' messages, in order.
+    let res = ok["results"].as_array().expect("results");
+    assert_eq!(res.len(), 6, "{ok}");
+    assert_eq!(res[0]["type"], "ack");
+    assert_eq!(res[1]["type"], "ack");
+    let ids: Vec<&String> = ids1.iter().chain(&ids2).collect();
+    for (k, txn) in ["o1", "o2", "o3", "o4"].into_iter().enumerate() {
+        let r = &res[2 + k];
+        assert_eq!(r["type"], "push", "{ok}");
+        assert_eq!(r["index"], 2 + k, "{ok}");
+        assert_eq!(r["success"], true, "{ok}");
+        assert_eq!(r["transactionId"], txn, "{ok}");
+        assert_eq!(r["messageId"], ids[k].as_str(), "the id is the client's: {ok}");
+    }
+
+    // The inputs are consumed and the outputs are there, payloads untouched.
+    assert_eq!(popped(&pop_q(&facade, "bin-in").await).len(), 0);
+    let mut got: Vec<(String, Value)> = Vec::new();
+    for _ in 0..2 {
+        for m in popped(&pop_q(&facade, "bin-out").await) {
+            got.push((
+                m["transactionId"].as_str().unwrap_or_default().to_string(),
+                m["data"].clone(),
+            ));
+        }
+    }
+    got.sort_by(|a, b| a.0.cmp(&b.0));
+    assert_eq!(
+        got,
+        vec![
+            ("o1".to_string(), serde_json::json!({"sum": 3})),
+            ("o2".to_string(), serde_json::json!({"text": "a \"quoted\"\nline"})),
+            ("o3".to_string(), serde_json::json!([1, 2, 3])),
+            ("o4".to_string(), serde_json::json!(4)),
+        ]
+    );
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_binary_transaction_is_all_or_nothing() {
+    let dir = scratch("txn-bin-rollback");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+
+    // An ack of a message nobody holds: the bundle is refused and stores nothing.
+    let (g, _) = frames_group("bin-rb", "Default", &[("r1", serde_json::json!({"n": 1}))]);
+    let head = serde_json::json!({"operations": [
+        {"type": "ack", "transactionId": "nobody", "partitionId": "424242", "leaseId": "no-lease"},
+    ]});
+    let (status, no) = txn_raw(&facade, txn_binary(0, &head, &[g.clone()])).await;
+    assert_eq!(status, 200, "{no}");
+    assert_eq!(no["success"], false, "{no}");
+    assert_eq!(popped(&pop_q(&facade, "bin-rb").await).len(), 0, "nothing was stored");
+
+    // The same group alone commits; sent again, the transaction id is a duplicate
+    // and the bundle as a whole is refused.
+    let (status, ok) = txn_raw(&facade, txn_binary(0, &serde_json::json!({}), &[g.clone()])).await;
+    assert_eq!((status, ok["success"].as_bool()), (200, Some(true)), "{ok}");
+    assert_eq!(popped(&pop_q(&facade, "bin-rb").await).len(), 1);
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_binary_transaction_answers_with_counts_when_asked() {
+    let dir = scratch("txn-bin-short");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+
+    // Two messages, the second with the first one's transaction id: within one
+    // bundle the second collapses into the first, as in the JSON body.
+    let (g, _) = frames_group(
+        "bin-short",
+        "Default",
+        &[
+            ("s1", serde_json::json!({"n": 1})),
+            ("s2", serde_json::json!({"n": 2})),
+            ("s1", serde_json::json!({"n": 3})),
+        ],
+    );
+    let head = serde_json::json!({
+        "kv": [{"op": "put", "ns": "st", "key": "cursor", "value": {"at": 2}, "ttlSeconds": 600}]
+    });
+    let (status, ok) = txn_raw(&facade, txn_binary(2, &head, &[g])).await;
+    assert_eq!(status, 200, "{ok}");
+    assert_eq!(ok["success"], true, "{ok}");
+    assert_eq!(ok["pushed"], 2, "{ok}");
+    assert_eq!(ok["duplicate"], 1, "{ok}");
+    assert_eq!(ok["acked"], 0, "{ok}");
+    // Only the rider's result is rendered, at its flat index: after the three pushes.
+    let res = ok["results"].as_array().expect("results");
+    assert_eq!(res.len(), 1, "{ok}");
+    assert_eq!(res[0]["type"], "kv", "{ok}");
+    assert_eq!(res[0]["index"], 3, "{ok}");
+    assert_eq!(popped(&pop_q(&facade, "bin-short").await).len(), 2);
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_binary_transaction_that_is_not_well_formed_is_refused_whole() {
+    let dir = scratch("txn-bin-bad");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+    let (good, _) = frames_group("bin-bad", "Default", &[("b1", serde_json::json!(1))]);
+    let head = serde_json::json!({});
+
+    let mut cases: Vec<(&str, Vec<u8>)> = Vec::new();
+    cases.push(("unknown flags", txn_binary(1, &head, &[good.clone()])));
+    let mut cut = txn_binary(0, &head, &[good.clone()]);
+    cut.truncate(cut.len() - 3);
+    cases.push(("truncated", cut));
+    let mut more = txn_binary(0, &head, &[good.clone()]);
+    more.push(0);
+    cases.push(("bytes after the last group", more));
+    let (not_json, _) = frames_group_raw("bin-bad", "Default", &[("b2", b"not json")]);
+    cases.push(("a payload that is not JSON", txn_binary(0, &head, &[not_json])));
+    // A frame whose id is not a version-7 UUID.
+    let mut raw = crate::frames::pack_frames(&[crate::frames::FrameIn {
+        message_id: crate::util::uuidv7_bytes(),
+        txn: "b3",
+        trace_id: None,
+        producer_sub: None,
+        payload: b"1",
+        encrypted: false,
+    }]);
+    raw[4 + 1 + 6] = 0x40; // the version nibble
+    cases.push((
+        "an id that is not version 7",
+        txn_binary(0, &head, &[group_of("bin-bad", "Default", 1, &raw)]),
+    ));
+    // A count that does not match the frames.
+    let one = crate::frames::pack_frames(&[crate::frames::FrameIn {
+        message_id: crate::util::uuidv7_bytes(),
+        txn: "b4",
+        trace_id: None,
+        producer_sub: None,
+        payload: b"1",
+        encrypted: false,
+    }]);
+    cases.push((
+        "more frames announced than sent",
+        txn_binary(0, &head, &[group_of("bin-bad", "Default", 2, &one)]),
+    ));
+    for (what, raw) in cases {
+        let (status, body) = txn_raw(&facade, raw).await;
+        assert_eq!(status, 400, "{what}: {body}");
+        assert_eq!(body["success"], false, "{what}: {body}");
+        assert_eq!(body["reason"], "bad_request", "{what}: {body}");
+    }
+    assert_eq!(popped(&pop_q(&facade, "bin-bad").await).len(), 0, "nothing was stored");
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_framed_push_stores_the_clients_messages() {
+    let dir = scratch("push-frames");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+    let (g, ids) = frames_group(
+        "framed",
+        "Default",
+        &[
+            ("f1", serde_json::json!({"n": 1})),
+            ("f2", serde_json::json!({"n": 2})),
+        ],
+    );
+    // "QPB1" | flags (8 = client-built frames) | u32 groups | the groups
+    let mut raw = b"QPB1".to_vec();
+    raw.push(8);
+    raw.extend_from_slice(&1u32.to_le_bytes());
+    raw.extend_from_slice(&g);
+    let out = facade.push(ctx(), PushReq { raw }).await.expect("push");
+    let res = parse(&out.body);
+    assert_eq!(res[0]["status"], "queued", "{}", out.body);
+    assert_eq!(res[1]["status"], "queued", "{}", out.body);
+    let msgs = popped(&pop_q(&facade, "framed").await);
+    assert_eq!(msgs.len(), 2);
+    assert_eq!(msgs[0]["transactionId"], "f1");
+    assert_eq!(msgs[0]["data"]["n"], 1);
+    assert_eq!(msgs[1]["data"]["n"], 2);
+    assert_eq!(msgs[0]["id"], ids[0].as_str(), "the id is the client's: {}", msgs[0]);
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A framed body compressed again as a whole (flags 1 and 8) hides its groups,
+/// and the size each one declares, inside the outer frame: it is refused, and
+/// nothing is stored.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_framed_push_compressed_again_as_a_whole_is_refused() {
+    let dir = scratch("push-frames-twice");
+    let facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+    let (g, _) = frames_group(
+        "framed-twice",
+        "Default",
+        &[("f1", serde_json::json!({"n": 1}))],
+    );
+    let mut groups = 1u32.to_le_bytes().to_vec();
+    groups.extend_from_slice(&g);
+    // "QPB1" | flags (1 = one zstd frame, 8 = client-built frames) | u32 raw_len | the frame
+    let mut raw = b"QPB1".to_vec();
+    raw.push(1 | 8);
+    raw.extend_from_slice(&(groups.len() as u32).to_le_bytes());
+    raw.extend_from_slice(&zstd::bulk::compress(&groups, 1).expect("zstd"));
+    let err = facade
+        .push(ctx(), PushReq { raw })
+        .await
+        .expect_err("flags 1 and 8 together must be refused");
+    let shown = format!("{err:?}");
+    assert!(
+        shown.contains("bad_body") && shown.contains("flags 1 and 8 together"),
+        "{shown}"
+    );
+    assert_eq!(
+        popped(&pop_q(&facade, "framed-twice").await).len(),
+        0,
+        "nothing was stored"
+    );
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}

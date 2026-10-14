@@ -18,6 +18,7 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/groups.rs
 # changes what /health answers (raft.quorumAckMs; ready needs the leader's majority within
 # QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/groups.rs now also answers the cluster link's two routes for every group and computes the placement a link call states. It still keeps a tenant in one raft group: nothing this page states changes.
 ---
 
 For building applications, Queen is the better choice: services that handle events per customer,
@@ -41,9 +42,10 @@ the smaller cases where another system fits. The side-by-side view of the same s
 its own [partition](/concepts/partitions/), created by the first message that names it, so one slow
 entity delays only itself. In Kafka an entity shares its partition with every other entity whose
 key hashes there, and a slow one delays them all. The cost of a Queen partition does not grow with
-the count: one queue carried 1,000,000 messages a second on 200 partitions and on 10,000,000, at an
-e2e p99 between 103 and 163 ms and on 17 to 18 cores. At 50,000 partitions Kafka's p99 was 1.5 s
-and Pulsar fell behind, and at 100,000 neither kept up ([partitions](/benchmarks/partitions/)).
+the count: one queue carried 1,000,000 messages a second on 10 partitions and on 10,000,000, at an
+e2e p99 between 18 and 38 ms and on 12 to 15 cores. On the same machines at 2,000,000 a second,
+Kafka's p99 went from 25 ms at 1,000 partitions to 134 ms at 10,000, and at 100,000 it did not
+keep up, where Queen read 59 ms ([partitions](/benchmarks/partitions/)).
 
 **One commit per step.** A worker's step is the ack, the state it changes, the events it emits and
 the timer it sets, and in Queen they commit as one entry or not at all
@@ -53,9 +55,10 @@ transaction covers messages and offsets or acks, so your state and your timers s
 system.
 
 **Fast transactions.** At 9,000 messages a second in transactions of 10, a Queen commit took 3 ms
-at p50 and 4 ms at p99, where Kafka took 12 and 34 ms and Pulsar 22 and 32 ms. On 200 partitions
-Queen kept up to 7,200 transactions a second with an e2e p99 of 33 ms, and Kafka fell behind at
-about 1,750 with the client and layout we ran ([transactions](/benchmarks/transactions/)).
+at p50 and 4 ms at p99, where Kafka took 12 and 34 ms and Pulsar 22 and 32 ms (September, Queen
+2.0.0-beta.2). On 200 partitions 2.3.0 carries 12,000 such transactions a second with a commit of
+3.6 ms at the median; Kafka fell behind at about 1,750 with the client and layout we ran
+([transactions](/benchmarks/transactions/)).
 
 **What a service needs is in the broker.** [Consumer groups](/concepts/consuming/) for fan-out
 between services, with leases, retries and a dead-letter queue. [KV](/concepts/kv/) for the state a
@@ -72,26 +75,29 @@ coordination service beside it, as one node or a cluster of three or five, and
 ## The exception: extreme throughput on a few partitions
 
 Queen is fast. On three 16-vCPU nodes, one queue carried 1,000,000 messages a second in and out at
-an e2e p99 of 146 ms, with every write fsynced on two of the three nodes before its producer was
-answered. Its ceiling is about 1,500,000 a second pushed, set by the one leader that orders the
-queue's writes ([throughput](/benchmarks/throughput/)).
+an e2e p99 of 19 ms and 2,000,000 at 63 ms, with every write fsynced on two of the three nodes
+before its producer was answered. Its ceiling is between 2,000,000 and 2,500,000 a second, set by
+the one leader that orders the queue's writes ([throughput](/benchmarks/throughput/)).
 
-On a few hundred partitions Kafka and Pulsar go further. Kafka kept up with 4,000,000 messages a
-second and Pulsar with 2,000,000, the highest rates we ran for each, with a p99 near 20 ms at a
-million and about half of Queen's CPU. Kafka acknowledges a write from the page cache, before an
-fsync, which is part of its lead; Pulsar waits for the same two fsyncs as Queen. That lead belongs
-to small partition counts: at 10,000 partitions Kafka already used more CPU than Queen, 28 cores
-against 18. These runs used 256-byte messages in batches of 100 and Queen 2.0.0-beta.2.
+On a few hundred partitions Kafka goes further. On the same machines it kept up with 4,000,000
+messages a second, the highest rate we ran, with a p99 of 11 ms at a million and 43 ms at two
+million, and two thirds of Queen's CPU at a million. Kafka acknowledges a write from the page
+cache, before an fsync, which is part of its lead. Pulsar waits for the same two fsyncs as Queen;
+in September it held a p99 near 20 ms up to 2,000,000 a second, and it has not been run against
+2.3.0. That lead belongs to small partition counts: at 10,000 partitions Kafka used 30 cores
+against Queen's 20, for twice the p99. These runs used 256-byte messages in batches of 100, and
+Queen 2.3.0 with the binary wire forms its clients turn on and deduplication off.
 
 Use Kafka or Pulsar when your keys fit a few hundred partitions, the order you need is per
-partition rather than per entity, and you need more than a million messages a second or a p99 near
-20 ms at that rate.
+partition rather than per entity, and you need more than two million messages a second, or a p99
+near 10 ms at a million.
 
 The far end of transaction rates is the same kind of case. One leader plans a tenant's
-transactions, which tops out near 7,000 a second of ten messages each, and more raft groups raise
-it for a deployment but not for one tenant. Pulsar sustained 14,400 a second over 900 partitions,
-with transactions that cover messages and acks only. If one tenant needs more than about 7,000
-transactions a second and nothing but messages in the commit, use Pulsar.
+transactions, which tops out near 12,900 a second of ten messages each on today's benchmark
+machines and near 7,000 on September's, and more raft groups raise it for a deployment but not for
+one tenant. On September's machines Pulsar sustained 14,400 a second over 900 partitions, with
+transactions that cover messages and acks only. If one tenant needs more transactions a second
+than that and nothing but messages in the commit, use Pulsar.
 
 ## Smaller cases, and what to use instead
 

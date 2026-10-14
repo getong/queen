@@ -17,6 +17,7 @@ type Config struct {
 	Duration    time.Duration // whole producing time, ramp included
 	Report      time.Duration
 	Drain       time.Duration
+	Tail        time.Duration // also report the last this-long of the producing time on its own (0 = off)
 	StartFile   string
 	StartAt     int64 // unix ms
 	MaxInflight int   // in-flight UNITS; over it a unit is shed
@@ -104,6 +105,7 @@ func (c *Config) Register(fs *flag.FlagSet) {
 	DurationVar(fs, &c.Duration, "duration", 70*time.Second, "whole producing time, ramp included")
 	DurationVar(fs, &c.Report, "report", 10*time.Second, "window line every this long (from the start instant)")
 	DurationVar(fs, &c.Drain, "drain", 0, "after -duration, consumers keep consuming this long")
+	DurationVar(fs, &c.Tail, "tail", 0, "also report the last this-long of the producing time on its own: the histograms of what was pushed and consumed from then to the end of the run (hist_*_tail_us in the result); 0 = off")
 	fs.StringVar(&c.StartFile, "start-file", "", "start barrier: after READY, poll this file every 100 ms; its content = the start instant (unix ms)")
 	fs.Int64Var(&c.StartAt, "start-at", 0, "start barrier: start instant (unix ms)")
 	fs.IntVar(&c.MaxInflight, "max-inflight", 5000, "in-flight UNITS; a unit scheduled while the cap is full is shed (offered+shed, never sent)")

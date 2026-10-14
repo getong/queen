@@ -1,0 +1,30 @@
+[06:10:02] A: no deletes, no dedup, rows window 60 s, 360 s at 2M | mounts: n1: rw,noatime,discard,errors=remount-ro,commit=30 | n2: rw,noatime,discard,errors=remount-ro,commit=30 | n3: rw,noatime,discard,errors=remount-ro,commit=30 | 
+dgA-p5-p1000-r2000000/2000000
+   pushed  1,999,719 consumed  1,999,949 of  2,000,036 | shed 0 errors 0
+   30-60 s: e2e p50 27.8 p99 59.6 (worst 64.3) | push p50 13.6 p99 31.4 (worst 33.0)
+   last 30 s: e2e p50 39.4 p99 89.1 | push p50 18.2 p99 42.0
+   e2e p99 per 10 s: [44, 86, 63, 58, 60, 56, 62, 52, 64, 59, 56, 53, 52, 94, 62, 74, 59, 59, 65, 63, 67, 65, 68, 67, 86, 62, 61, 86, 69, 72, 75, 98, 93, 79, 110, 72]  pushed k/s: [992, 2005, 1999, 1999, 1998, 2002, 2000, 2001, 2000, 2000, 1999, 2001, 2000, 2000, 2000, 1999, 2001, 1999, 2001, 2000, 2000, 1999, 2001, 2000, 1999, 2000, 1999, 2001, 2000, 2001, 1998, 2001, 2001, 2000, 1999, 2000]
+   cores [8.7, 5.7, 5.5] (sum 19.9) | leader mem GB 6.3 at 60 s, 7.5 at the end | disk MB/s [532, 531, 532] | net tx MB/s [602, 422, 421]
+   leader apply max ms per 10 s: [9, 17, 11, 10, 12, 11, 12, 15, 17, 15, 11, 13, 13, 17, 14, 14, 14, 14, 14, 17, 15, 22, 19, 12, 27, 15, 14, 16, 20, 13, 15, 33, 17, 16, 41, 20, 7, 10]
+[06:17:17] B: realistic, no online discard, 360 s at 2M | mounts: n1: rw,noatime,errors=remount-ro,commit=30 | n2: rw,noatime,errors=remount-ro,commit=30 | n3: rw,noatime,errors=remount-ro,commit=30 | 
+[06:17:19] run dgB-p1000-r2000000: binary p5, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 360s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s
+[06:17:43] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[06:24:24] 2,000,000: last 30 s: offered 1,999,998 pushed 2,000,150 consumed 2,000,064 | run: shed 0 errors 0 | push p50 20.7 p99 44.0 | e2e p50 49.2 p99 96.3 worst 98.3 | cores 9.8 / 6.1 / 6.0 | mem GB 9.2 / 6.7 / 6.7 | loaders 16.0c  OK 
+REAL_DONE
+dgB-p1000-r2000000/2000000
+   pushed  1,999,970 consumed  1,999,994 of  1,999,977 | shed 0 errors 0
+   30-60 s: e2e p50 32.1 p99 75.3 (worst 79.4) | push p50 15.4 p99 40.7 (worst 41.2)
+   last 30 s: e2e p50 49.2 p99 96.3 | push p50 20.7 p99 44.0
+   e2e p99 per 10 s: [50, 268, 62, 57, 75, 73, 66, 69, 79, 89, 61, 74, 83, 72, 76, 79, 70, 69, 83, 88, 82, 72, 81, 75, 105, 98, 90, 83, 92, 103, 81, 95, 106, 91, 94, 100]  pushed k/s: [998, 2000, 2000, 2000, 1999, 2001, 2000, 1999, 1999, 2000, 2001, 2000, 2000, 1995, 2004, 1998, 2001, 1998, 2001, 2001, 1999, 2001, 2001, 2001, 1998, 2000, 2001, 2000, 2000, 2000, 2001, 1999, 2000, 2001, 1999, 2002]
+   cores [9.3, 5.6, 5.5] (sum 20.4) | leader mem GB 7.5 at 60 s, 9.2 at the end | disk MB/s [539, 537, 537] | net tx MB/s [602, 422, 421]
+   leader apply max ms per 10 s: [9, 19, 13, 11, 15, 12, 25, 15, 17, 20, 23, 20, 19, 19, 16, 23, 15, 22, 25, 23, 28, 21, 27, 19, 29, 19, 35, 22, 33, 26, 20, 19, 94, 22, 23, 20, 12, 10]
+[06:24:32] DIAG_DONE
+[06:24:35] mount options put back: n1: rw,noatime,discard,errors=remount-ro,commit=30 | n2: rw,noatime,discard,errors=remount-ro,commit=30 | n3: rw,noatime,discard,errors=remount-ro,commit=30 | 
+[06:49:04] 100,000 partitions at 2M with the retention round every 30 s
+[06:49:04] run rli30-p100000-r2000000: binary p5, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 100000, consumers 33 per process, retention completed 60s, dedup 60s, steps of 360s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 RETENTION_INTERVAL=30000 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s
+[06:49:16] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 100000 partitions
+[06:55:57] 2,000,000: last 30 s: offered 2,000,016 pushed 1,999,738 consumed 2,001,066 | run: shed 0 errors 0 | push p50 27.1 p99 66.6 | e2e p50 59.4 p99 127.0 worst 131.1 | cores 9.9 / 6.6 / 6.5 | mem GB 11.1 / 8.5 / 8.5 | loaders 15.7c  OK 
+REAL_DONE
+[06:56:02] K1_DONE

@@ -746,7 +746,6 @@ mod tests {
             shared_hosts: Vec::new(),
             send_tenant_header: true,
             max_body_bytes: 1024,
-            default_max_batch_items: 100,
             upstream_connect_timeout_ms: 1000,
             upstream_request_timeout_ms: 1000,
             longpoll_margin_ms: 1000,

@@ -117,6 +117,7 @@ for runnable starting points.
 - **Transactions** - Atomic ack + push operations
 - **Lease Renewal** - Automatic lease renewal for long-running tasks
 - **Pop Autopilot** - The broker sizes the knobs you did not set
+- **Binary Wire Forms** - Opt-in binary push, compression in the client and framed pop
 - **Tracing** - Built-in message tracing support
 
 ## Configuration
@@ -475,6 +476,54 @@ if result.Success {
 }
 ```
 
+## Binary Push, Push Compression and Framed Pop
+
+Three opt-in forms of the push, pop and transaction requests. They change how
+the messages travel between the client and the broker and nothing else: the
+calls, their results, deduplication and the delivery guarantees stay the same.
+All three are off by default, and with them off the client sends and reads the
+JSON every broker knows.
+
+```go
+client, err := queen.New(queen.ClientConfig{
+    URLs:            []string{"http://localhost:6632"},
+    BinaryPush:      true, // a push travels as a binary body
+    PushCompression: true, // with BinaryPush: framed and compressed here
+    FramedPop:       true, // a pop returns the stored records, unpacked here
+})
+```
+
+| Option | What it does |
+|--------|--------------|
+| `BinaryPush` | A push, direct or buffered, sends its items as one length-prefixed binary body instead of a JSON document. The answer is the same list, one entry per item. |
+| `PushCompression` | Needs `BinaryPush`. The client frames each partition's batch the way the broker stores it, mints the message ids (UUIDv7) and compresses the batch with zstd, once. The broker checks the frames and, when it has nothing to add to them, stores those bytes without compressing them again. A transaction that pushes sends its pushes the same way, with the rest of the bundle as JSON in front of them. |
+| `FramedPop` | A pop, and so the consume loop, asks for the stored records (`frames=true`) and unpacks them here into the same `Message` values, instead of a JSON answer that the broker renders message by message. |
+
+Turn them on when the broker's CPU or the network limits a high message rate:
+the framing, the compression and the unpacking then run in the clients, and the
+batches cross the network compressed. zstd comes with the module
+(`github.com/klauspost/compress`), so there is nothing to install.
+
+**What stays JSON**, with no action from you:
+
+* A push that carries a trace id.
+* A transaction with no push, or with a trace id on one of its pushes.
+* A pop the broker cannot answer in frames: a pop of a conflating group, and
+  every pop on a broker that runs with an encryption key
+  (`QUEEN_ENCRYPTION_KEY`). The client reads the JSON answer as always.
+* Acks, KV, timers, locks and the admin calls. Ephemeral queues have their own
+  routes and do not change either.
+
+A transaction's `Results` come back in the order you added the operations, as
+with JSON. The broker answers a binary transaction with the acks first and the
+pushes after them, and the client puts them back.
+
+**Requires broker 2.3.0 or later** for `BinaryPush` and `PushCompression`.
+A broker up to 2.2.0 answers 400 to the binary bodies and the client does not
+fall back to JSON, so turn the two on after every broker of the cluster is
+upgraded. `FramedPop` is safe against any broker: an older one ignores the
+parameter and answers JSON.
+
 ## Key/Value
 
 Transactional state in the same broker, and on the same commit as your
@@ -760,6 +809,9 @@ go test ./tests/... -v
 | Buffer time | 1 second |
 | Buffer max size (backpressure bound) | 400 (4 x MessageCount) |
 | Buffer flush retry delay | 250 ms |
+| Binary push | off |
+| Push compression | off (needs binary push) |
+| Framed pop | off |
 
 ## License
 

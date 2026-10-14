@@ -98,6 +98,9 @@ class Queen:
         headers: Optional[Dict[str, str]] = None,
         retry_429: Optional[Dict[str, Any]] = None,
         transport: Optional[Any] = None,
+        binary_push: Optional[bool] = None,
+        push_compression: Optional[bool] = None,
+        framed_pop: Optional[bool] = None,
     ):
         """
         Initialize Queen client
@@ -124,6 +127,21 @@ class Queen:
             transport: Optional httpx transport override (e.g.
                 httpx.MockTransport) for tests -- no broker/network
                 required.
+            binary_push: Send a push as the binary push body instead of JSON
+                (queen/http/push_binary.py). It needs a broker that accepts
+                that body; off by default. Items with a trace id stay JSON.
+            push_compression: With binary_push: frame the messages as the
+                broker stores them and zstd-compress each partition's batch
+                once, here; the broker keeps those bytes as they are. The
+                client then mints the message ids. A transaction that pushes
+                sends its pushes the same way, and the rest of the bundle as
+                JSON in front of them. Needs zstd (Python 3.14, or the
+                ``zstd`` extra).
+            framed_pop: Ask the broker for a pop's messages as the stored
+                records (frames=true) and unpack them here
+                (queen/http/pop_frames.py). A broker that does not know the
+                parameter answers JSON, which is read as always; off by
+                default. Needs zstd (Python 3.14, or the ``zstd`` extra).
         """
         logger.log(
             "Queen.constructor",
@@ -152,6 +170,9 @@ class Queen:
             retry_429=retry_429,
             transport=transport,
             headers=headers,
+            binary_push=binary_push,
+            push_compression=push_compression,
+            framed_pop=framed_pop,
         )
 
         # Pop autopilot: on unless the environment rolls it back. Read ONCE here
@@ -230,6 +251,11 @@ class Queen:
         custom_headers = self._config.get("headers") or {}
         retry_429 = self._config.get("retry_429")
         transport = self._config.get("transport")
+        wire_forms = {
+            "binary_push": bool(self._config.get("binary_push")),
+            "push_compression": bool(self._config.get("push_compression")),
+            "framed_pop": bool(self._config.get("framed_pop")),
+        }
 
         if len(urls) == 1:
             # Single server
@@ -242,6 +268,7 @@ class Queen:
                 headers=custom_headers,
                 retry_429=retry_429,
                 transport=transport,
+                **wire_forms,
             )
 
         # Multiple servers with load balancing
@@ -261,6 +288,7 @@ class Queen:
             headers=custom_headers,
             retry_429=retry_429,
             transport=transport,
+            **wire_forms,
         )
 
     def _setup_graceful_shutdown(self) -> None:

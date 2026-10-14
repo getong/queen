@@ -160,7 +160,11 @@ queen = Queen({
     'timeout_millis': 30000,
     'retry_attempts': 3,
     'load_balancing_strategy': 'affinity',  # or 'round-robin', 'session'
-    'enable_failover': True
+    'enable_failover': True,
+    # Opt-in wire forms, off by default (see Binary Push, Push Compression and Framed Pop)
+    'binary_push': False,
+    'push_compression': False,
+    'framed_pop': False
 })
 ```
 
@@ -389,6 +393,66 @@ broker outage shows up as blocked producers rather than as missing messages.
 `flush_all_buffers()` keeps retrying while the broker is down (cancel it if you
 need a bounded wait); `close()` already bounds it at 30 seconds and logs how
 many messages were left unsent, so a shutdown ends loudly instead of hanging.
+
+### Binary Push, Push Compression and Framed Pop
+
+Three opt-in forms of the push, pop and transaction requests. They change how
+the messages travel between the client and the broker and nothing else: the
+calls, their results, deduplication and the delivery guarantees stay the same.
+All three are off by default, and with them off the client sends and reads the
+JSON every broker knows.
+
+```python
+queen = Queen(
+    url='http://localhost:6632',
+    binary_push=True,       # a push travels as a binary body
+    push_compression=True,  # with binary_push: framed and compressed here
+    framed_pop=True,        # a pop returns the stored records, unpacked here
+)
+```
+
+The same three names are keys of the config dict.
+
+| Option | What it does |
+| --- | --- |
+| `binary_push` | A push, direct or buffered, sends its items as one length-prefixed binary body instead of a JSON document. The answer is the same list, one entry per item. |
+| `push_compression` | Needs `binary_push`. The client frames each partition's batch the way the broker stores it, mints the message ids (UUIDv7) and compresses the batch with zstd, once. The broker checks the frames and, when it has nothing to add to them, stores those bytes without compressing them again. A transaction that pushes sends its pushes the same way, with the rest of the bundle as JSON in front of them. |
+| `framed_pop` | `pop()` and `consume()` ask for the stored records (`frames=true`) and unpack them here into the same message dicts, instead of a JSON answer that the broker renders message by message. |
+
+Turn them on when the broker's CPU or the network limits a high message rate:
+the framing, the compression and the unpacking then run in the clients, and the
+batches cross the network compressed.
+
+`push_compression` and `framed_pop` need zstd. Python 3.14 has it in the
+standard library. On an older Python, install the `zstandard` package with the
+client:
+
+```bash
+pip install "queen-mq[zstd]"
+```
+
+Without zstd, `Queen(...)` raises `RuntimeError` when an option that needs it is
+on.
+
+**What stays JSON**, with no action from you:
+
+- A push with a `traceId` on one of its items.
+- A transaction with no push, or with a `traceId` on one of its pushes.
+- A pop the broker cannot answer in frames: a pop of a conflating group, and
+  every pop on a broker that runs with an encryption key
+  (`QUEEN_ENCRYPTION_KEY`). The client reads the JSON answer as always.
+- Acks, KV, timers, locks and the admin calls. Ephemeral queues have their own
+  routes and do not change either.
+
+A transaction's `results` come back in the order you added the operations, as
+with JSON. The broker answers a binary transaction with the acks first and the
+pushes after them, and the client puts them back.
+
+**Requires broker 2.3.0 or later** for `binary_push` and `push_compression`.
+A broker up to 2.2.0 answers 400 to the binary bodies and the client does not
+fall back to JSON, so turn the two on after every broker of the cluster is
+upgraded. `framed_pop` is safe against any broker: an older one ignores the
+parameter and answers JSON.
 
 ### Dead Letter Queue
 
@@ -728,7 +792,10 @@ await queen.close()  # Flush buffers and close connections
     'retry_attempts': 3,
     'retry_delay_millis': 1000,
     'load_balancing_strategy': 'affinity',
-    'enable_failover': True
+    'enable_failover': True,
+    'binary_push': False,        # a push as a binary body
+    'push_compression': False,   # with binary_push: frames compressed in the client
+    'framed_pop': False          # a pop as the stored records
 }
 ```
 

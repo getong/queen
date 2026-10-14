@@ -81,17 +81,78 @@ enum WireReply {
     },
 }
 
-pub(super) fn encode_request(command: &Command, budget: Duration) -> Result<Vec<u8>, RsmError> {
+/// First bytes of what may FOLLOW the encoded request: the stored forms of a
+/// push's groups ([`super::StoredForm`]). A leader that predates them decodes
+/// the request and never looks past it, so nothing changes for it.
+const STORED_FORMS_MAGIC: &[u8; 4] = b"QSF1";
+
+pub(super) fn encode_request(
+    command: &Command,
+    budget: Duration,
+    stored: &[super::StoredForm],
+) -> Result<Vec<u8>, RsmError> {
     #[derive(Serialize)]
     struct Ref<'a> {
         budget_ms: u64,
         command: &'a Command,
     }
-    postcard::to_stdvec(&Ref {
+    let mut out = postcard::to_stdvec(&Ref {
         budget_ms: budget.as_millis() as u64,
         command,
     })
-    .map_err(|e| RsmError::Internal(format!("encode a prepared command: {e}")))
+    .map_err(|e| RsmError::Internal(format!("encode a prepared command: {e}")))?;
+    if !stored.is_empty() {
+        out.extend_from_slice(STORED_FORMS_MAGIC);
+        out.extend_from_slice(&(stored.len() as u32).to_le_bytes());
+        for s in stored {
+            out.extend_from_slice(&s.key.to_le_bytes());
+            out.extend_from_slice(&s.raw_len.to_le_bytes());
+            out.extend_from_slice(&(s.z.len() as u32).to_le_bytes());
+            out.extend_from_slice(&s.z);
+        }
+    }
+    Ok(out)
+}
+
+/// The leader side of [`STORED_FORMS_MAGIC`]: file every stored form that is
+/// exactly one zstd frame of the size it declares with the queue-log codec,
+/// before the command is planned. Anything else is ignored: the leader then
+/// compresses those frames itself, as it always did.
+fn take_stored_forms(rest: &[u8]) {
+    use crate::rsm::qlog::codec;
+    let Some(mut b) = rest.strip_prefix(STORED_FORMS_MAGIC.as_slice()) else {
+        return;
+    };
+    let mut take = |n: usize| -> Option<&[u8]> {
+        if b.len() < n {
+            return None;
+        }
+        let (head, tail) = b.split_at(n);
+        b = tail;
+        Some(head)
+    };
+    let Some(count) = take(4).map(|x| u32::from_le_bytes(x.try_into().expect("4 bytes"))) else {
+        return;
+    };
+    for _ in 0..count {
+        let Some(key) = take(16).map(|x| u128::from_le_bytes(x.try_into().expect("16 bytes"))) else {
+            return;
+        };
+        let Some(raw_len) = take(4).map(|x| u32::from_le_bytes(x.try_into().expect("4 bytes"))) else {
+            return;
+        };
+        let Some(z_len) = take(4).map(|x| u32::from_le_bytes(x.try_into().expect("4 bytes"))) else {
+            return;
+        };
+        let Some(z) = take(z_len as usize) else {
+            return;
+        };
+        let one_frame = zstd::zstd_safe::find_frame_compressed_size(z).ok() == Some(z.len());
+        let sized = matches!(zstd::zstd_safe::get_frame_content_size(z), Ok(Some(n)) if n == raw_len as u64);
+        if one_frame && sized {
+            codec::preseed_key(key, raw_len as usize, z.to_vec());
+        }
+    }
 }
 
 fn encode_reply(r: Result<Reply, RsmError>, seen: u64) -> Vec<u8> {
@@ -164,8 +225,11 @@ pub(super) async fn serve(
     from: crate::rsm::admit::Source,
     body: bytes::Bytes,
 ) -> Result<bytes::Bytes, String> {
-    let req: SubmitReq = match postcard::from_bytes(&body) {
-        Ok(req) => req,
+    let req: SubmitReq = match postcard::take_from_bytes::<SubmitReq>(&body) {
+        Ok((req, rest)) => {
+            take_stored_forms(rest);
+            req
+        }
         // A shape this build does not know (D20: a follower that sent it
         // before the cluster version admitted it, or a damaged frame). It
         // never ran: answered `retry`, which the follower hands its caller
@@ -316,7 +380,7 @@ mod tests {
             tenant: "t".into(),
             effects: vec![crate::rsm::effect::Effect::Noop],
         });
-        let body = bytes::Bytes::from(encode_request(&cmd, Duration::from_secs(5)).unwrap());
+        let body = bytes::Bytes::from(encode_request(&cmd, Duration::from_secs(5), &[]).unwrap());
         let answer = raft
             .block_on(raft.spawn(async move {
                 assert!(on_raft_runtime(), "called on the raft runtime");
@@ -421,7 +485,7 @@ mod tests {
             }],
             engine_acks: Default::default(),
         };
-        let bytes = encode_request(&Command::Transaction(txn.clone()), Duration::from_secs(1))
+        let bytes = encode_request(&Command::Transaction(txn.clone()), Duration::from_secs(1), &[])
             .expect("encode");
         let back: SubmitReq = postcard::from_bytes(&bytes).expect("decode");
         match back.command {

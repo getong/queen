@@ -1,0 +1,7 @@
+[11:56:58] run pushonly-1x200: binary new, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 0 per process, retention completed, steps of 60s at: 3000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[11:57:05] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 200 partitions
+[11:58:38] 3,000,000: offered 2,999,983 pushed 1,994,871 consumed 0 shed 47,003,000 errors 0 lag 117,995,600 | push p50 311.3 p99 3670.0 | e2e p50 0.0 p99 0.0 | n1 9.1c apply 32% raft 99%; n2 3.8c apply 33% raft 35%; n3 3.3c apply 29% raft 30% | loaders 13.3c  NOT CARRIED 
+RUN_DONE

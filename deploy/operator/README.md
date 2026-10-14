@@ -19,7 +19,7 @@ kubectl -n queen get queencluster
 
 ```text
 NAME    VERSION   VOTERS    COMMITS   PHASE   AGE
-queen   2.2.0     [1,2,3]   true      Ready   40s
+queen   2.3.0     [1,2,3]   true      Ready   40s
 ```
 
 ## What a change does

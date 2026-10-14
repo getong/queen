@@ -64,6 +64,7 @@ use crate::rsm::batcher::{
 };
 use crate::rsm::effect::{Pid, QueueConfig};
 use crate::rsm::entry::{Outcome, PopClaim, PushVerdict, RequestId};
+use crate::rsm::link::wire::Placement;
 use crate::rsm::planner::timers::{
     list_limit, list_row_json, parse_timer_ops, peek_json, timers_results, TimerOp, TimersCommand,
 };
@@ -77,7 +78,7 @@ use crate::rsm::replicator::node::{NodeReplicator, ReplicatorKind};
 use crate::rsm::replicator::Replicator;
 use crate::rsm::segments;
 use crate::rsm::store::{rows, HeedStore, Reads, Store, StoreOpts, TypedReads};
-use crate::util::{txn_hash128, uuidv7_bytes};
+use crate::util::{txn_hash128, unix_ms, uuidv7_bytes, uuidv7_bytes_at};
 
 use super::{
     AckOut, AckReq, ApiOut, ApiReq, DepthOut, DepthReq, DlqHeadOut, DlqHeadReq, KvFailure,
@@ -782,23 +783,17 @@ impl RaftFacade {
             // keep host disk fullness and concurrent local GC out of them.
             batcher.maintenance_every_ms = 0;
         }
-        RaftFacade::open_inner(ctx, batcher, !cfg!(test), 0, false, None, None)
+        RaftFacade::open_inner(ctx, batcher, !cfg!(test), Placement::single(), None, None)
     }
 
-    /// Raft group `group` of several in this process (`QUEEN_RAFT_GROUPS`,
-    /// [`super::groups`]): its own data directory (`<dir>/groups/g<group>`;
-    /// group 0 keeps `<dir>`) and its own Raft addresses
-    /// ([`crate::rsm::replicator::raft::ClusterConfig::for_group`]).
-    pub fn open_group(ctx: &RsmBuildCtx, group: usize) -> Result<RaftFacade, String> {
-        RaftFacade::open_inner(
-            ctx,
-            BatcherConfig::from_env(),
-            true,
-            group,
-            true,
-            None,
-            None,
-        )
+    /// The raft group `placement` names, of several in this process
+    /// (`QUEEN_RAFT_GROUPS`, [`super::groups`]): its own data directory
+    /// (`<dir>/groups/g<group>`; group 0 keeps `<dir>`), its own Raft
+    /// addresses ([`crate::rsm::replicator::raft::ClusterConfig::for_group`])
+    /// and, on a standby, its own source: the source's group of the same
+    /// number ([`crate::rsm::link::driver::LinkConfig::for_group`]).
+    pub fn open_group(ctx: &RsmBuildCtx, placement: Placement) -> Result<RaftFacade, String> {
+        RaftFacade::open_inner(ctx, BatcherConfig::from_env(), true, placement, None, None)
     }
 
     /// A node with its part in a cluster link given instead of read from the
@@ -814,7 +809,32 @@ impl RaftFacade {
         )>,
         link: crate::rsm::link::driver::LinkSetup,
     ) -> Result<RaftFacade, String> {
-        RaftFacade::open_inner(ctx, batcher_cfg, false, 0, false, node, Some(link))
+        RaftFacade::open_inner(
+            ctx,
+            batcher_cfg,
+            false,
+            Placement::single(),
+            node,
+            Some(link),
+        )
+    }
+
+    /// [`RaftFacade::open_link_node_for_test`] for one raft group of a node
+    /// that runs several: `node` is the group's own cluster configuration
+    /// (its Raft addresses already the group's), `link` names the source's
+    /// group 0 as `QUEEN_LINK_SOURCE` does.
+    #[cfg(test)]
+    pub(crate) fn open_link_group_for_test(
+        ctx: &RsmBuildCtx,
+        batcher_cfg: BatcherConfig,
+        node: (
+            crate::rsm::replicator::raft::ClusterConfig,
+            crate::rsm::replicator::raft::RaftOpts,
+        ),
+        link: crate::rsm::link::driver::LinkSetup,
+        placement: Placement,
+    ) -> Result<RaftFacade, String> {
+        RaftFacade::open_inner(ctx, batcher_cfg, false, placement, Some(node), Some(link))
     }
 
     /// A node of an openraft cluster, with the cluster configuration and the
@@ -831,8 +851,7 @@ impl RaftFacade {
             ctx,
             batcher_cfg,
             false,
-            0,
-            false,
+            Placement::single(),
             Some((cluster, opts)),
             None,
         )
@@ -842,13 +861,14 @@ impl RaftFacade {
     /// the environment's — the tests' seam (a fast timer tick, the injected
     /// fire failure), never the boot path's.
     pub fn open_with(ctx: &RsmBuildCtx, batcher_cfg: BatcherConfig) -> Result<RaftFacade, String> {
-        RaftFacade::open_inner(ctx, batcher_cfg, false, 0, false, None, None)
+        RaftFacade::open_inner(ctx, batcher_cfg, false, Placement::single(), None, None)
     }
 
-    /// `multi_group`: one of several Raft groups in this process
-    /// (`QUEEN_RAFT_GROUPS` > 1): the group's Raft addresses and its PREFERRED
-    /// leader come from [`crate::rsm::replicator::raft::ClusterConfig::for_group`],
-    /// which spreads the groups' leaders over the nodes. A single group has no
+    /// `placement`: which raft group of this process the facade is. One of
+    /// several (`QUEEN_RAFT_GROUPS` > 1) takes its Raft addresses and its
+    /// PREFERRED leader from
+    /// [`crate::rsm::replicator::raft::ClusterConfig::for_group`], which
+    /// spreads the groups' leaders over the nodes. A single group has no
     /// preferred leader: one would only add a leadership transfer after every
     /// heal (every node led by the same member again), for nothing to spread.
     /// `node`: the openraft cluster node to run instead of what the
@@ -859,8 +879,7 @@ impl RaftFacade {
         ctx: &RsmBuildCtx,
         mut batcher_cfg: BatcherConfig,
         storage_pressure_enabled: bool,
-        group: usize,
-        multi_group: bool,
+        placement: Placement,
         node: Option<(
             crate::rsm::replicator::raft::ClusterConfig,
             crate::rsm::replicator::raft::RaftOpts,
@@ -870,17 +889,18 @@ impl RaftFacade {
         if ctx.data_dir.trim().is_empty() {
             return Err("QUEEN_RAFT_DIR is required in raft mode (§11.1)".into());
         }
+        let (group, multi_group) = (placement.group, placement.groups > 1);
         // The cluster link (`crate::rsm::link`): the source this cluster
         // follows while it is a standby, and whether an empty one starts as a
-        // standby. A standby replays ONE log.
-        let link = match link {
+        // standby. A standby replays one log per raft group: this group's
+        // source is the source's group of the same number, and what is
+        // configured names the source's group 0.
+        let mut link = match link {
             Some(l) => l,
             None => crate::rsm::link::driver::LinkSetup::from_env()?,
         };
-        if multi_group && link.source.is_some() {
-            return Err(
-                "QUEEN_LINK_SOURCE needs QUEEN_RAFT_GROUPS=1: a standby replays one log".into(),
-            );
+        if let Some(source) = &link.source {
+            link.source = Some(source.for_group(&placement)?);
         }
         let dir = match group {
             0 => PathBuf::from(&ctx.data_dir),
@@ -918,6 +938,12 @@ impl RaftFacade {
                 None,
             ),
         };
+        // What a standby's group must state to read this group's log: its
+        // own number, and this cluster's way of placing tenants.
+        let cluster = cluster.map(|mut c| {
+            c.link_placement = placement.clone();
+            c
+        });
         let node_id = cluster.as_ref().map_or(NODE_ID, |c| c.node_id);
         let ocfg = OpenConfig::new(node_id, dir.clone());
         // A standby is a cluster, of one node or more: how its nodes get what
@@ -1134,10 +1160,9 @@ impl RaftFacade {
         // one: it acts only where the node leads a standby). Weak on the
         // store: the facade's shutdown takes it back by value.
         let link_follower = link.source.clone().map(|cfg| {
-            let fetch = link
-                .fetch
-                .clone()
-                .unwrap_or_else(|| crate::rsm::link::driver::http_fetch(cfg.token.clone()));
+            let fetch = link.fetch.clone().unwrap_or_else(|| {
+                crate::rsm::link::driver::http_fetch(cfg.token.clone(), cfg.placement.clone())
+            });
             crate::rsm::link::driver::spawn(
                 cfg,
                 Arc::downgrade(&store),
@@ -1433,6 +1458,7 @@ impl RaftFacade {
                         let b = bytes::Bytes::from(super::remote::encode_request(
                             &command,
                             ctx.deadline.remaining(),
+                            ctx.stored_forms.as_deref().map_or(&[], |v| v.as_slice()),
                         )?);
                         body = Some(b.clone());
                         b
@@ -1866,7 +1892,7 @@ fn release_claims(repl: &Arc<NodeReplicator<HeedStore>>, command: &Command, repl
     tokio::spawn(async move {
         let budget = Duration::from_secs(5);
         for cmd in nacks {
-            if let Ok(b) = super::remote::encode_request(&cmd, budget) {
+            if let Ok(b) = super::remote::encode_request(&cmd, budget, &[]) {
                 let _ = repl
                     .forward_command(bytes::Bytes::from(b), budget, true)
                     .await;
@@ -2065,7 +2091,11 @@ impl RaftFacade {
     /// atomic across queue logs by Phase C's present-in-all replay. The wire
     /// contract is the SQL wire transaction's: HTTP 200, `success` + a flat
     /// `results` array on commit; `success:false` + `reason` on a rollback.
-    async fn txn_impl(&self, ctx: ReqCtx, req: super::TxnReq) -> Result<super::TxnOut, RsmError> {
+    async fn txn_impl(
+        &self,
+        mut ctx: ReqCtx,
+        req: super::TxnReq,
+    ) -> Result<super::TxnOut, RsmError> {
         let txn_id = uuid_bytes_to_string(&uuidv7_bytes());
         // A rollback VERDICT answers 200 + `success:false`; a body the wire
         // refuses (wrong shape, server-owned field) answers a named 4xx.
@@ -2082,11 +2112,65 @@ impl RaftFacade {
         };
         let fail = |reason: &str, err: &str| answer(200, reason, err);
         let refuse = |reason: &str, err: &str| answer(400, reason, err);
-        let body: TxnBodyIn = match serde_json::from_slice(&req.raw) {
+        // The binary body ([`TXN_BINARY_MAGIC`]): the JSON body without its
+        // pushes (the head), then the pushes as the client's own frames,
+        // compressed by the client group by group, as a framed push carries
+        // them ([`frame_groups`]):
+        //
+        //   "QTB1" | u8 flags | u32 len, head | u32 groups | the groups
+        //
+        // The head's operations keep the first flat ordinals and the groups'
+        // messages take the next ones, in the order they are written; the
+        // riders follow, as in the JSON body.
+        let binary = req.raw.starts_with(TXN_BINARY_MAGIC);
+        let (head, short, bin_groups, bin_blobs) = if binary {
+            let b = &req.raw[TXN_BINARY_MAGIC.len()..];
+            let mut at = 0usize;
+            let parsed = (|| -> Result<_, String> {
+                let flags = wire_take(b, &mut at, 1)?[0];
+                if flags & !TXN_BINARY_SHORT != 0 {
+                    return Err("unknown flags".into());
+                }
+                let n = wire_u32(b, &mut at)?;
+                let head = wire_take(b, &mut at, n)?;
+                let (groups, blobs, _) = frame_groups(b, &mut at)?;
+                if at != b.len() {
+                    return Err("bytes after the last group".into());
+                }
+                Ok((head, flags & TXN_BINARY_SHORT != 0, groups, blobs))
+            })();
+            match parsed {
+                Ok((head, short, groups, blobs)) => {
+                    let head: &[u8] = if head.is_empty() { b"{}" } else { head };
+                    (head, short, groups, blobs)
+                }
+                Err(m) => {
+                    return Ok(refuse(
+                        "bad_request",
+                        &format!("bad transaction body: {m}"),
+                    ))
+                }
+            }
+        } else {
+            (&req.raw[..], false, Vec::new(), Vec::new())
+        };
+        let mut bin_frames: Vec<Vec<ClientFrame<'_>>> = Vec::with_capacity(bin_groups.len());
+        for (g, blob) in bin_groups.iter().zip(&bin_blobs) {
+            match client_frames(blob, g.count) {
+                Ok(frames) => bin_frames.push(frames),
+                Err(m) => {
+                    return Ok(refuse(
+                        "bad_request",
+                        &format!("bad transaction body: {m}"),
+                    ))
+                }
+            }
+        }
+        let body: TxnBodyIn = match serde_json::from_slice(head) {
             Ok(b) => b,
             Err(e) => {
                 // A rider that is not an array is the common wrong shape: name it.
-                let rider = serde_json::from_slice::<serde_json::Value>(&req.raw)
+                let rider = serde_json::from_slice::<serde_json::Value>(head)
                     .ok()
                     .and_then(|v| {
                         ["operations", "kv", "timers", "positions", "requiredLeases"]
@@ -2165,7 +2249,12 @@ impl RaftFacade {
             Err(e) => return Ok(fail(e.reason, &e.detail)),
         };
         let ops = body.operations.unwrap_or_default();
-        if ops.is_empty() && kv_ops.is_empty() && timer_ops.is_empty() && position_ops.is_empty() {
+        if ops.is_empty()
+            && bin_frames.iter().all(|f| f.is_empty())
+            && kv_ops.is_empty()
+            && timer_ops.is_empty()
+            && position_ops.is_empty()
+        {
             return Ok(fail(
                 "bad_request",
                 "transaction requires an operations array (or a top-level kv/timers/positions \
@@ -2183,6 +2272,9 @@ impl RaftFacade {
         }
         for op in &timer_ops {
             queue_names.insert(op.queue().to_string());
+        }
+        for g in &bin_groups {
+            queue_names.insert(g.queue.to_string());
         }
         let encrypted_queues = self.encrypted_queues(&ctx.tenant, queue_names).await?;
         if let Err(error) = self.encrypt_timer_ops(&mut timer_ops, &encrypted_queues) {
@@ -2205,7 +2297,7 @@ impl RaftFacade {
             queue: String,
             follower_of: Option<usize>, // index into `pushes`
             hash: [u8; 16],
-            frame: Vec<u8>,
+            frame: bytes::Bytes,
         }
         let mut pushes: Vec<TxnPush> = Vec::new();
         let mut seen: std::collections::HashMap<(String, String, String), usize> =
@@ -2217,11 +2309,15 @@ impl RaftFacade {
         let mut ack_txn: Vec<(usize, String, AckStatus)> = Vec::new();
         let mut flat = 0usize;
 
+        // `prebuilt`: the message's id and frame as the client built them (the
+        // binary body); the frame is used as it is when nothing has to be added
+        // to it, and built here around the client's id otherwise.
         let mut add_push = |queue: &str,
                             partition: Option<&str>,
-                            payload: &RawValue,
+                            payload: &[u8],
                             txn_in: Option<&str>,
                             trace_id: Option<&str>,
+                            prebuilt: Option<([u8; 16], bytes::Bytes)>,
                             flat: usize,
                             pushes: &mut Vec<TxnPush>|
          -> Result<(), RsmError> {
@@ -2231,7 +2327,7 @@ impl RaftFacade {
                     message: format!("transactionId exceeds the {MAX_TXN_BYTES}-byte limit"),
                 });
             }
-            let mid = uuidv7_bytes();
+            let mid = prebuilt.as_ref().map_or_else(uuidv7_bytes, |(id, _)| *id);
             let mid_str = uuid_bytes_to_string(&mid);
             let txn = txn_in
                 .map(str::to_string)
@@ -2247,23 +2343,26 @@ impl RaftFacade {
             let frame = if follower_of.is_none() {
                 seen.insert(key, idx);
                 groups.push(queue, &partition, idx);
-                let (payload, encrypted) = self.encode_payload(
-                    encrypted_queues.contains(queue),
-                    payload.get().as_bytes(),
-                    queue,
-                );
-                pack_frames(&[FrameIn {
-                    message_id: mid,
-                    txn: &txn,
-                    // Invalid trace ids are deliberately ignored, matching the
-                    // permissive transaction wire contract.
-                    trace_id: trace_id.and_then(uuid_string_to_bytes),
-                    producer_sub: ctx.producer_sub.as_deref(),
-                    payload: &payload,
-                    encrypted,
-                }])
+                let encrypt = encrypted_queues.contains(queue);
+                match prebuilt {
+                    Some((_, frame)) if !encrypt && ctx.producer_sub.is_none() => frame,
+                    _ => {
+                        let (payload, encrypted) = self.encode_payload(encrypt, payload, queue);
+                        pack_frames(&[FrameIn {
+                            message_id: mid,
+                            txn: &txn,
+                            // Invalid trace ids are deliberately ignored, matching the
+                            // permissive transaction wire contract.
+                            trace_id: trace_id.and_then(uuid_string_to_bytes),
+                            producer_sub: ctx.producer_sub.as_deref(),
+                            payload: &payload,
+                            encrypted,
+                        }])
+                        .into()
+                    }
+                }
             } else {
-                Vec::new()
+                bytes::Bytes::new()
             };
             pushes.push(TxnPush {
                 flat,
@@ -2285,9 +2384,10 @@ impl RaftFacade {
                             add_push(
                                 it.queue.as_ref(),
                                 it.partition.as_deref(),
-                                it.payload,
+                                it.payload.get().as_bytes(),
                                 it.transaction_id.as_deref(),
                                 it.trace_id.as_deref(),
+                                None,
                                 flat,
                                 &mut pushes,
                             )?;
@@ -2303,9 +2403,10 @@ impl RaftFacade {
                         add_push(
                             q,
                             op.partition.as_deref(),
-                            pl,
+                            pl.get().as_bytes(),
                             op.transaction_id.as_deref(),
                             op.trace_id.as_deref(),
+                            None,
                             flat,
                             &mut pushes,
                         )?;
@@ -2366,6 +2467,27 @@ impl RaftFacade {
             }
         }
 
+        // The binary body's messages take the flat ordinals after the head's
+        // operations. `bin_spans`: where each group's messages lie in `pushes`.
+        let mut bin_spans: Vec<(usize, usize)> = Vec::with_capacity(bin_groups.len());
+        for ((g, blob), frames) in bin_groups.iter().zip(&bin_blobs).zip(&bin_frames) {
+            let start = pushes.len();
+            for f in frames {
+                add_push(
+                    g.queue,
+                    Some(g.partition),
+                    f.payload,
+                    Some(f.txn),
+                    None,
+                    Some((f.id, blob.slice(f.at.clone()))),
+                    flat,
+                    &mut pushes,
+                )?;
+                flat += 1;
+            }
+            bin_spans.push((start, pushes.len()));
+        }
+
         // The riders take the flat ordinals after the operations (the SQL wire's
         // layout: operations keep their indices, the riders append).
         let kv_base = flat;
@@ -2407,6 +2529,48 @@ impl RaftFacade {
                 create_cfg: default_queue_config(&g.queue),
             });
             push_members.push(g.members.clone());
+        }
+        // The client's compressed bytes as a partition's stored form, as a
+        // framed push does it: when the group is the whole of what this bundle
+        // appends to its partition, in order, and its frames go into the log
+        // exactly as they came (no producer identity, no encryption, no
+        // transaction id twice). Anything else is compressed here as before.
+        if binary
+            && ctx.producer_sub.is_none()
+            && !self.encryption.is_enabled()
+            && crate::rsm::qlog::codec::level() > 0
+        {
+            use crate::rsm::qlog::codec;
+            let whole = |&(start, end): &(usize, usize)| {
+                end > start
+                    && push_members
+                        .iter()
+                        .any(|m| m.len() == end - start && m.iter().copied().eq(start..end))
+            };
+            let as_sent = bin_groups
+                .iter()
+                .zip(&bin_blobs)
+                .zip(&bin_spans)
+                .filter(|(_, span)| whole(span))
+                .map(|(pair, _)| pair);
+            if self.early_codec() {
+                for (g, raw) in as_sent {
+                    codec::preseed(raw, g.z.to_vec());
+                }
+            } else if self.offload && *FORWARD_STORED_FORMS {
+                // Another node leads: the stored forms travel beside the
+                // forwarded command, and the leader files them the same way.
+                let forms: Vec<super::StoredForm> = as_sent
+                    .map(|(g, raw)| super::StoredForm {
+                        key: codec::early_key(raw),
+                        raw_len: raw.len() as u32,
+                        z: bytes::Bytes::copy_from_slice(g.z),
+                    })
+                    .collect();
+                if !forms.is_empty() {
+                    ctx.stored_forms = Some(Arc::new(forms));
+                }
+            }
         }
         let mut targets: Vec<AckTarget> = Vec::new();
         for (group, mut flats) in acks_by_group {
@@ -2521,13 +2685,21 @@ impl RaftFacade {
                 results[kv_base + i] = serde_json::Value::Object(obj);
             }
         }
+        // With `short` (the binary body's flag) the pushes' and the acks'
+        // results are counted, not rendered: the client built the messages and
+        // their ids itself, and a committed bundle settled every ack.
         let mut verdict_mid: Vec<Option<String>> = vec![None; pushes.len()];
+        let mut stored = 0usize;
         for (g, members) in push_members.iter().enumerate() {
             for (k, &i) in members.iter().enumerate() {
                 let created = matches!(
                     out.pushes.get(g).and_then(|o| o.items.get(k)),
                     Some(PushVerdict::Created { .. })
                 );
+                stored += created as usize;
+                if short {
+                    continue;
+                }
                 verdict_mid[i] = Some(pushes[i].message_id.clone());
                 results[pushes[i].flat] = serde_json::json!({
                     "index": pushes[i].flat,
@@ -2539,7 +2711,7 @@ impl RaftFacade {
                 });
             }
         }
-        for p in &pushes {
+        for p in pushes.iter().filter(|_| !short) {
             if let Some(leader) = p.follower_of {
                 results[p.flat] = serde_json::json!({
                     "index": p.flat,
@@ -2578,7 +2750,8 @@ impl RaftFacade {
             .iter()
             .filter(|(_, _, st)| matches!(st, AckStatus::Dlq))
             .count() as u64;
-        for (i, txn, status) in ack_txn {
+        let acked = ack_txn.len();
+        for (i, txn, status) in ack_txn.into_iter().filter(|_| !short) {
             results[i] = serde_json::json!({
                 "index": i,
                 "type": "ack",
@@ -2634,14 +2807,26 @@ impl RaftFacade {
                     .fetch_add(txn_dlq, std::sync::atomic::Ordering::Relaxed);
             }
         }
-        Ok(super::TxnOut {
-            status: 200,
-            body: serde_json::json!({
+        let body = if short {
+            results.retain(|r| !r.is_null());
+            serde_json::json!({
+                "transactionId": txn_id,
+                "success": true,
+                "results": results,
+                "pushed": stored,
+                "duplicate": pushes.len() - stored,
+                "acked": acked,
+            })
+        } else {
+            serde_json::json!({
                 "transactionId": txn_id,
                 "success": true,
                 "results": results,
             })
-            .to_string(),
+        };
+        Ok(super::TxnOut {
+            status: 200,
+            body: body.to_string(),
         })
     }
 }
@@ -2661,6 +2846,151 @@ pub(crate) fn txn_too_long(txn: Option<&str>) -> bool {
     txn.is_some_and(|t| t.len() > MAX_TXN_BYTES)
 }
 
+/// First bytes of a binary push body ([`RaftFacade::push_binary`]).
+pub(crate) const PUSH_BINARY_MAGIC: &[u8] = b"QPB1";
+/// Binary push flag: the body is zstd-compressed.
+pub(crate) const PUSH_BINARY_ZSTD: u8 = 1;
+/// Binary push flag: answer with the counts only.
+pub(crate) const PUSH_BINARY_SHORT: u8 = 2;
+/// Binary push flag: every item carries a transactionId.
+pub(crate) const PUSH_BINARY_TXN: u8 = 4;
+/// Binary push flag: every group is the client's own frames, compressed.
+pub(crate) const PUSH_BINARY_FRAMES: u8 = 8;
+/// `QUEEN_PUSH_FORWARD_STORED` (default on): a node that does not lead sends a
+/// framed push's compressed groups beside the command it forwards.
+static FORWARD_STORED_FORMS: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
+    std::env::var("QUEEN_PUSH_FORWARD_STORED").map_or(true, |v| v != "0")
+});
+/// Largest uncompressed binary push body accepted.
+const PUSH_BINARY_MAX_RAW: usize = 256 * 1024 * 1024;
+/// First bytes of a binary transaction body ([`RaftFacade::txn_impl`]).
+pub(crate) const TXN_BINARY_MAGIC: &[u8] = b"QTB1";
+/// Binary transaction flag: the answer leaves out the pushes' and the acks'
+/// results and counts them; the riders' results stay, with their flat indices.
+pub(crate) const TXN_BINARY_SHORT: u8 = 2;
+
+/// One group of a body made of client-built frames ([`frame_groups`]).
+struct FrameGroup<'a> {
+    queue: &'a str,
+    partition: &'a str,
+    count: usize,
+    /// The group's frames as the client compressed them: one zstd frame.
+    z: &'a [u8],
+}
+
+/// One frame of a decompressed group ([`client_frames`]).
+struct ClientFrame<'a> {
+    id: [u8; 16],
+    txn: &'a str,
+    payload: &'a [u8],
+    /// Where the whole frame lies in its group's bytes.
+    at: std::ops::Range<usize>,
+}
+
+fn wire_take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8], String> {
+    let end = p.checked_add(n).ok_or_else(|| "truncated".to_string())?;
+    let s = b.get(*p..end).ok_or_else(|| "truncated".to_string())?;
+    *p = end;
+    Ok(s)
+}
+
+fn wire_u16(b: &[u8], p: &mut usize) -> Result<usize, String> {
+    Ok(u16::from_le_bytes(wire_take(b, p, 2)?.try_into().expect("2 bytes")) as usize)
+}
+
+fn wire_u32(b: &[u8], p: &mut usize) -> Result<usize, String> {
+    Ok(u32::from_le_bytes(wire_take(b, p, 4)?.try_into().expect("4 bytes")) as usize)
+}
+
+/// The groups of client-built frames that a binary push
+/// ([`PUSH_BINARY_FRAMES`]) and a binary transaction ([`TXN_BINARY_MAGIC`])
+/// carry, read from `body` at `*p`:
+///
+/// ```text
+/// u32 groups | per group: u16 len, queue | u16 len, partition | u32 n | u32 z_len | z
+/// ```
+///
+/// `z` is ONE zstd frame of the group's `n` frames. Each group is decompressed
+/// by the codec's own decoder, the one every later read of it uses. Returns
+/// the groups, their decompressed bytes, and what those weigh.
+#[allow(clippy::type_complexity)]
+fn frame_groups<'a>(
+    body: &'a [u8],
+    p: &mut usize,
+) -> Result<(Vec<FrameGroup<'a>>, Vec<bytes::Bytes>, usize), String> {
+    use crate::rsm::qlog::codec;
+    let n_groups = wire_u32(body, p)?;
+    let mut groups: Vec<FrameGroup<'a>> = Vec::with_capacity(n_groups.min(1024));
+    let mut blobs: Vec<bytes::Bytes> = Vec::with_capacity(n_groups.min(1024));
+    let mut weight = 2usize;
+    for _ in 0..n_groups {
+        let n = wire_u16(body, p)?;
+        let queue = std::str::from_utf8(wire_take(body, p, n)?).map_err(|_| "queue".to_string())?;
+        let n = wire_u16(body, p)?;
+        let partition =
+            std::str::from_utf8(wire_take(body, p, n)?).map_err(|_| "partition".to_string())?;
+        let count = wire_u32(body, p)?;
+        let n = wire_u32(body, p)?;
+        let z = wire_take(body, p, n)?;
+        if zstd::zstd_safe::find_frame_compressed_size(z).ok() != Some(z.len()) {
+            return Err("a group is not exactly one zstd frame".into());
+        }
+        let raw = codec::decompress(z).map_err(|e| format!("zstd: {e}"))?;
+        weight = weight.saturating_add(raw.len());
+        if weight > PUSH_BINARY_MAX_RAW {
+            return Err("the uncompressed body is too large".into());
+        }
+        groups.push(FrameGroup {
+            queue,
+            partition,
+            count,
+            z,
+        });
+        blobs.push(bytes::Bytes::from(raw));
+    }
+    Ok((groups, blobs, weight))
+}
+
+/// The `count` frames of one decompressed group, each checked: the storage
+/// layout with no flags, a version-7 message id, a transaction id, and one
+/// JSON document as payload; and nothing after the last frame.
+fn client_frames(raw: &[u8], count: usize) -> Result<Vec<ClientFrame<'_>>, String> {
+    let mut frames = Vec::with_capacity(count.min(4096));
+    let mut p = 0usize;
+    for _ in 0..count {
+        let start = p;
+        let n = wire_u32(raw, &mut p)?;
+        let b = wire_take(raw, &mut p, n)?;
+        if b.len() < 19 || b[0] != 0 {
+            return Err("a frame is malformed or carries flags".into());
+        }
+        let id: [u8; 16] = b[1..17].try_into().expect("16 bytes");
+        if id[6] >> 4 != 7 || id[8] & 0xc0 != 0x80 {
+            return Err("a message id is not a version-7 UUID".into());
+        }
+        let tl = u16::from_le_bytes([b[17], b[18]]) as usize;
+        let txn = b.get(19..19 + tl).ok_or_else(|| "truncated".to_string())?;
+        let txn = std::str::from_utf8(txn).map_err(|_| "transactionId".to_string())?;
+        if txn.is_empty() || txn.len() > MAX_TXN_BYTES {
+            return Err("a transactionId is empty or exceeds the limit".into());
+        }
+        let payload = &b[19 + tl..];
+        if !is_json(payload) {
+            return Err("a payload is not one JSON document".into());
+        }
+        frames.push(ClientFrame {
+            id,
+            txn,
+            payload,
+            at: start..p,
+        });
+    }
+    if p != raw.len() {
+        return Err("a group holds more bytes than its frames".into());
+    }
+    Ok(frames)
+}
+
 // `pub(crate)` for the W7 fuzz entry point (`crate::fuzzing::push_body`).
 #[derive(Deserialize)]
 pub(crate) struct PushBodyIn<'a> {
@@ -2672,13 +3002,23 @@ pub(crate) struct PushBodyIn<'a> {
 pub(crate) struct PushItemIn<'a> {
     #[serde(borrow)]
     pub(crate) queue: std::borrow::Cow<'a, str>,
-    #[serde(borrow, default)]
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
     pub(crate) partition: Option<std::borrow::Cow<'a, str>>,
     #[serde(borrow)]
     pub(crate) payload: &'a RawValue,
-    #[serde(borrow, default, rename = "transactionId")]
+    #[serde(
+        borrow,
+        default,
+        deserialize_with = "opt_cow::deserialize",
+        rename = "transactionId"
+    )]
     pub(crate) transaction_id: Option<std::borrow::Cow<'a, str>>,
-    #[serde(borrow, default, rename = "traceId")]
+    #[serde(
+        borrow,
+        default,
+        deserialize_with = "opt_cow::deserialize",
+        rename = "traceId"
+    )]
     pub(crate) trace_id: Option<std::borrow::Cow<'a, str>>,
 }
 
@@ -2695,7 +3035,7 @@ struct PushResolved {
     /// intra-request follower.
     follower_of: Option<usize>,
     hash: [u8; 16],
-    frame: Vec<u8>,
+    frame: bytes::Bytes,
 }
 
 /// One push item as its parser left it: borrowed from the JSON body of the
@@ -2706,6 +3046,25 @@ pub(crate) struct PushInput<'a> {
     pub(crate) payload: &'a [u8],
     /// The client's `transactionId`; `None` mints one from the message id.
     pub(crate) txn: Option<&'a str>,
+    /// The item as a frame the client already built ([`RaftFacade::push_binary`]).
+    pub(crate) prebuilt: Option<Prebuilt<'a>>,
+}
+
+/// A message the client framed itself: its id, its transaction id and the
+/// whole frame, checked by the receiver.
+#[derive(Clone)]
+pub(crate) struct Prebuilt<'a> {
+    pub(crate) id: [u8; 16],
+    pub(crate) txn: &'a str,
+    /// A slice of the group's one buffer: shared, never copied per message.
+    pub(crate) frame: bytes::Bytes,
+    /// No other item of the request carries this transaction id.
+    pub(crate) unique: bool,
+}
+
+/// Whether `payload` is exactly one JSON document.
+fn is_json(payload: &[u8]) -> bool {
+    serde_json::from_slice::<serde::de::IgnoredAny>(payload).is_ok()
 }
 
 /// The JSON one route item adds around its payload, queue and partition
@@ -2842,6 +3201,9 @@ impl RaftFacade {
         // pre-submit work (parse + resolve + pack); `submit_ns` accumulates the
         // `cmd_tx.send` await (channel back-pressure, which `arrival_to_proposed`
         // cannot see because it stamps just before the send).
+        if req.raw.starts_with(PUSH_BINARY_MAGIC) {
+            return self.push_binary(ctx, &req.raw).await;
+        }
         let _admitted = self.admit_push(req.raw.len()).await?;
         let t_prep = crate::rsm::timing::stamp();
         let body: PushBodyIn =
@@ -2872,9 +3234,253 @@ impl RaftFacade {
                 partition: it.partition.as_deref(),
                 payload: it.payload.get().as_bytes(),
                 txn: it.transaction_id.as_deref(),
+                prebuilt: None,
             })
             .collect();
-        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep).await?;
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        Ok(PushOut {
+            body: render_push(&resolved, &out),
+        })
+    }
+
+    /// The binary push body, an alternative to the JSON one on the same route
+    /// (a JSON body starts with `{`, this one with [`PUSH_BINARY_MAGIC`]):
+    ///
+    /// ```text
+    /// "QPB1" | u8 flags | [u32 raw_len, when FLAG_ZSTD] | body
+    /// body:  u32 groups | per group: u16 len, queue | u16 len, partition | u32 n
+    ///        | n x ([u16 len, transactionId, when FLAG_TXN] | u32 len, payload)
+    /// ```
+    ///
+    /// All integers little-endian. `flags`: [`PUSH_BINARY_ZSTD`] = the body is
+    /// one zstd frame of `raw_len` bytes; [`PUSH_BINARY_SHORT`] = answer with
+    /// the counts only, not one object per message; [`PUSH_BINARY_TXN`] = every
+    /// item carries its `transactionId` (empty = the broker mints it). No
+    /// `traceId`. Same admission, same commands and same verdicts as the JSON
+    /// body.
+    ///
+    /// A payload must be one JSON document, as in the JSON body, and is checked.
+    /// With [`PUSH_BINARY_FRAMES`] the body is [`RaftFacade::push_frames`]'s.
+    ///
+    /// [`PUSH_BINARY_ZSTD`] and [`PUSH_BINARY_FRAMES`] together are refused. A
+    /// framed body is already compressed, group by group, and each group's
+    /// frame declares what it holds; compressed again as a whole, the groups
+    /// and those sizes are hidden inside the outer frame. What a body weighs
+    /// uncompressed has to be readable from its headers: the proxy limits a
+    /// tenant on it without inflating anything.
+    async fn push_binary(&self, ctx: ReqCtx, raw: &[u8]) -> Result<PushOut, RsmError> {
+        fn bad(m: &str) -> RsmError {
+            RsmError::Rejected {
+                code: "bad_body".into(),
+                message: format!("bad push body: {m}"),
+            }
+        }
+        fn take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8], RsmError> {
+            let end = p.checked_add(n).ok_or_else(|| bad("truncated"))?;
+            let s = b.get(*p..end).ok_or_else(|| bad("truncated"))?;
+            *p = end;
+            Ok(s)
+        }
+        fn u16le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
+            Ok(u16::from_le_bytes(take(b, p, 2)?.try_into().expect("2 bytes")) as usize)
+        }
+        fn u32le(b: &[u8], p: &mut usize) -> Result<usize, RsmError> {
+            Ok(u32::from_le_bytes(take(b, p, 4)?.try_into().expect("4 bytes")) as usize)
+        }
+        let mut p = PUSH_BINARY_MAGIC.len();
+        let flags = *raw.get(p).ok_or_else(|| bad("truncated"))?;
+        p += 1;
+        if flags & PUSH_BINARY_ZSTD != 0 && flags & PUSH_BINARY_FRAMES != 0 {
+            return Err(bad(
+                "flags 1 and 8 together: a framed body is already compressed, group by group",
+            ));
+        }
+        let inflated;
+        let body: &[u8] = if flags & PUSH_BINARY_ZSTD != 0 {
+            let raw_len = u32le(raw, &mut p)?;
+            if raw_len > PUSH_BINARY_MAX_RAW {
+                return Err(bad("the uncompressed body is too large"));
+            }
+            inflated = zstd::bulk::decompress(&raw[p..], raw_len)
+                .map_err(|e| bad(&format!("zstd: {e}")))?;
+            &inflated
+        } else {
+            &raw[p..]
+        };
+        if flags & PUSH_BINARY_FRAMES != 0 {
+            return self.push_frames(ctx, body, flags).await;
+        }
+        let _admitted = self.admit_push(body.len()).await?;
+        let t_prep = crate::rsm::timing::stamp();
+        let mut p = 0usize;
+        let groups = u32le(body, &mut p)?;
+        let mut inputs: Vec<PushInput<'_>> = Vec::new();
+        for _ in 0..groups {
+            let n = u16le(body, &mut p)?;
+            let queue = std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("queue"))?;
+            let n = u16le(body, &mut p)?;
+            let partition =
+                std::str::from_utf8(take(body, &mut p, n)?).map_err(|_| bad("partition"))?;
+            let count = u32le(body, &mut p)?;
+            inputs.reserve(count.min(65_536));
+            for _ in 0..count {
+                let txn = if flags & PUSH_BINARY_TXN != 0 {
+                    let n = u16le(body, &mut p)?;
+                    let t = std::str::from_utf8(take(body, &mut p, n)?)
+                        .map_err(|_| bad("transactionId"))?;
+                    if t.len() > MAX_TXN_BYTES {
+                        return Err(bad("a transactionId exceeds the limit"));
+                    }
+                    (!t.is_empty()).then_some(t)
+                } else {
+                    None
+                };
+                let n = u32le(body, &mut p)?;
+                let payload = take(body, &mut p, n)?;
+                if !is_json(payload) {
+                    return Err(bad("a payload is not one JSON document"));
+                }
+                inputs.push(PushInput {
+                    queue,
+                    partition: Some(partition),
+                    payload,
+                    txn,
+                    prebuilt: None,
+                });
+            }
+        }
+        if inputs.is_empty() {
+            return Ok(PushOut { body: "[]".into() });
+        }
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        if flags & PUSH_BINARY_SHORT != 0 {
+            let (mut queued, mut duplicate, mut error) = (0usize, 0usize, 0usize);
+            for o in &out {
+                match o.status {
+                    "queued" => queued += 1,
+                    "duplicate" => duplicate += 1,
+                    _ => error += 1,
+                }
+            }
+            return Ok(PushOut {
+                body: format!(
+                    "{{\"count\":{},\"queued\":{queued},\"duplicate\":{duplicate},\"error\":{error}}}",
+                    out.len()
+                ),
+            });
+        }
+        Ok(PushOut {
+            body: render_push(&resolved, &out),
+        })
+    }
+
+    /// The binary push body with [`PUSH_BINARY_FRAMES`]: every group is the
+    /// client's own frames (`crate::frames`: message id, transaction id,
+    /// payload), compressed by the client as ONE zstd frame:
+    ///
+    /// ```text
+    /// u32 groups | per group: u16 len, queue | u16 len, partition | u32 n | u32 z_len | z
+    /// ```
+    ///
+    /// Each group is decompressed and every frame checked here (layout, a
+    /// version-7 id, the transaction id, one JSON document as payload). When
+    /// nothing has to be added to the frames (no producer identity, no
+    /// encryption, no transaction id twice), the client's compressed bytes go
+    /// to the queue-log codec as the group's stored form ([`codec::preseed`]):
+    /// this node does not compress them again, and ships them to its
+    /// followers as they are.
+    async fn push_frames(
+        &self,
+        mut ctx: ReqCtx,
+        body: &[u8],
+        flags: u8,
+    ) -> Result<PushOut, RsmError> {
+        use crate::rsm::qlog::codec;
+        fn bad(m: &str) -> RsmError {
+            RsmError::Rejected {
+                code: "bad_body".into(),
+                message: format!("bad push body: {m}"),
+            }
+        }
+        // 1. The groups: names, counts, and each one's frames decompressed.
+        let mut p = 0usize;
+        let (groups, blobs, weight) = frame_groups(body, &mut p).map_err(|m| bad(&m))?;
+        let _admitted = self.admit_push(weight).await?;
+        let t_prep = crate::rsm::timing::stamp();
+        // 2. Every frame, checked.
+        let mut inputs: Vec<PushInput<'_>> = Vec::new();
+        let mut txns: std::collections::HashSet<&str> = std::collections::HashSet::new();
+        let mut unique = true;
+        for (g, blob) in groups.iter().zip(&blobs) {
+            for f in client_frames(blob, g.count).map_err(|m| bad(&m))? {
+                unique &= txns.insert(f.txn);
+                inputs.push(PushInput {
+                    queue: g.queue,
+                    partition: Some(g.partition),
+                    payload: f.payload,
+                    txn: None,
+                    prebuilt: Some(Prebuilt {
+                        id: f.id,
+                        txn: f.txn,
+                        frame: blob.slice(f.at),
+                        unique: true,
+                    }),
+                });
+            }
+        }
+        if inputs.is_empty() {
+            return Ok(PushOut { body: "[]".into() });
+        }
+        if !unique {
+            for it in &mut inputs {
+                if let Some(pb) = &mut it.prebuilt {
+                    pb.unique = false;
+                }
+            }
+        }
+        // 3. The client's compressed bytes as the stored form, when the frames
+        //    go into the log exactly as they came.
+        let as_sent = unique
+            && ctx.producer_sub.is_none()
+            && !self.encryption.is_enabled()
+            && codec::level() > 0;
+        let preseeded = as_sent && self.early_codec();
+        if preseeded {
+            for (g, raw) in groups.iter().zip(&blobs) {
+                codec::preseed(raw, g.z.to_vec());
+            }
+        } else if as_sent && self.offload && *FORWARD_STORED_FORMS {
+            // Another node leads: the stored forms travel beside the
+            // forwarded command, and the leader files them the same way.
+            ctx.stored_forms = Some(Arc::new(
+                groups
+                    .iter()
+                    .zip(&blobs)
+                    .map(|(g, raw)| super::StoredForm {
+                        key: codec::early_key(raw),
+                        raw_len: raw.len() as u32,
+                        z: bytes::Bytes::copy_from_slice(g.z),
+                    })
+                    .collect(),
+            ));
+        }
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, preseeded).await?;
+        if flags & PUSH_BINARY_SHORT != 0 {
+            let (mut queued, mut duplicate, mut error) = (0usize, 0usize, 0usize);
+            for o in &out {
+                match o.status {
+                    "queued" => queued += 1,
+                    "duplicate" => duplicate += 1,
+                    _ => error += 1,
+                }
+            }
+            return Ok(PushOut {
+                body: format!(
+                    "{{\"count\":{},\"queued\":{queued},\"duplicate\":{duplicate},\"error\":{error}}}",
+                    out.len()
+                ),
+            });
+        }
         Ok(PushOut {
             body: render_push(&resolved, &out),
         })
@@ -2906,9 +3512,10 @@ impl RaftFacade {
                 partition: Some(it.partition.as_str()),
                 payload: &it.payload,
                 txn: None,
+                prebuilt: None,
             })
             .collect();
-        let (_, out) = self.push_inputs(&ctx, &inputs, t_prep).await?;
+        let (_, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
         Ok(out
             .into_iter()
             .map(|o| super::RecordPushed {
@@ -2936,25 +3543,46 @@ impl RaftFacade {
         if self.storage_pressure() {
             return Err(RsmError::StorageFull);
         }
-        let encrypted_queues = self
-            .encrypted_queues(
-                &ctx.tenant,
-                inputs.iter().map(|item| item.queue.to_string()).collect(),
-            )
-            .await?;
+        // The distinct queue names: a batch is one queue, so one string, not one per message.
+        let mut queue_names = std::collections::BTreeSet::new();
+        let mut last_queue: Option<&str> = None;
+        for item in inputs {
+            if last_queue != Some(item.queue) {
+                queue_names.insert(item.queue.to_string());
+                last_queue = Some(item.queue);
+            }
+        }
+        let encrypted_queues = self.encrypted_queues(&ctx.tenant, queue_names).await?;
         let mut resolved: Vec<PushResolved> = Vec::with_capacity(inputs.len());
         // (queue, partition, txn) → the flat index of its leader.
         let mut seen: std::collections::HashMap<(String, String, String), usize> =
             std::collections::HashMap::new();
         // (queue, partition) → the survivors' flat indices, in order.
         let mut groups: indexed_groups::Groups = indexed_groups::Groups::new();
+        // One clock read for the whole push, not one per message.
+        let now_ms = unix_ms();
         for it in inputs {
-            let mid = uuidv7_bytes();
+            // A frame the client built carries its own message id and
+            // transaction id; otherwise the id is minted here.
+            let mid = match &it.prebuilt {
+                Some(p) => p.id,
+                None => uuidv7_bytes_at(now_ms),
+            };
             let mid_str = uuid_bytes_to_string(&mid);
-            let txn = it
-                .txn
-                .map(str::to_string)
-                .unwrap_or_else(|| mid_str.clone());
+            let txn = match &it.prebuilt {
+                Some(p) => p.txn.to_string(),
+                None => it
+                    .txn
+                    .map(str::to_string)
+                    .unwrap_or_else(|| mid_str.clone()),
+            };
+            // Whether another item of this request may carry the same
+            // transaction id: a client's own id may, one minted here cannot,
+            // and the receiver already compared the ids of prebuilt frames.
+            let may_repeat = match &it.prebuilt {
+                Some(p) => !p.unique,
+                None => it.txn.is_some(),
+            };
             let partition_name = it.partition.filter(|p| !p.is_empty()).unwrap_or("Default");
             // The item's names, shared with the item before it when it is in
             // the same partition (the shape of every batch): one allocation per
@@ -2981,7 +3609,7 @@ impl RaftFacade {
             // A transaction id the broker just minted is a fresh UUIDv7: no
             // other item of this request can carry it, so only a client's own
             // ids need the duplicate map (and its three key copies per item).
-            let follower_of = if it.txn.is_none() {
+            let follower_of = if !may_repeat {
                 None
             } else {
                 let key = (queue.to_string(), partition.to_string(), txn.clone());
@@ -3004,16 +3632,21 @@ impl RaftFacade {
                 } else {
                     (it.payload, false)
                 };
-                pack_frames(&[FrameIn {
-                    message_id: mid,
-                    txn: &txn,
-                    trace_id: None,
-                    producer_sub: ctx.producer_sub.as_deref(),
-                    payload,
-                    encrypted,
-                }])
+                match &it.prebuilt {
+                    // The client's frame as it is: nothing to add to it.
+                    Some(p) if !encrypted && ctx.producer_sub.is_none() => p.frame.clone(),
+                    _ => pack_frames(&[FrameIn {
+                        message_id: mid,
+                        txn: &txn,
+                        trace_id: None,
+                        producer_sub: ctx.producer_sub.as_deref(),
+                        payload,
+                        encrypted,
+                    }])
+                    .into(),
+                }
             } else {
-                Vec::new()
+                bytes::Bytes::new()
             };
             if follower_of.is_none() {
                 groups.push(&queue, &partition, flat);
@@ -3093,8 +3726,8 @@ impl RaftFacade {
         ctx: &ReqCtx,
         groups: &indexed_groups::Groups,
         resolved: &mut [PushResolved],
+        early_codec: bool,
     ) -> Command {
-        let early_codec = self.early_codec();
         if groups.len() == 1 {
             let g = groups.iter().next().expect("one group");
             return Command::Push(Self::push_command(ctx, 0, g, resolved, early_codec));
@@ -3127,6 +3760,8 @@ impl RaftFacade {
         ctx: &ReqCtx,
         inputs: &[PushInput<'_>],
         _t_prep: Option<std::time::Instant>,
+        // The groups' stored forms are already with the codec (`codec::preseed`).
+        preseeded: bool,
     ) -> Result<(Vec<PushResolved>, Vec<PushVerdictOut>), RsmError> {
         let mut _submit_ns: u64 = 0;
         let (mut resolved, groups) = self.push_resolve(ctx, inputs).await?;
@@ -3140,10 +3775,10 @@ impl RaftFacade {
                 .record_dur(t.elapsed());
         }
         let mut rxs = Vec::with_capacity(groups.len());
-        let early_codec = self.early_codec();
+        let early_codec = self.early_codec() && !preseeded;
         let multi = *MULTIPUSH && groups.len() > 1;
         if multi {
-            let cmd = self.multi_command(ctx, &groups, &mut resolved);
+            let cmd = self.multi_command(ctx, &groups, &mut resolved, early_codec);
             let reply = if self.offload {
                 self.submit_offloaded(ctx, cmd).await?
             } else {
@@ -3920,6 +4555,7 @@ impl RaftFacade {
         let group = group.to_string();
         let worker = worker.to_string();
         let deadline = ctx.deadline;
+        let frames = ctx.pop_frames;
 
         let rendered = tokio::task::spawn_blocking(move || {
             // PERF-1: pop payload read latency — the blocking segment render.
@@ -3938,6 +4574,7 @@ impl RaftFacade {
                 auto_ack,
                 &claims,
                 deadline,
+                frames,
             );
             if let Some(r0) = r0 {
                 crate::rsm::timing::metrics()
@@ -3979,6 +4616,7 @@ fn render_pop_blocking(
     auto_ack: bool,
     claims: &[PopClaim],
     deadline: super::Deadline,
+    frames: bool,
 ) -> Result<PopOut, String> {
     // Resolve every claimed pid's partition row + sealed files in one read txn.
     //
@@ -4006,6 +4644,19 @@ fn render_pop_blocking(
         .count();
     if missing > 0 {
         crate::rsm::dbgctr::inc(&crate::rsm::dbgctr::C.render_part_missing, missing as u64);
+    }
+    // The stored records as they are, when the client asked for them and
+    // nothing has to be done to a message on the way out (no decryption, no
+    // conflation). A record that is not readable here leaves the whole answer
+    // to the JSON render, which waits for it and stops before a gap.
+    if frames && !encryption.is_enabled() && !claims.iter().any(|c| c.conflated) {
+        if let Some(ql) = qlog_reader {
+            if let Some(out) =
+                render_pop_frames(ql, tenant, top_queue, group, worker, auto_ack, claims, &infos)?
+            {
+                return Ok(out);
+            }
+        }
     }
     render_pop_body(
         qlog_reader,
@@ -4330,39 +4981,228 @@ fn render_pop_body(
         empty: count == 0,
         conflation: false,
         conflation_conflict: false,
+        frames: None,
     })
+}
+
+/// The pop answer as the stored records, for a client that asked for them
+/// (`frames=true`): each record's payload goes out as the queue log holds it,
+/// zstd frame included, so nothing is decompressed or rendered here. All
+/// integers little-endian:
+///
+/// ```text
+/// "QPF1" | u8 1 | u32 len, the answer's own keys as one JSON object
+/// u16 len, queue | u16 len, leaseId | u16 len, consumerGroup | u32 claims
+/// per claim:  u64 partitionId | u16 len, partition | u64 start | u64 end | u32 deliveryAttempt | u32 records
+/// per record: u64 base_offset | i64 created_at_us | u32 count | u8 codec (0 raw, 1 zstd) | u32 len | bytes
+/// ```
+///
+/// A record's bytes are `count` frames (`crate::frames`); message `i` of it
+/// has offset `base_offset + i` and belongs to the delivery when that lies in
+/// the claim's `start..=end`. The JSON object is [`PopOut::body`]
+/// (`{"frames":true}` plus the conflation echo and the autopilot's choice);
+/// the first line is written by the route (`handlers::raft::pop_answer`), the
+/// rest here. `None` when a claimed record is not readable.
+#[allow(clippy::too_many_arguments)]
+fn render_pop_frames(
+    ql: &QLogReader,
+    tenant: &str,
+    top_queue: &str,
+    group: &str,
+    worker: &str,
+    auto_ack: bool,
+    claims: &[PopClaim],
+    infos: &std::collections::HashMap<Pid, PartInfo>,
+) -> Result<Option<PopOut>, String> {
+    fn text(out: &mut Vec<u8>, s: &str) {
+        let n = s.len().min(u16::MAX as usize);
+        out.extend_from_slice(&(n as u16).to_le_bytes());
+        out.extend_from_slice(&s.as_bytes()[..n]);
+    }
+    let lease_id = if auto_ack || claims.is_empty() {
+        ""
+    } else {
+        worker
+    };
+    let mut out: Vec<u8> = Vec::with_capacity(64 * 1024);
+    text(&mut out, top_queue);
+    text(&mut out, lease_id);
+    text(&mut out, group);
+    let claims_at = out.len();
+    out.extend_from_slice(&0u32.to_le_bytes());
+    let mut n_claims = 0u32;
+    let mut count = 0usize;
+    let now_ms = wall_micros() / 1000;
+    let mut per_q: std::collections::HashMap<&str, (u64, u64, u64)> =
+        std::collections::HashMap::new();
+    for claim in claims {
+        let Some(info) = infos.get(&claim.pid) else {
+            continue;
+        };
+        let qid = QLogReader::queue_id_of(tenant, &info.queue);
+        out.extend_from_slice(&claim.pid.to_le_bytes());
+        text(&mut out, &info.name);
+        out.extend_from_slice(&claim.start_offset.to_le_bytes());
+        out.extend_from_slice(&claim.end_offset.to_le_bytes());
+        out.extend_from_slice(&claim.delivery_attempt.max(1).to_le_bytes());
+        let records_at = out.len();
+        out.extend_from_slice(&0u32.to_le_bytes());
+        let mut n_records = 0u32;
+        let mut off = claim.start_offset;
+        while off <= claim.end_offset {
+            let rec = match ql.read_stored(qid, claim.pid, off) {
+                Ok(Some(r)) if r.count > 0 => r,
+                Ok(_) => return Ok(None),
+                Err(e) => {
+                    return Err(format!(
+                        "read pop payload (qlog, stored) at pid {} off {off}: {e}",
+                        claim.pid
+                    ))
+                }
+            };
+            out.extend_from_slice(&rec.base_offset.to_le_bytes());
+            out.extend_from_slice(&rec.created_at_us.to_le_bytes());
+            out.extend_from_slice(&rec.count.to_le_bytes());
+            out.push(u8::from(rec.zstd));
+            out.extend_from_slice(&(rec.payload.len() as u32).to_le_bytes());
+            out.extend_from_slice(&rec.payload);
+            n_records += 1;
+            let last = rec.base_offset + u64::from(rec.count) - 1;
+            let (lo, hi) = (off.max(rec.base_offset), claim.end_offset.min(last));
+            if hi >= lo {
+                let n = hi - lo + 1;
+                count += n as usize;
+                let lag_ms = (now_ms - rec.created_at_us / 1000).max(0) as u64;
+                let e = per_q.entry(info.queue.as_str()).or_insert((0, 0, 0));
+                e.0 += n;
+                e.1 += lag_ms * n;
+                e.2 = e.2.max(lag_ms);
+            }
+            off = last + 1;
+        }
+        out[records_at..records_at + 4].copy_from_slice(&n_records.to_le_bytes());
+        n_claims += 1;
+    }
+    out[claims_at..claims_at + 4].copy_from_slice(&n_claims.to_le_bytes());
+    // The dashboard counters, as the JSON render keeps them.
+    if let Some(m) = crate::metrics::global() {
+        m.pop.record_request(count);
+        if count == 0 && !top_queue.is_empty() {
+            m.per_queue.add_pop_empty(tenant, top_queue);
+        }
+        for (q, (n, sum, max)) in &per_q {
+            m.per_queue.add_pop(tenant, q, *n);
+            m.per_queue.add_pop_lag(tenant, q, *sum, *max, *n);
+            if auto_ack {
+                m.per_queue.add_ack(tenant, q, *n, 0);
+            }
+        }
+        if auto_ack && count > 0 {
+            m.ack.record_request(count);
+            m.ack_success
+                .fetch_add(count as u64, std::sync::atomic::Ordering::Relaxed);
+        }
+    }
+    Ok(Some(PopOut {
+        // The answer's own keys: the conflation echo and the autopilot's
+        // choice are added to this object as they are to the JSON answer, and
+        // it travels in front of the records.
+        body: "{\"frames\":true}".to_string(),
+        empty: count == 0,
+        conflation: false,
+        conflation_conflict: false,
+        frames: Some(out),
+    }))
 }
 
 // ---------------------------------------------------------------------------
 // Ack
 // ---------------------------------------------------------------------------
 
+/// `Option<Cow<str>>` that borrows from the body when the JSON string has no
+/// escapes. serde's `#[serde(borrow)]` does that for a bare `Cow<str>` only:
+/// inside an `Option` it allocates a `String` per value.
+mod opt_cow {
+    use serde::de::{Deserializer, Error, Visitor};
+    use std::borrow::Cow;
+    use std::fmt;
+
+    struct Str;
+    impl<'de> Visitor<'de> for Str {
+        type Value = Cow<'de, str>;
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str("a string")
+        }
+        fn visit_borrowed_str<E: Error>(self, v: &'de str) -> Result<Self::Value, E> {
+            Ok(Cow::Borrowed(v))
+        }
+        fn visit_str<E: Error>(self, v: &str) -> Result<Self::Value, E> {
+            Ok(Cow::Owned(v.to_owned()))
+        }
+        fn visit_string<E: Error>(self, v: String) -> Result<Self::Value, E> {
+            Ok(Cow::Owned(v))
+        }
+    }
+    struct Opt;
+    impl<'de> Visitor<'de> for Opt {
+        type Value = Option<Cow<'de, str>>;
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            f.write_str("a string or null")
+        }
+        fn visit_none<E: Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+        fn visit_unit<E: Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+        fn visit_some<D: Deserializer<'de>>(self, d: D) -> Result<Self::Value, D::Error> {
+            d.deserialize_str(Str).map(Some)
+        }
+    }
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Cow<'de, str>>, D::Error> {
+        d.deserialize_option(Opt)
+    }
+}
+
+type OptStr<'a> = Option<std::borrow::Cow<'a, str>>;
+
 #[derive(Deserialize)]
-struct AckBodyIn {
+struct AckBodyIn<'a> {
     // single
-    #[serde(rename = "transactionId")]
-    transaction_id: Option<String>,
-    #[serde(rename = "partitionId")]
-    partition_id: Option<String>,
-    status: Option<String>,
-    #[serde(rename = "leaseId")]
-    lease_id: Option<String>,
-    error: Option<String>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "transactionId")]
+    transaction_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "partitionId")]
+    partition_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    status: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "leaseId")]
+    lease_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    error: OptStr<'a>,
     // batch
-    #[serde(default)]
-    acknowledgments: Vec<AckBodyItem>,
+    #[serde(borrow, default)]
+    acknowledgments: Vec<AckBodyItem<'a>>,
+    /// The consumer group, read here when the caller did not name one: the
+    /// route used to parse the whole body a first time for this key.
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "consumerGroup")]
+    consumer_group: OptStr<'a>,
+    /// `"counts"` asks for the totals instead of one object per item.
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    answer: OptStr<'a>,
 }
 
 #[derive(Deserialize)]
-struct AckBodyItem {
-    #[serde(rename = "transactionId")]
-    transaction_id: Option<String>,
-    #[serde(rename = "partitionId")]
-    partition_id: Option<String>,
-    status: Option<String>,
-    #[serde(rename = "leaseId")]
-    lease_id: Option<String>,
-    error: Option<String>,
+struct AckBodyItem<'a> {
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "transactionId")]
+    transaction_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "partitionId")]
+    partition_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    status: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize", rename = "leaseId")]
+    lease_id: OptStr<'a>,
+    #[serde(borrow, default, deserialize_with = "opt_cow::deserialize")]
+    error: OptStr<'a>,
 }
 
 /// One flat ack the receiver resolved: original index, txn, pid, worker, status,
@@ -4387,30 +5227,48 @@ fn ack_status_of(s: Option<&str>) -> AckStatus {
 
 impl RaftFacade {
     async fn ack_impl(&self, ctx: ReqCtx, req: AckReq) -> Result<AckOut, RsmError> {
-        let body: AckBodyIn = serde_json::from_slice(&req.raw).map_err(|e| RsmError::Rejected {
-            code: "bad_body".into(),
-            message: format!("bad ack body: {e}"),
-        })?;
+        let body: AckBodyIn<'_> =
+            serde_json::from_slice(&req.raw).map_err(|e| RsmError::Rejected {
+                code: "bad_body".into(),
+                message: format!("bad ack body: {e}"),
+            })?;
+        // The group: the caller's, or the body's own `consumerGroup`, bounded
+        // here as the route bounded it (R-108).
+        let group_of_body;
+        let group: &str = if req.group.is_empty() {
+            group_of_body = body
+                .consumer_group
+                .as_deref()
+                .unwrap_or("__QUEUE_MODE__")
+                .to_string();
+            super::check_message_key_names(&ctx.tenant, "", Some(&group_of_body), None)?;
+            &group_of_body
+        } else {
+            &req.group
+        };
+        let counts_only = body.answer.as_deref() == Some("counts");
 
-        // Flatten single vs batch into (index, txn, partitionId, status, lease).
-        let mut raw_items: Vec<(String, String, AckStatus, String, Option<String>)> = Vec::new();
+        // Flatten single vs batch into (txn, partitionId, status, lease,
+        // error), borrowed from the body.
+        let mut raw_items: Vec<(&str, &str, AckStatus, &str, Option<&str>)> =
+            Vec::with_capacity(body.acknowledgments.len().max(1));
         if !body.acknowledgments.is_empty() {
             for it in &body.acknowledgments {
                 raw_items.push((
-                    it.transaction_id.clone().unwrap_or_default(),
-                    it.partition_id.clone().unwrap_or_default(),
+                    it.transaction_id.as_deref().unwrap_or(""),
+                    it.partition_id.as_deref().unwrap_or(""),
                     ack_status_of(it.status.as_deref()),
-                    it.lease_id.clone().unwrap_or_default(),
-                    it.error.clone(),
+                    it.lease_id.as_deref().unwrap_or(""),
+                    it.error.as_deref(),
                 ));
             }
         } else {
             raw_items.push((
-                body.transaction_id.clone().unwrap_or_default(),
-                body.partition_id.clone().unwrap_or_default(),
+                body.transaction_id.as_deref().unwrap_or(""),
+                body.partition_id.as_deref().unwrap_or(""),
                 ack_status_of(body.status.as_deref()),
-                body.lease_id.clone().unwrap_or_default(),
-                body.error.clone(),
+                body.lease_id.as_deref().unwrap_or(""),
+                body.error.as_deref(),
             ));
         }
         if raw_items.is_empty() {
@@ -4422,12 +5280,12 @@ impl RaftFacade {
             let mut run: Option<(&str, u32)> = None;
             for (_, _, _, lease, _) in &raw_items {
                 match &mut run {
-                    Some((l, n)) if *l == lease.as_str() => *n += 1,
+                    Some((l, n)) if *l == *lease => *n += 1,
                     _ => {
                         if let Some((l, n)) = run.take() {
                             self.autopilot.acked(l, n);
                         }
-                        run = Some((lease.as_str(), 1));
+                        run = Some((*lease, 1));
                     }
                 }
             }
@@ -4444,11 +5302,11 @@ impl RaftFacade {
             match pid_str.parse::<u64>() {
                 Ok(pid) => flats.push(AckFlat {
                     index: i,
-                    txn: txn.clone(),
+                    txn: txn.to_string(),
                     pid,
-                    worker: worker.clone(),
+                    worker: worker.to_string(),
                     status: *status,
-                    error: error.clone(),
+                    error: error.map(str::to_string),
                 }),
                 Err(_) => bad.push((i, "partitionId is not a partition id".to_string())),
             }
@@ -4456,17 +5314,22 @@ impl RaftFacade {
 
         // Group by (pid, worker) into AckTargets. Read each pid's (tenant,
         // queue) once. A pid with no row is a per-item error.
-        let resolved = self.resolve_acks(&ctx, &req.group, flats).await?;
+        let resolved = self.resolve_acks(&ctx, group, flats).await?;
         let (targets, per_item, more_bad) = resolved.map_err(RsmError::Internal)?;
         bad.extend(more_bad);
 
-        let txns: Vec<String> = raw_items.iter().map(|r| r.0.clone()).collect();
+        let txns: Vec<&str> = raw_items.iter().map(|r| r.0).collect();
+        let render = |results: &[crate::rsm::entry::AckResult]| {
+            if counts_only {
+                render_ack_counts(txns.len(), results, &per_item, &bad)
+            } else {
+                render_ack(&txns, results, &per_item, &bad)
+            }
+        };
 
         if targets.is_empty() {
             // Nothing resolvable: render all as errors/failures.
-            return Ok(AckOut {
-                body: render_ack(&txns, &[], &per_item, &bad),
-            });
+            return Ok(AckOut { body: render(&[]) });
         }
 
         // Dashboard tallies per target, taken before the targets move into the
@@ -4516,7 +5379,7 @@ impl RaftFacade {
             }
         }
         Ok(AckOut {
-            body: render_ack(&txns, &results, &per_item, &bad),
+            body: render(&results),
         })
     }
 }
@@ -4793,11 +5656,25 @@ fn read_dlq_snapshot(
 /// `[{index, transactionId, success, error, leaseReleased, dlq, noop}]`, input order
 /// (`handlers/data.rs` ack wire). The group is applied by the caller.
 fn render_ack(
-    txns: &[String],
+    txns: &[&str],
     results: &[crate::rsm::entry::AckResult],
     per_item: &[AckPerItem],
     bad: &[(usize, String)],
 ) -> String {
+    // Each input item's resolution and refusal, by its index: looked up once
+    // per item (a scan per item was quadratic in the batch).
+    let mut item_at: Vec<Option<&AckPerItem>> = vec![None; txns.len()];
+    for p in per_item {
+        if let Some(slot) = item_at.get_mut(p.index) {
+            slot.get_or_insert(p);
+        }
+    }
+    let mut bad_at: Vec<Option<&str>> = vec![None; txns.len()];
+    for (i, m) in bad {
+        if let Some(slot) = bad_at.get_mut(*i) {
+            slot.get_or_insert(m.as_str());
+        }
+    }
     // A `failed`/`dlq` item at or below its target's new cursor was settled by
     // this ack. Per target: how many such items.
     let settled = |p: &AckPerItem| {
@@ -4821,8 +5698,8 @@ fn render_ack(
         out.push_str("{\"index\":");
         out.push_str(&i.to_string());
         // Attribute this input item to its target result.
-        let item = per_item.iter().find(|p| p.index == i);
-        let bad_msg = bad.iter().find(|(bi, _)| *bi == i).map(|(_, m)| m.as_str());
+        let item = item_at[i];
+        let bad_msg = bad_at[i];
         out.push_str(",\"transactionId\":\"");
         crate::util::json_escape_into(&mut out, txn);
         out.push('"');
@@ -4887,6 +5764,53 @@ fn render_ack(
         out.push('}');
     }
     out.push(']');
+    out
+}
+
+/// The answer a client asked for with `"answer":"counts"`: how many items the
+/// ack settled and how many it refused, with the first refusal's reason. An
+/// item counts as [`render_ack`] would mark it `success`.
+fn render_ack_counts(
+    count: usize,
+    results: &[crate::rsm::entry::AckResult],
+    per_item: &[AckPerItem],
+    bad: &[(usize, String)],
+) -> String {
+    let mut refused = vec![false; count];
+    let mut first: Option<&str> = None;
+    for (i, m) in bad {
+        if let Some(r) = refused.get_mut(*i) {
+            *r = true;
+            first.get_or_insert(m.as_str());
+        }
+    }
+    for p in per_item {
+        let Some(res) = results.get(p.target) else {
+            continue;
+        };
+        if p.index < count && !refused[p.index] && res.stale_hashes.contains(&p.hash) {
+            refused[p.index] = true;
+            first.get_or_insert(if p.lease_invalid {
+                "invalid or expired lease"
+            } else {
+                "transaction is unresolvable, already committed, or acknowledgment is stale"
+            });
+        }
+    }
+    let failed = refused.iter().filter(|r| **r).count();
+    let mut out = format!(
+        "{{\"count\":{count},\"success\":{},\"failed\":{failed},\"error\":",
+        count - failed
+    );
+    match first {
+        Some(m) => {
+            out.push('"');
+            crate::util::json_escape_into(&mut out, m);
+            out.push('"');
+        }
+        None => out.push_str("null"),
+    }
+    out.push('}');
     out
 }
 
@@ -5771,7 +6695,7 @@ pub fn real_builder(ctx: &RsmBuildCtx) -> Arc<dyn Rsm> {
     };
     let mut facades: Vec<Arc<dyn super::Rsm>> = Vec::with_capacity(groups);
     for g in 0..groups {
-        match RaftFacade::open_group(ctx, g) {
+        match RaftFacade::open_group(ctx, super::groups::placement(g, groups, &overrides)) {
             Ok(f) => facades.push(Arc::new(f)),
             Err(e) => crate::obs::fatal(format!("raft group {g} failed to open: {e}")),
         }

@@ -1,0 +1,12 @@
+# samples per thread, 499 Hz for 5 s: 2,495 = one full core
+619 queen-raft 69730
+612 queen-raft 69733
+601 queen-raft 69731
+595 queen-rsm-apply 69720
+584 queen-raft 69732
+442 queen-rsm-apply 69725
+440 queen-rsm-apply 69726
+437 queen-rsm-apply 69727
+249 queen-raft 70421
+246 queen-raft 69801
+240 queen-raft 70678

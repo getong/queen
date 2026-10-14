@@ -219,8 +219,8 @@ export const proofSection = {
   eyebrow: "Benchmarks",
   title: "Measured, with the conditions attached",
   lead:
-    "Queen 2.0 on three 16-vCPU nodes, every write fsynced on two of them, beside Kafka, Redpanda " +
-    "and Pulsar on the same machines. Every number names its run, including the places where " +
+    "Queen 2.3 on three 16-vCPU nodes, every write fsynced on two of them, beside Kafka on the " +
+    "same machines and September's runs of Redpanda and Pulsar. Every number names its run, including the places where " +
     "another system does better.",
   link: { label: "All the benchmarks", href: "/benchmarks/" },
 };
@@ -230,19 +230,19 @@ export const proof: { figure: string; unit: string; body: string; href: string }
   {
     figure: "1,000,000",
     unit: "msg/s pushed and consumed",
-    body: "One queue on three nodes at every partition count from 200 to 10,000,000, e2e p99 103 to 163 ms, deduplication off (2.0.0-beta.2, 60 s runs).",
+    body: "One queue on three nodes at every partition count from 10 to 10,000,000, e2e p99 18 to 38 ms, and 2,000,000 msg/s at 59 to 100 ms. Deduplication off (2.3.0 pre-release builds, 90 s runs).",
     href: "/benchmarks/partitions/",
   },
   {
     figure: "10,000,000",
     unit: "partitions in one queue",
-    body: "Each one created by a push, none declared. 1,000,000 msg/s in and out on the same three nodes, e2e p99 122 ms over the last 30 s.",
+    body: "Each one created by a push, none declared. 1,000,000 msg/s in and out on the same three nodes at an e2e p99 of 38 ms, 2,000,000 at 73 ms.",
     href: "/benchmarks/partitions/",
   },
   {
     figure: "4 ms",
     unit: "commit p99, ten messages a step",
-    body: "A transaction that acks its inputs and pushes its outputs, at 9,000 msg/s on three nodes: e2e p99 19 ms, every input found exactly once in the output.",
+    body: "A transaction that acks its inputs and pushes its outputs, at 6,000 transactions a second on three nodes; the median is 3 ms. A verifier found every input exactly once in the output.",
     href: "/benchmarks/transactions/",
   },
   {

@@ -37,6 +37,10 @@ verifiedBy:
 # SupervisorConfiguration: a job whose timeout its lease cannot cover fails alone, a numeric-string
 # timeout counts, the renewal budget refusal names its parts. The lease, its expiry and the refused
 # ACKs this page runs are unchanged.
+# sourceOfTruth re-read 2026-10-12 (binary push, push compression, framed pop): QueenConnector also
+# checks binary_push, push_compression and framed_pop and gives them to the client it builds. The
+# lease renewal timing rule and its message, which this page quotes, are unchanged. Nothing this page
+# states changes.
 ---
 
 Without lease renewal, a job that runs longer than `retry_after` goes to a second worker while the

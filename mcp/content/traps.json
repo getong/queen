@@ -773,5 +773,37 @@
       "https://queenmq.com/concepts/locks/",
       "https://queenmq.com/guides/state-machines/"
     ]
+  },
+  {
+    "id": "binary-forms-need-broker-2-3",
+    "title": "Binary push and push compression need broker 2.3.0 on every node, and the client does not fall back",
+    "applies": [
+      "all"
+    ],
+    "severity": "breaks",
+    "symptom": "After binaryPush / pushCompression is turned on, every push (and every transaction that pushes) fails with HTTP 400, or fails only some of the time during a rolling upgrade.",
+    "cause": "The binary push and transaction bodies exist from broker 2.3.0. A broker up to 2.2.0 reads the body as JSON and answers 400, and no SDK retries the request as JSON. During a roll from 2.2.0 the nodes that are not upgraded yet answer 400 while the others accept.",
+    "fix": "Leave binaryPush and pushCompression off until GET /health reports version 2.3.0 or later on every node, then turn them on. framedPop needs no such care: an older broker ignores frames=true and answers JSON. The options are in the 2.3.0 SDKs (PHP client 2.5.0).",
+    "source": [
+      "https://queenmq.com/start/clients/",
+      "https://queenmq.com/reference/http/"
+    ]
+  },
+  {
+    "id": "wire-forms-need-zstd",
+    "title": "pushCompression and framedPop need zstd, which PHP, C++ and Python before 3.14 do not bring",
+    "applies": [
+      "php",
+      "cpp",
+      "python"
+    ],
+    "severity": "breaks",
+    "symptom": "The client throws when it is constructed (PHP: \"needs the zstd extension\"), the C++ program does not link, or the Python client fails at the first compressed push or framed pop.",
+    "cause": "Push compression compresses each batch with zstd in the client and framed pop unpacks zstd records there. Node.js, Go and Rust ship or depend on zstd by themselves. PHP needs the zstd extension, C++ needs libzstd and the build flag, and Python has it in the standard library only from 3.14.",
+    "fix": "PHP: pecl install zstd, in the workers and in every process that dispatches. C++: compile with -DQUEEN_CLIENT_ZSTD and link -lzstd. Python before 3.14: pip install \"queen-mq[zstd]\". binaryPush alone needs no zstd.",
+    "source": [
+      "https://queenmq.com/start/clients/",
+      "https://queenmq.com/guides/laravel/configuration/"
+    ]
   }
 ]

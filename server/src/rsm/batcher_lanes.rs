@@ -199,14 +199,97 @@ type GroupDest = (Dest, Option<Pid>);
 type FxMap<K, V> = HashMap<K, V, FxBuild>;
 type FxSet<K> = HashSet<K, FxBuild>;
 
+/// The names one table of a [`Names`] holds before they are spread over
+/// [`NAME_TABLES`] tables, and how many those are.
+const NAME_SPLIT_AT: usize = 4096;
+const NAME_TABLES: usize = 256;
+
+/// name → `V` in tables small enough that growing one never holds the planner
+/// thread. A hash table that doubles rehashes every key where it stands: a
+/// queue's partition names in ONE table cost the serial planner thread 36 ms
+/// at 458,752 names and 89 ms at 917,504, and every push in flight waited
+/// behind it (2026-10-13: a million partitions at 2M msg/s, push p99 30 → 131
+/// ms for that second). With the kept lookups capped at
+/// [`ROUTER_KEEP_MAX_PIDS`] a table holds about 4,096 names, and growing it
+/// moves a third of a millisecond's worth. A queue of a few partitions keeps
+/// a single table.
+struct Names<V> {
+    len: usize,
+    tables: Vec<FxMap<String, V>>,
+}
+
+impl<V> Default for Names<V> {
+    fn default() -> Self {
+        Names {
+            len: 0,
+            tables: Vec::new(),
+        }
+    }
+}
+
+impl<V> Names<V> {
+    /// The table holding `name`: by bits of its hash a table does not place
+    /// by itself (the low ones choose the bucket, the top seven are its tag),
+    /// so the names of one table still spread over its buckets.
+    fn table_of(&self, name: &str) -> usize {
+        use std::hash::BuildHasher;
+        if self.tables.len() <= 1 {
+            return 0;
+        }
+        (FxBuild::default().hash_one(name) >> 32) as usize % NAME_TABLES
+    }
+
+    fn get(&self, name: &str) -> Option<&V> {
+        self.tables.get(self.table_of(name))?.get(name)
+    }
+
+    fn insert(&mut self, name: String, v: V) {
+        if self.tables.is_empty() {
+            self.tables.push(FxMap::default());
+        }
+        let t = self.table_of(&name);
+        if self.tables[t].insert(name, v).is_none() {
+            self.len += 1;
+        }
+        if self.tables.len() == 1 && self.len >= NAME_SPLIT_AT {
+            let one = std::mem::take(&mut self.tables[0]);
+            self.tables = (0..NAME_TABLES).map(|_| FxMap::default()).collect();
+            for (name, v) in one {
+                let t = self.table_of(&name);
+                self.tables[t].insert(name, v);
+            }
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
+/// tenant → queue → partition name → its committed pid, and whether it is
+/// garbage.
+type PidsByName = FxMap<String, FxMap<String, Names<Option<(Pid, bool)>>>>;
+
+/// Free a router's lookups: a few where they drop, the names of a large queue
+/// on the drop thread ([`drop_later`]). A million names are a million frees,
+/// and the planner thread is where every push waits.
+fn spend_lookups(queues: FxMap<String, FxMap<String, bool>>, pids: PidsByName) {
+    let named: usize = pids
+        .values()
+        .flat_map(|qs| qs.values())
+        .map(Names::len)
+        .sum();
+    if named >= NAME_SPLIT_AT {
+        drop_later((queues, pids));
+    }
+}
+
 /// What the router reads once per cycle rather than once per command.
 #[derive(Default)]
 struct RouterCycle {
     /// tenant → queue → committed.
     queues: FxMap<String, FxMap<String, bool>>,
-    /// tenant → queue → partition name → its committed pid, and whether it is
-    /// garbage.
-    pids: ByName<Option<(Pid, bool)>>,
+    pids: PidsByName,
 }
 
 /// How many commands the lanes and control planned (a log line every 10 s).
@@ -715,7 +798,7 @@ fn drop_later<T: Send + 'static>(v: T) {
 #[derive(Default)]
 struct KeptFacts {
     queues: FxMap<String, FxMap<String, bool>>,
-    pids: ByName<Option<(Pid, bool)>>,
+    pids: PidsByName,
 }
 
 /// The in-flight catalog work commands must not race (L1).
@@ -766,7 +849,8 @@ impl LanesState {
         self.records.clear();
         self.ids.clear();
         self.control = None;
-        self.kept_facts = KeptFacts::default();
+        let stale = std::mem::take(&mut self.kept_facts);
+        spend_lookups(stale.queues, stale.pids);
         self.kept_stale = false;
         for l in &self.lanes {
             l.lock().expect("lane state").kept = None;
@@ -1405,14 +1489,21 @@ pub(crate) fn plan_cycle_lanes<S: Store + 'static>(
             // that was starts them over once it has landed.
             let keep = *ROUTER_KEEP && !ls.records.iter().any(Record::catalog);
             if !keep || ls.kept_stale {
-                ls.kept_facts = KeptFacts::default();
+                let stale = std::mem::take(&mut ls.kept_facts);
+                spend_lookups(stale.queues, stale.pids);
             }
             ls.kept_stale = !keep;
             let kept = std::mem::take(&mut ls.kept_facts);
-            ls.cycle = RouterCycle {
-                queues: kept.queues,
-                pids: kept.pids,
-            };
+            // The last cycle's own lookups, when it did not hand them on (a
+            // catalog change in flight, or more names than are kept).
+            let spent = std::mem::replace(
+                &mut ls.cycle,
+                RouterCycle {
+                    queues: kept.queues,
+                    pids: kept.pids,
+                },
+            );
+            spend_lookups(spent.queues, spent.pids);
             // A request id seen twice in one batch (a client retry) goes where
             // its first copy went: one planner sees both, logs it once and
             // answers the second as a same-cycle hit.
@@ -2493,6 +2584,67 @@ mod router_tests {
         assert_eq!(
             route(&mut ls, &cell, &push(14, "q", "b")),
             Dest::Lane(pb % N)
+        );
+    }
+
+    #[test]
+    fn names_fill_many_small_tables_and_lose_nothing() {
+        let mut ns: Names<u64> = Names::default();
+        assert_eq!(ns.get("p-0"), None);
+        for i in 0..NAME_SPLIT_AT - 1 {
+            ns.insert(format!("p-{i}"), i as u64);
+        }
+        assert_eq!(ns.tables.len(), 1, "a few names keep a single table");
+        let n = NAME_SPLIT_AT * 40;
+        for i in NAME_SPLIT_AT - 1..n {
+            ns.insert(format!("p-{i}"), i as u64);
+        }
+        assert_eq!(ns.tables.len(), NAME_TABLES);
+        assert_eq!(ns.len(), n);
+        for i in 0..n {
+            assert_eq!(ns.get(&format!("p-{i}")), Some(&(i as u64)));
+        }
+        assert_eq!(ns.get("absent"), None);
+        // A name written again is replaced, and counted once.
+        ns.insert("p-7".to_string(), 99);
+        assert_eq!(ns.len(), n);
+        assert_eq!(ns.get("p-7"), Some(&99));
+        // No table holds much more than its share, so growing one stays a
+        // small job however many names the queue has.
+        let most = ns.tables.iter().map(|t| t.len()).max().expect("tables");
+        assert!(most < 2 * n / NAME_TABLES, "the fullest table holds {most}");
+    }
+
+    #[test]
+    fn the_router_answers_the_same_once_a_queue_s_names_fill_many_tables() {
+        let mut cell = Cell::new("router-names");
+        cell.run(&[h::push(1, "q", "a", &["a0"])]);
+        let pa = cell.pid_of("q", "a").expect("a");
+        let mut ls = LanesState::new(N);
+
+        cycle(&mut ls);
+        assert_eq!(
+            route(&mut ls, &cell, &push(10, "q", "a")),
+            Dest::Lane(pa % N)
+        );
+        // Every name looked up is kept for the cycle, the absent ones too.
+        let absent = NAME_SPLIT_AT as u64 + 500;
+        for i in 0..absent {
+            assert_eq!(
+                route(&mut ls, &cell, &push(100 + i, "q", &format!("new-{i}"))),
+                Dest::Create
+            );
+        }
+        let names = &ls.cycle.pids[TENANT]["q"];
+        assert_eq!(names.len() as u64, absent + 1);
+        assert_eq!(names.tables.len(), NAME_TABLES);
+        assert_eq!(
+            route(&mut ls, &cell, &push(90_000, "q", "a")),
+            Dest::Lane(pa % N)
+        );
+        assert_eq!(
+            route(&mut ls, &cell, &push(90_001, "q", "new-7")),
+            Dest::Create
         );
     }
 

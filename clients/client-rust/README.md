@@ -5,7 +5,7 @@ its data in its own replicated log.
 
 ```toml
 [dependencies]
-queen-mq = "2.1.0"
+queen-mq = "2.3.0"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 serde_json = "1"
 ```
@@ -260,6 +260,51 @@ from a backlog you asked to skip is ever handed to your handler.
 `admin().queue_depth(..)` is where a conflating queue stops looking like an incident:
 `pending` is log depth, `effectivePending` is handler invocations remaining, and
 `pending: 4_000_000, effectivePending: 12` is healthy.
+
+## Binary push, push compression and framed pop (broker 2.3.0 or later)
+
+Three opt-in forms of the push, pop and transaction requests. They change how the messages
+travel between the client and the broker and nothing else: the calls, their results,
+deduplication and the delivery guarantees stay the same. All three are off by default, and with
+them off the client sends and reads the JSON every broker knows.
+
+```rust
+let queen = Queen::connect(
+    Config::new("http://localhost:6632")
+        .binary_push(true)       // a push travels as a binary body
+        .push_compression(true)  // with binary_push: framed and compressed here
+        .framed_pop(true),       // a pop returns the stored records, unpacked here
+)?;
+```
+
+| Option | What it does |
+|---|---|
+| `binary_push` | A push, direct or buffered, sends its items as one length-prefixed binary body instead of a JSON document. The answer is the same list, one entry per item. |
+| `push_compression` | Needs `binary_push`. The client frames each partition's batch the way the broker stores it, mints the message ids (UUIDv7) and compresses the batch with zstd, once. The broker checks the frames and, when it has nothing to add to them, stores those bytes without compressing them again. A transaction that pushes sends its pushes the same way, with the rest of the bundle as JSON in front of them. |
+| `framed_pop` | `pop()` and the consume loop ask for the stored records (`frames=true`) and unpack them here into the same `Message` values, instead of a JSON answer that the broker renders message by message. |
+
+Turn them on when the broker's CPU or the network limits a high message rate: the framing, the
+compression and the unpacking then run in the clients, and the batches cross the network
+compressed. zstd is the `zstd` crate, a dependency of this client, so there is nothing to
+install.
+
+What stays JSON, with no action from you:
+
+* A transaction with no push, or with a trace id on one of its pushes (`TxnPushItem`).
+* A pop the broker cannot answer in frames: a pop of a conflating group, and every pop on a
+  broker that runs with an encryption key (`QUEEN_ENCRYPTION_KEY`). The client reads the JSON
+  answer as always.
+* Acks, KV, timers, locks and the admin calls. Ephemeral queues have their own routes and do
+  not change either.
+
+A transaction's `results` come back in the order you added the operations, as with JSON. The
+broker answers a binary transaction with the acks first and the pushes after them, and the
+client puts them back.
+
+**A broker up to 2.2.0 answers 400 to the binary bodies**, and the client does not fall back to
+JSON: turn `binary_push` and `push_compression` on after every broker of the cluster is
+upgraded. `framed_pop` is safe against any broker: an older one ignores the parameter and
+answers JSON.
 
 ## Streams
 

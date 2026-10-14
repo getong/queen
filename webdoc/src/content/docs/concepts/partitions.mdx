@@ -43,6 +43,12 @@ verifiedBy:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/real.rs
 # changes what /health answers (raft.quorumAckMs; ready needs the leader's majority within
 # QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs and the handlers read a binary push body
+# and a binary transaction body on the routes of the JSON ones, answer an ack with counts when its
+# body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
+# forms is planned, committed and answered as before. phase2.rs carries a ceiling for a whole fetch
+# call; planner/timers.rs only converts a frame's type. The page's memory figure and its ten-
+# million-partition sentence follow the 2.3.0 measurement.
 ---
 
 A queue is a named set of partitions, and a partition is the ordered stream of one entity: a
@@ -77,13 +83,14 @@ blocking, and changing the count later moves keys from one shard to another. So 
 [Compare](/start/compare/) shows how Kafka, RabbitMQ and SQS each keep order per key.
 
 We made the partition the entity because in Queen it costs almost nothing. A partition is a few
-rows in the broker's state, about 2 KB of the leader's memory, plus one cursor for each consumer
+rows in the broker's state, about 1 KB of every node's memory, plus one cursor for each consumer
 group that reads it; it is not a file, a process or a replica set. A group's cursor stays in the
 leader's memory only while the partition is in use: after `QUEEN_CONSUME_IDLE_UNLOAD_S` (10 minutes)
 with nothing to deliver it is dropped, and the next message loads it back. That is why there is no count to
 plan and nothing to provision, and why a queue can hold millions of them: on three 16-vCPU nodes,
 one queue of ten million partitions carried 1,000,000 messages a second, pushed and consumed, at an
-end-to-end p99 of 122 ms (2.0.0-beta.2, 2026-10-01; see [partition count](/benchmarks/partitions/)).
+end-to-end p99 of 38 ms (pre-release builds of 2.3.0, 2026-10-13; see
+[partition count](/benchmarks/partitions/)).
 
 Choose the partition key at the boundary where order matters to you. If a customer's events must
 be handled in order, the partition is the customer. A partition per message would give you no

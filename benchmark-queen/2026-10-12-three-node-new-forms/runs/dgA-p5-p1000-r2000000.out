@@ -1,0 +1,4 @@
+[06:10:04] run dgA-p5-p1000-r2000000: binary p5, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 360s at: 2000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 60s
+[06:10:31] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[06:17:10] 2,000,000: last 30 s: offered 1,999,994 pushed 1,999,811 consumed 1,999,824 | run: shed 0 errors 0 | push p50 18.2 p99 42.0 | e2e p50 39.4 p99 89.1 worst 91.1 | cores 9.2 / 6.0 / 5.9 | mem GB 7.5 / 6.6 / 6.6 | loaders 15.9c  OK 

@@ -372,7 +372,7 @@ func (qb *QueueBuilder) PopResult(ctx context.Context) (PopResult, error) {
 	}
 
 	// Make request
-	result, err := qb.queen.httpClient.Get(ctx, path, timeout, "", opts...)
+	result, framed, isFramed, err := qb.queen.httpClient.popRequest(ctx, path, timeout, "", opts...)
 	if err != nil {
 		return PopResult{}, fmt.Errorf("pop request failed: %w", err)
 	}
@@ -387,7 +387,10 @@ func (qb *QueueBuilder) PopResult(ctx context.Context) (PopResult, error) {
 	}
 
 	// Parse response
-	messages := parseMessages(result)
+	messages := framed
+	if !isFramed {
+		messages = parseMessages(result)
+	}
 
 	logDebug("QueueBuilder.Pop", map[string]interface{}{
 		"queue": qb.queueName,

@@ -54,6 +54,11 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): facade/mod.rs,
 # facade/real.rs, handlers/raft.rs change what /health answers (raft.quorumAckMs; ready needs the
 # leader's majority within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-12 (the byte rate): proxy/src/gateway.rs no longer answers 413 for one
+# payload or for the number of items of a push, limits it no longer has; 429 `rate_limited` is the request
+# rate or the byte rate; a binary body whose headers do not say what it weighs answers 400
+# `invalid_request`. The proxy table says so. facade/real.rs refuses a binary push with flags 1 and 8
+# together as `bad_body`, a code this page already lists.
 ---
 
 When Queen refuses a call it answers a status code and a JSON body with a stable code, and the code
@@ -189,7 +194,7 @@ limits are on [tenants](/operate/tenants/).
 |---|---|---|
 | `unauthorized` | 401 | No valid API key or session. |
 | `forbidden` | 403 | The credential has no role on this cluster, or is for another cluster. |
-| `rate_limited` | 429 | A request or message rate limit, with `Retry-After`. |
+| `rate_limited` | 429 | The request rate or the byte rate of the plan, with `Retry-After`. |
 | `quota_exceeded` | 403 | A queue, partition or monthly message quota is reached. |
 | `storage_quota_exceeded` | 403 | The retained-bytes quota is reached; pushes are blocked. |
 | `push_blocked` | 403 | Pushes are blocked on this cluster (billing hold). |
@@ -197,7 +202,8 @@ limits are on [tenants](/operate/tenants/).
 | `feature_gated` | 403 | The route is not in the plan. |
 | `route_blocked` | 404 | A broker route that is not served to tenants. |
 | `cluster_unknown` | 421 | The `Host` names no cluster. |
-| `payload_too_large` | 413 | The body is over the proxy's body cap (`QUEEN_PROXY_MAX_BODY_BYTES`, 16 MiB), an item's payload over the plan's `max_payload_bytes`, or a push over `max_batch_items`. |
+| `payload_too_large` | 413 | The body is over the proxy's body cap (`QUEEN_PROXY_MAX_BODY_BYTES`, 16 MiB). |
+| `invalid_request` | 400 | A binary push or transaction body whose headers do not say what it weighs uncompressed (`binary body: ...`), or a DLQ replay that names half a destination. |
 | `bad_gateway`, `upstream_timeout` | 502, 504 | The broker did not answer. |
 
 ### Control-plane codes

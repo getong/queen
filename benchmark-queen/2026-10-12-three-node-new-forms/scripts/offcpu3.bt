@@ -1,0 +1,14 @@
+#!/usr/bin/env bpftrace
+// offcpu3.bt: as offcpu2.bt (where the broker's apply threads wait, by kernel stack), plus the longest wait per
+// stack and a line for every wait of 15 ms or more with the monotonic clock it ended at, to place it in a run.
+BEGIN { printf("BEGIN %llu\n", nsecs); }
+tracepoint:sched:sched_switch /args->prev_comm == "queen-rsm-apply"/ { @off[args->prev_pid] = nsecs; @st[args->prev_pid] = kstack(12); }
+tracepoint:sched:sched_switch /@off[args->next_pid]/
+{
+  $us = (nsecs - @off[args->next_pid]) / 1000;
+  @off_total_us[args->next_pid] = sum($us);
+  if ($us >= 1000) { @long_us[args->next_pid, @st[args->next_pid]] = stats($us); @long_max[args->next_pid, @st[args->next_pid]] = max($us); }
+  if ($us >= 15000) { printf("WAIT ended %llu tid %d us %d\n%s\n", nsecs, args->next_pid, $us, @st[args->next_pid]); }
+  delete(@off[args->next_pid]);
+}
+END { clear(@off); clear(@st); }

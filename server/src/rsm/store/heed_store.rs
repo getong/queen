@@ -257,6 +257,33 @@ fn arena_slice(_arena: &RefCell<Arena>, p: *const [u8]) -> &[u8] {
 // The store
 // ---------------------------------------------------------------------------
 
+/// `QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB` (default 8; 0 = off): write a
+/// checkpoint out in steps of this many megabytes of `data.mdb` before its
+/// sync ([`HeedStore::flush_in_steps`]). Linux only.
+///
+/// A checkpoint's commit leaves all its pages in the page cache, and the
+/// environment sync then hands them to the device in one go: tens of megabytes
+/// at the default cadence. While the device works through them, every other
+/// sync on the same filesystem waits behind them, the raft log's among them:
+/// its `fdatasync` took 20 to 130 ms instead of one or two for as long as the
+/// checkpoint's lasted (three 16-vCPU machines, 1M msg/s, 2026-10-10), on
+/// every node at once, and nothing committed meanwhile. Written a range at a
+/// time, the device never holds more than one range's pages, and another sync
+/// waits for that much.
+///
+/// 8 MB is the measured choice (one voter, 900,000 msg/s, 2026-10-12): the
+/// checkpoint's own sync fell from 21-35 ms to 0.5-1 ms and the push p99 from
+/// 41.5 to 18.7 ms; with steps of 32 MB the p99 was 46 ms. The walk covers the
+/// whole file, so it costs one call for every 8 MB of `data.mdb` at each
+/// checkpoint, written or not.
+static CKPT_FLUSH_STEP: std::sync::LazyLock<u64> = std::sync::LazyLock::new(|| {
+    std::env::var("QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB")
+        .ok()
+        .and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(8)
+        << 20
+});
+
 pub struct HeedStore {
     env: Env<WithTls>,
     /// Indexed by [`Keyspace::slot`].
@@ -1179,7 +1206,52 @@ impl HeedStore {
             }
         }
         txn.commit().map_err(|e| err(self, e))?;
+        self.flush_in_steps()
+            .map_err(|e| err(self, heed::Error::Io(e)))?;
         self.sync_now()
+    }
+
+    /// Push the pages the cut's commit left in the page cache to the device a
+    /// range of `data.mdb` at a time, each range waited for, so the sync that
+    /// follows finds them written (`QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB`,
+    /// [`CKPT_FLUSH_STEP`]). It makes nothing durable and is not the durable
+    /// step: the environment sync after it is, and reports as before.
+    #[cfg(target_os = "linux")]
+    fn flush_in_steps(&self) -> std::io::Result<()> {
+        use std::os::fd::AsRawFd;
+        let step = *CKPT_FLUSH_STEP;
+        if step == 0 {
+            return Ok(());
+        }
+        let file = std::fs::File::open(self.dir.join("data.mdb"))?;
+        let len = file.metadata()?.len();
+        let fd = file.as_raw_fd();
+        let mut off = 0u64;
+        while off < len {
+            let n = step.min(len - off);
+            // SAFETY: a plain system call on a descriptor this function holds
+            // open; it takes no pointer.
+            let r = unsafe {
+                libc::sync_file_range(
+                    fd,
+                    off as libc::off64_t,
+                    n as libc::off64_t,
+                    libc::SYNC_FILE_RANGE_WAIT_BEFORE
+                        | libc::SYNC_FILE_RANGE_WRITE
+                        | libc::SYNC_FILE_RANGE_WAIT_AFTER,
+                )
+            };
+            if r != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            off += n;
+        }
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn flush_in_steps(&self) -> std::io::Result<()> {
+        Ok(())
     }
 
     /// A cut that was not written: its keys go back to their dirty sets.

@@ -50,6 +50,12 @@ sourceOfTruth:
 # facade/mod.rs, facade/real.rs, handlers/raft.rs change what /health answers (raft.quorumAckMs;
 # ready needs the leader's majority within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states
 # changes.
+# sourceOfTruth re-read 2026-10-12 (the byte rate): the proxy no longer caps the items of a push
+# (`QUEEN_PROXY_MAX_BATCH_ITEMS` is gone with the plan's `max_batch_items`); the row says so. No limit
+# of the broker changes.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): batcher.rs looks every QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS
+# (10) whether 256 recorded outcomes have left their window and retires them in its next cycle; the
+# window itself, QUEEN_RAFT_REQUEST_ID_WINDOW_S, is still 60 s, as the table says.
 ---
 
 Most of Queen's limits exist to keep one request from costing everyone else: a body cap, a ceiling
@@ -69,7 +75,7 @@ applies it. The values are the defaults of server 2.0.1; the full list of settin
 | Request body | 64 MiB | `QUEEN_MAX_BODY_BYTES` | `server/src/handlers/raft.rs` |
 | One planned command (a push to one partition, a KV call, a timers call, a positions list) | 96 MiB | `QUEEN_RAFT_ENTRY_MAX_BYTES` | `server/src/rsm/planner/push.rs` |
 | Message `payload` | any JSON value, inside the two limits above | | `server/src/rsm/facade/real.rs` |
-| Items per push | no count limit in the broker; 10,000 through the proxy unless the plan says otherwise | `QUEEN_PROXY_MAX_BATCH_ITEMS` | `server/src/rsm/facade/real.rs` |
+| Items per push | no count limit | | `server/src/rsm/facade/real.rs` |
 | `transactionId` | 65,535 bytes | | `server/src/rsm/facade/real.rs` |
 | Deadline of a push | 30 s, at most 60 s | `POP_DEFAULT_TIMEOUT_MS` | `server/src/handlers/raft.rs` |
 | Deadline of an ack, a lease extension or a transaction | 30 s, at most 60 s | `QUEEN_STMT_TIMEOUT_MS` | `server/src/handlers/raft.rs` |

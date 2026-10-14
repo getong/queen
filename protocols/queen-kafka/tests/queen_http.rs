@@ -1388,3 +1388,109 @@ async fn a_host_scoped_local_client_sends_exactly_that_host() {
     assert_eq!(seen[0].method, "GET");
     assert_eq!(seen[0].body, None);
 }
+
+/// A fetch whose entries are handed over ([`QueenApi::fetch_owned`]) is the
+/// fetch that lends them: in-process the record path is given the same
+/// entries and its answer is read the same way, and a transport that serves
+/// no records takes the route with the same body. The ceiling of the whole
+/// call goes with it: to the record path as it is, to the route as the body's
+/// top-level `maxBytes`, and a fetch without one sends the body it always did.
+#[tokio::test]
+async fn a_fetch_handed_over_is_the_fetch_that_lends() {
+    use queen_kafka::queen::{LocalAnswer, RawFetched};
+
+    /// What one in-process fetch was asked: entries, long poll, ceiling.
+    type Asked = (Vec<FetchEntry>, i64, i64, Option<i64>);
+
+    /// Serves the record path, keeps what it was asked, and answers each entry
+    /// with its own offset as the high watermark.
+    #[derive(Default)]
+    struct Records {
+        asked: Mutex<Vec<Asked>>,
+    }
+    impl LocalDispatch for Records {
+        fn call(
+            &self,
+            _req: LocalRequest,
+        ) -> queen_kafka::queen::BoxFuture<'static, std::result::Result<LocalResponse, String>>
+        {
+            Box::pin(async { Err("the record path takes no route".to_string()) })
+        }
+
+        fn serves_records(&self) -> bool {
+            true
+        }
+
+        fn fetch_records(
+            &self,
+            _bearer: Option<String>,
+            entries: Vec<FetchEntry>,
+            max_wait_ms: i64,
+            min_bytes: i64,
+            max_bytes: Option<i64>,
+        ) -> queen_kafka::queen::BoxFuture<
+            'static,
+            std::result::Result<LocalAnswer<Vec<RawFetched>>, String>,
+        > {
+            let answer = entries
+                .iter()
+                .map(|e| RawFetched {
+                    high_watermark: e.offset,
+                    ..RawFetched::default()
+                })
+                .collect();
+            self.asked
+                .lock()
+                .unwrap()
+                .push((entries, max_wait_ms, min_bytes, max_bytes));
+            Box::pin(async move { Ok(LocalAnswer::Done(answer)) })
+        }
+    }
+
+    let records = Arc::new(Records::default());
+    let api = HttpQueen::local(Arc::clone(&records) as Arc<dyn LocalDispatch>);
+    let lent = api.fetch_raw(&entries(), 500, 1, None).await.unwrap();
+    let owned = api
+        .fetch_owned(entries(), 500, 1, Some(4096), None)
+        .await
+        .unwrap();
+    assert_eq!(owned, lent);
+    assert_eq!(
+        owned.iter().map(|f| f.high_watermark).collect::<Vec<_>>(),
+        [41, 99]
+    );
+    assert_eq!(
+        records.asked.lock().unwrap().as_slice(),
+        [(entries(), 500, 1, None), (entries(), 500, 1, Some(4096))]
+    );
+
+    // No record path: all three go to the route.
+    let recorder = Recorder::new(vec![
+        Canned::new(200, FETCH_BODY),
+        Canned::new(200, FETCH_BODY),
+        Canned::new(200, FETCH_BODY),
+    ]);
+    let api = HttpQueen::local(Arc::clone(&recorder) as Arc<dyn LocalDispatch>);
+    let lent = api.fetch_raw(&entries(), 500, 1, None).await.unwrap();
+    let owned = api
+        .fetch_owned(entries(), 500, 1, None, None)
+        .await
+        .unwrap();
+    let capped = api
+        .fetch_owned(entries(), 500, 1, Some(4096), None)
+        .await
+        .unwrap();
+    assert_eq!(owned, lent);
+    assert_eq!(capped, lent);
+    let seen = recorder.seen();
+    assert_eq!(seen.len(), 3);
+    assert!(seen.iter().all(|r| r.path == "/api/v1/fetch"));
+    let body = |i: usize| seen[i].body.clone().unwrap_or_default();
+    assert_eq!(body(1), body(0), "no ceiling, no field");
+    assert_eq!(
+        body(2),
+        body(0).replacen(r#""minBytes":1}"#, r#""minBytes":1,"maxBytes":4096}"#, 1),
+        "the ceiling is the body's own maxBytes, beside its entries'"
+    );
+    assert_ne!(body(2), body(0));
+}

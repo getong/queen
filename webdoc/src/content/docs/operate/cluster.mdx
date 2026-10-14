@@ -50,6 +50,16 @@ verifiedBy:
 # paragraph, the readiness advice, the wiped voter and the limits follow; the healthcheck comment is
 # the Compose file's; the /health sample gains quorumAckMs, with a value from the loopback run of
 # 2026-10-10.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): replicator/raft/mod.rs, cluster.rs and network.rs let
+# each raft group of a standby replay the source's group of the same number, read on the raft port
+# plus the group's number, and a group's leader hands leadership only to a voter and not during a
+# membership change; "Raft groups" says the second, and facade/groups.rs lists every group's link
+# under /health's raft.link on a node of several groups. facade/real.rs, facade/mod.rs and
+# handlers/raft.rs read a binary push and transaction body, answer an ack with counts and a pop with
+# the stored records, only for a client that asks; a JSON request is served as before. phase2.rs
+# carries a fetch call's ceiling; consume/mod.rs takes a checkpoint at once when an answer waits.
+# The upgrade section says 2.3.0 leaves the cluster version at 6. Nothing else this page states
+# changes.
 ---
 
 Three copies of the same binary, each told where the other two are, make a Queen cluster. They
@@ -356,6 +366,11 @@ messages are read from the queue log ([storage](/internals/storage/#limits)); 2.
 refuse to start on that data. While the version stays at 5, the rows stay until retention removes
 their messages, as in 2.1.0.
 
+2.3.0 leaves the cluster at version 6: it changes nothing in the replicated state, so a cluster
+rolls from 2.2.0 to 2.3.0 and back one node at a time. During the roll, turn a client's
+[binary push and push compression](/start/clients/#binary-push-push-compression-and-framed-pop)
+on only after the last node runs 2.3.0, because a 2.2.0 node answers those bodies with 400.
+
 ## Ephemeral queues in a cluster
 
 [Ephemeral queues](/guides/ephemeral/) keep their messages in memory and never in the log, and
@@ -466,8 +481,10 @@ each node, each with its own log, leader and data directory (`groups/g<N>/`). A 
 exactly one group, picked by a stable hash of its id or pinned with
 `QUEEN_TENANT_GROUPS=<tenant>=<group>,...`, so its transactions stay single entries. Group N listens
 on the raft port plus N and prefers the member at position N mod n as its leader, so with as many
-groups as nodes every node leads one and follows the others. It needs `QUEEN_RAFT_CLIENT_OFFLOAD`
-on, which is the default.
+groups as nodes every node leads one and follows the others. A group hands leadership to its
+preferred member only once that member is a voter and no membership change is in flight, so a
+node being added leads nothing until its promotion is complete. It needs
+`QUEEN_RAFT_CLIENT_OFFLOAD` on, which is the default.
 
 Raft groups were not part of the Jepsen pass, which ran one group. A tenant cannot change group
 while it has data, because there is no migration yet, so pin a large tenant before it writes.

@@ -40,6 +40,15 @@
     "words": "ephemeral request reply rpc"
   },
   {
+    "feature": "wire-forms",
+    "title": "Binary push, push compression and framed pop",
+    "pages": ["start/clients"],
+    "skip": ["Install and connect", "curl is a client", "Consumer supervision", "What each SDK implements", "The broker inside a Rust program", "Next"],
+    "related": ["reference/http", "benchmarks/throughput"],
+    "card": "wire-forms",
+    "words": "binary push compression compressed zstd framed pop frames wire throughput performance rate cpu"
+  },
+  {
     "feature": "kafka",
     "title": "Kafka clients through the Kafka facade",
     "pages": ["guides/kafka"],

@@ -28,16 +28,33 @@
 //! bring one back.
 
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicI64, AtomicU64, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use crate::rsm::effect::Pid;
 
-use super::state::{lock, read, Gid, Group, Load, Part, PidInfo, Shard, SHARDS};
+use super::state::{lock, read, Gid, Group, GroupShard, Load, Part, PidInfo, Shard, SHARDS};
 use super::{Engine, SEC_US};
 
-/// The unloader looks at one shard this often (each shard every `SHARDS`).
-const PERIOD_US: i64 = SEC_US;
+/// The unloader takes a turn this often: one slice of one shard.
+const PERIOD_US: i64 = 5_000;
+
+/// Partitions one turn looks at. A turn holds its shard's lock, and whatever
+/// needs a partition of that shard waits for it, the serve thread included
+/// (the unloader runs in its clock work): so a turn must be short however
+/// large the shard. The unloader used to take a whole shard in one `retain`,
+/// once a second: with ten million partitions that is 625,000 parts and about
+/// 80 ms under the lock, and 7% of all messages were delivered up to 80 ms
+/// late whatever the load (three machines, 2026-10-12: end to end p99 74 ms at
+/// 100,000 msg/s, against 11 ms with one million partitions). A slice of this
+/// size is about 0.1 ms.
+const SLICE: usize = 1024;
+
+/// A pass over every shard begins no sooner than this after the one before
+/// began: what the unloader did when it took a shard a second. A pass that
+/// takes longer (ten million partitions: about 50 s) is followed at once by
+/// the next.
+const PASS_EVERY_US: i64 = SHARDS as i64 * SEC_US;
 
 /// At most one log line about it this often.
 const LOG_EVERY_US: i64 = 60 * SEC_US;
@@ -45,10 +62,11 @@ const LOG_EVERY_US: i64 = 60 * SEC_US;
 /// The unloader's pacing and counters.
 #[derive(Default)]
 pub(crate) struct Unload {
-    /// The next look (engine clock, µs).
+    /// The next turn (engine clock, µs).
     next_us: AtomicI64,
-    /// The shard it takes.
-    shard: AtomicUsize,
+    /// Where the pass is. Two clocks tick the engine (the serve thread and the
+    /// checkpoint ticker): the one that finds this taken skips its turn.
+    scan: Mutex<Scan>,
     /// Parts dropped and parts loaded (first contacts and loads back), since
     /// this engine was built.
     pub unloaded: AtomicU64,
@@ -59,6 +77,28 @@ pub(crate) struct Unload {
     /// Parts dropped since the last log line, and when that was.
     since_log: AtomicU64,
     logged_us: AtomicI64,
+    /// Tests: the clock work takes no turn. The engine's suite drives the
+    /// unloader by hand and counts what each pass drops; a turn of the clock
+    /// work in between (every command of the harness ticks the engine) would
+    /// drop some of it first.
+    #[cfg(test)]
+    pub auto_off: std::sync::atomic::AtomicBool,
+}
+
+/// The unloader's place in its pass over the shards.
+#[derive(Default)]
+struct Scan {
+    /// The shard the pass is in.
+    shard: usize,
+    /// The next partition of that shard to look at; `None`: the shard begins.
+    next: Option<Pid>,
+    /// The groups that may lose parts, decided when the shard begins.
+    whole: HashSet<Gid>,
+    /// The groups that lost a part in this shard: their tables are given back
+    /// when the shard is done.
+    lost: HashSet<Gid>,
+    /// When the pass began.
+    pass_started_us: i64,
 }
 
 /// The engine's size: what the leader holds in memory for consumption.
@@ -94,16 +134,23 @@ fn unloadable(p: &Part, pi: &PidInfo) -> bool {
 }
 
 impl Engine {
-    /// The clock work's turn: one shard, once a period.
+    /// The clock work's turn: one slice of one shard.
     pub(crate) fn unload_idle(&self, now: i64) {
         if self.k.idle_unload_us <= 0 || now < self.unload.next_us.load(Ordering::Acquire) {
             return;
         }
+        #[cfg(test)]
+        if self.unload.auto_off.load(Ordering::Acquire) {
+            return;
+        }
+        let Ok(mut scan) = self.unload.scan.try_lock() else {
+            return;
+        };
         self.unload
             .next_us
             .store(now + PERIOD_US, Ordering::Release);
-        let si = self.unload.shard.fetch_add(1, Ordering::AcqRel) % SHARDS;
-        let n = self.unload_shards(&[si], now, false);
+        let (n, _) = self.unload_turn(&mut scan, now, SLICE);
+        drop(scan);
         if n == 0 {
             return;
         }
@@ -116,6 +163,67 @@ impl Engine {
                 groups = s.groups, idle_s = self.k.idle_unload_us / SEC_US,
                 "consume: idle parts unloaded (loaded back on their next append)");
         }
+    }
+
+    /// One turn of the pass: at most `budget` partitions of the shard the pass
+    /// is in, from where the last turn stopped. Returns how many parts went and
+    /// whether the pass over every shard ended with this turn.
+    fn unload_turn(&self, scan: &mut Scan, now: i64, budget: usize) -> (u64, bool) {
+        if self.k.idle_unload_us <= 0 {
+            return (0, true);
+        }
+        // A reset waits for this to end: no part of an incarnation that is
+        // going is looked at after it went ([`Engine::serving`]).
+        let _serving = read(&self.serving);
+        if !self.leader.load(Ordering::Acquire) {
+            *scan = Scan::default();
+            return (0, true);
+        }
+        if scan.next.is_none() {
+            if scan.shard == 0 {
+                scan.pass_started_us = now;
+            }
+            scan.whole = self.whole_groups();
+            scan.lost.clear();
+        }
+        let (dropped, next) = self.unload_range(
+            scan.shard,
+            scan.next,
+            budget,
+            now,
+            false,
+            &scan.whole,
+            &mut scan.lost,
+        );
+        scan.next = next;
+        let mut pass_done = false;
+        if next.is_none() {
+            scan.shard = (scan.shard + 1) % SHARDS;
+            if scan.shard == 0 {
+                pass_done = true;
+                self.unload.next_us.store(
+                    (scan.pass_started_us + PASS_EVERY_US).max(now + PERIOD_US),
+                    Ordering::Release,
+                );
+            }
+        }
+        self.unload.unloaded.fetch_add(dropped, Ordering::AcqRel);
+        (dropped, pass_done)
+    }
+
+    /// One turn with a budget of the caller's (tests: that a pass made of
+    /// small turns does what one whole pass does).
+    #[cfg(test)]
+    pub(crate) fn unload_turn_for_test(&self, now: i64, budget: usize) -> (u64, bool) {
+        let mut scan = lock(&self.unload.scan);
+        self.unload_turn(&mut scan, now, budget)
+    }
+
+    /// Where the pass is: the shard, and the next partition there (tests).
+    #[cfg(test)]
+    pub(crate) fn unload_cursor_for_test(&self) -> (usize, Option<Pid>) {
+        let scan = lock(&self.unload.scan);
+        (scan.shard, scan.next)
     }
 
     /// Every shard at once, by the idle rule (tests).
@@ -139,22 +247,34 @@ impl Engine {
         self.unload_shards(&all, now, true)
     }
 
-    /// Drop the idle parts of whole-queue groups in `shards` (`force`: every
-    /// part that could go, however recently it changed): how many went.
+    /// Drop the idle parts of whole-queue groups in `shards`, each shard in
+    /// one go (`force`: every part that could go, however recently it
+    /// changed): how many went.
+    #[cfg(test)]
     fn unload_shards(&self, shards: &[usize], now: i64, force: bool) -> u64 {
-        let idle = self.k.idle_unload_us;
-        if idle <= 0 {
+        if self.k.idle_unload_us <= 0 {
             return 0;
         }
-        // A reset waits for this to end: no part of an incarnation that is
-        // going is looked at after it went ([`Engine::serving`]).
         let _serving = read(&self.serving);
         if !self.leader.load(Ordering::Acquire) {
             return 0;
         }
-        // The groups that may lose parts, decided before any shard is taken
-        // (lock order: a group's `st`, then one shard). A group that stops
-        // being one meanwhile only lost parts it could load back.
+        let whole = self.whole_groups();
+        let mut dropped = 0u64;
+        for &si in shards {
+            let mut lost = HashSet::new();
+            dropped += self
+                .unload_range(si, None, usize::MAX, now, force, &whole, &mut lost)
+                .0;
+        }
+        self.unload.unloaded.fetch_add(dropped, Ordering::AcqRel);
+        dropped
+    }
+
+    /// The groups that may lose parts, decided before any shard is taken
+    /// (lock order: a group's `st`, then one shard). A group that stops being
+    /// one meanwhile only lost parts it could load back.
+    fn whole_groups(&self) -> HashSet<Gid> {
         let groups: Vec<Arc<Group>> = read(&self.reg).by_id.values().cloned().collect();
         let mut whole: HashSet<Gid> = HashSet::with_capacity(groups.len());
         for g in &groups {
@@ -163,36 +283,100 @@ impl Engine {
                 whole.insert(g.id);
             }
         }
-        if whole.is_empty() {
-            return 0;
+        whole
+    }
+
+    /// Look at the partitions `from`, `from + SHARDS`, ... of shard `si`
+    /// (`None`: from its lowest), `budget` of them at most, and drop the parts
+    /// of `whole` groups that are idle (`force`: that could go, however
+    /// recently they changed). Returns how many went, and where the next turn
+    /// resumes (`None`: the shard is done).
+    ///
+    /// The walk is over partition ids, not over a group's table: ids are
+    /// handed out in sequence, a shard holds every sixteenth, and a walk by
+    /// id resumes at an id, where a walk of a hash table would have to skip
+    /// to its place again every turn. An id nobody holds costs one lookup.
+    #[allow(clippy::too_many_arguments)]
+    fn unload_range(
+        &self,
+        si: usize,
+        from: Option<Pid>,
+        budget: usize,
+        now: i64,
+        force: bool,
+        whole: &HashSet<Gid>,
+        lost: &mut HashSet<Gid>,
+    ) -> (u64, Option<Pid>) {
+        let idle = self.k.idle_unload_us;
+        let mut guard = lock(&self.shards[si]);
+        let Shard {
+            pids,
+            groups,
+            pid_lo,
+            pid_hi,
+            ..
+        } = &mut *guard;
+        let mut gss: Vec<(Gid, &mut GroupShard)> = groups
+            .iter_mut()
+            .filter(|(gid, gs)| whole.contains(*gid) && !gs.g.dead.load(Ordering::Acquire))
+            .map(|(gid, gs)| (*gid, gs))
+            .collect();
+        if gss.is_empty() || pids.is_empty() {
+            return (0, None);
         }
+        let n = SHARDS as u64;
+        let start = from.unwrap_or(*pid_lo);
+        // The first id at or after `start` that this shard holds.
+        let mut pid = start + (si as u64 + n - start % n) % n;
+        let hi = *pid_hi;
+        let per_pid = gss.len().max(1);
+        let mut left = budget;
         let mut dropped = 0u64;
-        for &si in shards {
-            let mut guard = lock(&self.shards[si]);
-            let Shard { pids, groups, .. } = &mut *guard;
-            for (gid, gs) in groups.iter_mut() {
-                if !whole.contains(gid) || gs.g.dead.load(Ordering::Acquire) {
-                    continue;
+        let mut resume = None;
+        while pid <= hi {
+            if left < per_pid && left < budget {
+                resume = Some(pid);
+                break;
+            }
+            left = left.saturating_sub(per_pid);
+            for (gid, gs) in gss.iter_mut() {
+                let stays = match gs.parts.get_mut(&pid) {
+                    None => continue,
+                    Some(p) => {
+                        let pi = pids.get(&pid);
+                        if force {
+                            pi.is_none_or(|pi| !unloadable(p, pi))
+                        } else {
+                            keep(p, pi, now, idle)
+                        }
+                    }
+                };
+                if !stays {
+                    gs.parts.remove(&pid);
+                    lost.insert(*gid);
+                    dropped += 1;
                 }
-                let before = gs.parts.len();
-                gs.parts.retain(|pid, p| {
-                    if force {
-                        return pids.get(pid).is_none_or(|pi| !unloadable(p, pi));
-                    }
-                    keep(p, pids.get(pid), now, idle)
-                });
-                let gone = before - gs.parts.len();
-                if gone > 0 {
-                    dropped += gone as u64;
-                    // The table keeps its size after removals: give it back.
-                    if gs.parts.capacity() > (gs.parts.len() * 2).max(64) {
-                        gs.parts.shrink_to_fit();
-                    }
+            }
+            match pid.checked_add(n) {
+                Some(p) => pid = p,
+                None => break,
+            }
+        }
+        if resume.is_none() {
+            // The shard is done. A table keeps its size after removals: the
+            // ones that lost parts in this pass give it back, once they hold
+            // under a quarter of it, and keep room for twice what they hold.
+            // (Shrunk to fit at half, a table whose parts come and go — loaded
+            // by an append, dropped a window later — was rebuilt twice a pass:
+            // grown when the next appends came, shrunk when their parts went.)
+            for (gid, gs) in gss.iter_mut() {
+                let len = gs.parts.len();
+                if lost.contains(&*gid) && gs.parts.capacity() > (len * 4).max(64) {
+                    gs.parts.shrink_to(len * 2);
                 }
             }
         }
-        self.unload.unloaded.fetch_add(dropped, Ordering::AcqRel);
-        dropped
+        (dropped, resume)
     }
 
     /// What the leader holds for consumption now (the gauges).

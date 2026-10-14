@@ -59,6 +59,13 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (/health needs a majority behind the leader): config.rs,
 # facade/real.rs change what /health answers (raft.quorumAckMs; ready needs the leader's majority
 # within QUEEN_RAFT_READY_QUORUM_MS). Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-12 (the byte rate): proxy/src/config.rs no longer reads
+# QUEEN_PROXY_MAX_BATCH_ITEMS (its row is removed), and what QUEEN_PROXY_ENFORCE=false still enforces is
+# the body cap and the two quotas.
+# sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): facade/real.rs no longer refuses `QUEEN_LINK_SOURCE` beside `QUEEN_RAFT_GROUPS` above 1 and opens each group with its own source, link/driver.rs reads the same `QUEEN_LINK_*` variables and moves the configured addresses to the group's port, and raft/mod.rs tells each group's link routes which group they serve and hands a group's leadership to its preferred member only once that member is a voter. No variable was added or removed and no default changed: the tables and the paragraph on the nine `QUEEN_LINK_*` variables stand.
+# sourceOfTruth re-read 2026-10-13 (the latency fixes and the fetch ceiling): QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS
+# (batcher.rs), QUEEN_CONSUME_CHECKPOINT_EAGER (consume/mod.rs) and QUEEN_QLOG_READ_AHEAD_MB (qlog/mod.rs) join the
+# tables. The retention history written every METRICS_FLUSH_MS (local_metrics.rs) changes no row.
 ---
 
 A node reads its whole configuration from environment variables when it starts. There is no
@@ -108,6 +115,7 @@ on by default turns off only with `0`, `false`, `off` or `no`.
 | `QUEEN_RAFT_ENTRY_MAX_BYTES` | `100663296` (96 MiB) | The largest planned command: a push to one partition, one KV or timers call, one positions list. A larger one is refused. |
 | `QUEEN_RAFT_COMMAND_QUEUE_DEPTH` | `16384` | The planner's command channel. |
 | `QUEEN_RAFT_REQUEST_ID_WINDOW_S` | `60` | How long a committed command's outcome answers a retry under the same request id. |
+| `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` | `10` | How often the leader looks whether 256 recorded outcomes have left `QUEEN_RAFT_REQUEST_ID_WINDOW_S`, and retires what has in its next cycle. Fewer wait for the 10 s tick. `0` leaves everything to that tick, which retires ten seconds of outcomes at once. |
 | `QUEEN_RAFT_ANSWER_AT_COMMIT` | on | Answer pushes and acks when their entry commits, without waiting for it to apply on the leader. |
 | `QUEEN_RAFT_DEDUP_INDEX` | `txns` | How each append's `transactionId` hashes are indexed: `txns` (one row per append), `segment` (read back from the queue log) or `rows`. |
 | `QUEEN_RAFT_ROWS_WINDOW` | on | A push's index row leaves memory when it leaves the queue's dedup window (never before 900 s), whether or not the message is still retained; older messages are read through the queue log's own index. Needs cluster version 6. Off: a row stays for as long as its message. |
@@ -126,6 +134,7 @@ on by default turns off only with `0`, `false`, `off` or `no`.
 | Variable | Default | Effect |
 |---|---|---|
 | `QUEEN_CONSUME_CHECKPOINT_MS` | `5` | How often the leader logs the cursor rows that changed. A pop or an ack is answered once the checkpoint holding its change has committed. |
+| `QUEEN_CONSUME_CHECKPOINT_EAGER` | on | A pop or an ack that waits for a change no checkpoint holds yet has the next checkpoint taken at once when none is in flight, instead of at the next `QUEEN_CONSUME_CHECKPOINT_MS` tick. `0` waits for the tick. What an answer waits for is the same either way. |
 | `QUEEN_CONSUME_FAST` | off | `1`, `true`, `on` or `yes` answers pops and acks before their checkpoint commits. A leader change can then lose a lease or an ack you were told about. |
 | `QUEEN_CONSUME_LEADER_LEASE_MS` | `400` | The engine serves only while its node leads and has heard from a quorum within this. |
 | `QUEEN_CONSUME_TXN_TTL_MS` | `30000` | The longest a transaction holds the cursors it acks or positions. |
@@ -155,14 +164,17 @@ what each one does. A cluster with none of them set is neither a standby nor rea
 | Variable | Default | Effect |
 |---|---|---|
 | `QUEEN_RAFT_APPLY_SHARDS` | `4` (at most 64) | Threads that apply partition-keyed effects in parallel. Node-local: the replicated state is the same at every value. |
-| `QUEEN_RAFT_DURABLE_EVERY_MS` | `1000` | How often the store checkpoint is written to disk. It bounds what a restart replays; no answer waits for it. |
+| `QUEEN_RAFT_DURABLE_EVERY_MS` | `250` | How often the store checkpoint is written to disk. It bounds what a restart replays; no answer waits for it. |
 | `QUEEN_RAFT_DURABLE_EVERY_BYTES` | `268435456` (256 MiB) | ...or after this many bytes, whichever comes first. |
+| `QUEEN_RAFT_DURABLE_PHASE_MS` | from the node's raft id | Where in that period a node of a cluster writes its checkpoint, so that the nodes do not all write theirs at the same instant. A number of milliseconds sets it; `off` leaves the node on its own timer. |
+| `QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB` | `8` | The megabytes of the store file a checkpoint hands to the disk at a time before its sync, so that the raft log's own sync does not wait behind the whole checkpoint. `0` hands it over in one go. Linux only. |
 | `QUEEN_RAFT_SEGMENT_BYTES` | `67108864` (64 MiB) | The size at which a queue-log file rolls. |
 | `QUEEN_RAFT_QLOG_ZSTD_LEVEL` | `1` | zstd level for queue-log payloads; `0` stores them raw. |
 | `QUEEN_QLOG_LANES` | `1` (1 to 64) | Queue-log lanes per queue. Read only when the data directory is created. |
 | `QUEEN_QLOG_SHARDS` | `0` (0 to 4096) | Shared queue logs. `0` gives every queue a log of its own; `K` maps every queue onto one of K shared logs, the layout for thousands of queues: a write fsyncs at most K files, and files fill at the rate of all the queues in them. Read only when the data directory is created. |
 | `QUEEN_QLOG_COMPACT_MIN_DEAD_PCT` | unset | Rewrite a sealed file once this percentage of it is dead. Unset: a per-queue log file on its first dead message, a shared one at 50%. |
 | `QUEEN_QLOG_SEAL_AGE_S` | `600` | An active file holding data this old is sealed so retention can reclaim it, once retention has a dead message in it or it holds an eighth of a full file; `0` never seals by age. |
+| `QUEEN_QLOG_READ_AHEAD_MB` | `1` | When a fetch finds a record out of the page cache, the kernel is asked for that record and for this many MiB of the partition's records after it. `0` turns it off. |
 | `QUEEN_STORE_SCRUB_EVERY_S` | `21600` | How often the whole store is re-verified in the background; `0` turns the scrub off. |
 | `QUEEN_STORE_SCRUB_ROWS_PER_S` | `2000` | The scrub's pace. |
 | `QUEEN_RAFT_RETENTION_SCAN_PER_S` | `50000` | Partitions the leader's retention scanner walks per second. |
@@ -191,7 +203,7 @@ inside your network; that port must not face the internet. Plans and limits are 
 |---|---|---|
 | `QUEEN_PROXY_PORT` | unset | Give the proxy its own port (see above). |
 | `QUEEN_TLS_CERT`, `QUEEN_TLS_KEY` | unset | PEM file paths. Set both to serve TLS on the proxy's listener. |
-| `QUEEN_PROXY_ENFORCE` | `false` | `false` is shadow mode: rate limits and the queue and partition counts are computed, logged and metered but not refused. The size caps and the storage and monthly message quotas are enforced either way. |
+| `QUEEN_PROXY_ENFORCE` | `false` | `false` is shadow mode: rate limits and the queue and partition counts are computed, logged and metered but not refused. The body cap and the storage and monthly message quotas are enforced either way. |
 | `QUEEN_PROXY_TENANT_HEADER` | `true` | Send each cluster's broker tenant to the broker in `x-queen-tenant`. Off, every cluster shares the broker's default tenant. |
 | `QUEEN_PROXY_CP_TOKEN` | unset | Turns on the [control-plane API](/reference/http/#control-plane-apicp). Unset, `/api/cp/*` and `/metrics*` answer 404 on the proxy's port. |
 | `QUEEN_PROXY_PUBLIC_URL` | unset | The public base URL: OAuth callbacks are built on it, and the session audience and allowed origin default to it. |
@@ -199,7 +211,6 @@ inside your network; that port must not face the internet. Plans and limits are 
 | `QUEEN_PROXY_DEFAULT_CLUSTER` | unset | Development only: the cluster a `Host` that names none falls back to. |
 | `QUEEN_PROXY_DEV_INSECURE` | `false` | Development only: skip authentication. |
 | `QUEEN_PROXY_MAX_BODY_BYTES` | `16777216` (16 MiB) | The largest body the proxy reads on the routes it buffers: push, transaction, `/configure`, DLQ replay, the streams cycle, KV batches and ephemeral push. A larger body gets 413 `payload_too_large`. Other routes go to the broker, where `QUEEN_MAX_BODY_BYTES` applies. |
-| `QUEEN_PROXY_MAX_BATCH_ITEMS` | `10000` | Items per push when the plan sets no `max_batch_items`. |
 | `QUEEN_PROXY_UPSTREAM_TIMEOUT_MS` | `35000` | How long a call to the broker may take. |
 | `QUEEN_PROXY_UPSTREAM_CONNECT_TIMEOUT_MS` | `5000` | Connect timeout to the broker. |
 | `QUEEN_PROXY_LONGPOLL_MAX_MS` | `90000` | How long the proxy waits for a long-poll pop at most, plus `QUEEN_PROXY_LONGPOLL_MARGIN_MS`; the broker's own wait is not shortened ([limits](/reference/limits/#pop-and-long-poll)). |

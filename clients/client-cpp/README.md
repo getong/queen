@@ -11,6 +11,7 @@ A comprehensive C++ client for Queen Message Queue, providing a fluent API match
 - ✅ **Client-Side Buffering** - Automatic batching with time/count triggers
 - ✅ **Consumer Groups** - Distributed message processing
 - ✅ **Pop Autopilot** - The broker sizes the knobs you did not set
+- ✅ **Binary Wire Forms** - Opt-in binary push, compression in the client and framed pop
 - ✅ **Partitions** - Ordered message processing per partition
 - ✅ **Atomic Transactions** - All-or-nothing operations
 - ✅ **Key/Value State** - `get`, `put`, `putIfAbsent`, `delete`, `incr`, standalone or inside a transaction
@@ -27,6 +28,7 @@ A comprehensive C++ client for Queen Message Queue, providing a fluent API match
 - **nlohmann/json** - JSON library (already in `server/vendor/json.hpp`)
 - **cpp-httplib** - Header-only HTTP client (install separately or include)
 - **astp::ThreadPool** - Thread pool library (already in `server/include/threadpool.hpp`)
+- **zstd** (optional) - Only for `push_compression` and `framed_pop`: compile with `-DQUEEN_CLIENT_ZSTD` and link `-lzstd`
 
 ### Installing cpp-httplib
 
@@ -293,6 +295,66 @@ if (!messages.empty()) {
 }
 ```
 
+### Binary Push, Push Compression and Framed Pop
+
+Three opt-in forms of the push, pop and transaction requests. They change how
+the messages travel between the client and the broker and nothing else: the
+calls, their results, deduplication and the delivery guarantees stay the same.
+All three are off by default, and with them off the client sends and reads the
+JSON every broker knows.
+
+```cpp
+ClientConfig config;
+config.binary_push = true;       // a push travels as a binary body
+config.push_compression = true;  // with binary_push: framed and compressed here
+config.framed_pop = true;        // a pop returns the stored records, unpacked here
+
+QueenClient client({"http://localhost:6632"}, config);
+```
+
+| Option | What it does |
+| --- | --- |
+| `binary_push` | A push, direct or buffered, sends its items as one length-prefixed binary body instead of a JSON document. The answer is the same list, one entry per item. |
+| `push_compression` | Needs `binary_push`. The client frames each partition's batch the way the broker stores it, mints the message ids (UUIDv7) and compresses the batch with zstd, once. The broker checks the frames and, when it has nothing to add to them, stores those bytes without compressing them again. A transaction that pushes sends its pushes the same way, with the rest of the bundle as JSON in front of them. |
+| `framed_pop` | `pop()`, `pop_result()` and `consume()` ask for the stored records (`frames=true`) and unpack them here into the same `json` messages, instead of a JSON answer that the broker renders message by message. |
+
+Turn them on when the broker's CPU or the network limits a high message rate:
+the framing, the compression and the unpacking then run in the clients, and the
+batches cross the network compressed.
+
+**`push_compression` and `framed_pop` need zstd, and the header takes it only
+when you ask.** Define `QUEEN_CLIENT_ZSTD` and link the library:
+
+```makefile
+CXXFLAGS += -DQUEEN_CLIENT_ZSTD
+LIBS     += -lzstd
+```
+
+Without the define the header does not include `zstd.h`, so an existing build
+needs no new library. `QueenClient` then throws `std::runtime_error` at
+construction when an option that needs zstd is on. `binary_push` alone needs
+none.
+
+**What stays JSON**, with no action from you:
+
+- A push with a `traceId` on one of its items.
+- A transaction with no push, or with a `traceId` on one of its pushes.
+- A pop the broker cannot answer in frames: a pop of a conflating group, and
+  every pop on a broker that runs with an encryption key
+  (`QUEEN_ENCRYPTION_KEY`). The client reads the JSON answer as always.
+- Acks, KV, timers, locks and the DLQ query. Ephemeral queues have their own
+  routes and do not change either.
+
+A transaction's `results` come back in the order you added the operations, as
+with JSON. The broker answers a binary transaction with the acks first and the
+pushes after them, and the client puts them back.
+
+**Requires broker 2.3.0 or later** for `binary_push` and `push_compression`.
+A broker up to 2.2.0 answers 400 to the binary bodies and the client does not
+fall back to JSON, so turn the two on after every broker of the cluster is
+upgraded. `framed_pop` is safe against any broker: an older one ignores the
+parameter and answers JSON.
+
 ### Queue Configuration
 
 ```cpp
@@ -460,6 +522,9 @@ make test
 # kvtimers  = the KV/timer wire contract (exact JSON body, method and path)
 # locks     = the lock and semaphore wire contract; ./bin/test_locks <url> adds a live half
 # consumer  = the consume path: ack()/renew() results and the consume loop
+# wireforms = the binary push body, the framed pop answer and the binary transaction body
+#             (built with zstd when zstd.h is installed; USE_ZSTD=0 leaves it out and the
+#             suite skips what needs it)
 make run-unit
 
 # Against a live broker (localhost:6632 by default)
@@ -494,6 +559,9 @@ LIBS = -lpthread
 your_program: your_program.cpp
 	g++ -std=c++17 $(INCLUDES) your_program.cpp -o your_program $(LIBS)
 ```
+
+For `push_compression` and `framed_pop`, add `-DQUEEN_CLIENT_ZSTD` to the compile flags and
+`-lzstd` to `LIBS`.
 
 ## Advanced Features
 
@@ -616,6 +684,7 @@ Output:
 
 - `QueenClient(url)` - Create client with single server
 - `QueenClient(urls, config)` - Create client with multiple servers
+- `ClientConfig::binary_push`, `push_compression`, `framed_pop` - Opt-in wire forms, off by default (see Binary Push, Push Compression and Framed Pop)
 - `queue(name)` - Get queue builder
 - `transaction()` - Create transaction builder
 - `ack(message, status, context)` - Acknowledge message(s). `success` is false when the broker refused any of them; its answer is in `result`

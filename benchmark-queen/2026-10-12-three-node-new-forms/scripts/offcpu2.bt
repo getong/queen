@@ -1,0 +1,16 @@
+#!/usr/bin/env bpftrace
+// offcpu2.bt: where the broker's apply threads wait (every thread named queen-rsm-apply: the apply thread and its
+// shard workers share the 15 characters). Per thread: the time off the CPU as a histogram and in total, and the
+// waits of 1 ms or more by the kernel stack the thread went to sleep on (a lock or a wake-up it waits for, the disk,
+// a page fault).
+tracepoint:sched:sched_switch /args->prev_comm == "queen-rsm-apply"/ { @off[args->prev_pid] = nsecs; @st[args->prev_pid] = kstack(10); }
+tracepoint:sched:sched_switch /@off[args->next_pid]/
+{
+  $us = (nsecs - @off[args->next_pid]) / 1000;
+  @off_us[args->next_pid] = hist($us);
+  @off_total_us[args->next_pid] = sum($us);
+  @switches[args->next_pid] = count();
+  if ($us >= 1000) { @long_us[args->next_pid, @st[args->next_pid]] = stats($us); }
+  delete(@off[args->next_pid]);
+}
+END { clear(@off); clear(@st); }

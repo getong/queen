@@ -123,6 +123,224 @@ document that was expired, malformed or dated in the future by a clock step made
 drain every worker and exit. It is now removed with one log line and supervision goes on, as in the
 PHP engine; one that cannot be removed still stops the master, as a fault of the state directory.
 
+## 2.3.0
+
+**Three brokers, a million messages a second: end to end p99 from 100-160 ms to about 20.** Measured on
+2026-10-12 and 13 with the fixes below and this release's wire forms (binary push, compressed groups,
+framed pops, counted acks), 100 messages a request, a fresh cluster for every point, figures at
+seconds 30-60 of the load. With deduplication off and nothing deleted, end to end p50 / p99 is the
+same from 100 to 100,000 partitions: 4 / 6 ms at 100k msg/s, 5 / 9 at 500k, 10 / 17 at 1M, 17-20 /
+35-40 at 1.5M, 27-31 / 56-62 at 2M. Ten million partitions read 10 / 20 ms at 1M msg/s and 39 / 69 at
+2M; before these fixes they did not carry 1.5M. 2.5M msg/s is pushed and not carried. With
+deduplication and retention on (60 s windows) 1.5M msg/s reads 19-28 / 36-51 ms from 100 to 1M
+partitions; it is not carried on 10 partitions (the planner, with deduplication at 150,000 msg/s a
+partition) nor on 10M (memory: more than the 32 GB of these brokers). 2M msg/s with retention holds on
+1,000 partitions and rises slowly there. The runs, their method and what is not solved are in
+`benchmark-queen/2026-10-12-three-node-new-forms/NIGHT.md`.
+Kafka 4.3.1 ran on the same machines on 2026-10-13, worst load process on both sides: on 100
+partitions it reads 8 / 11 ms at 1M msg/s against Queen's 10 / 19 and 8 / 43 at 2M against 31 / 63,
+and carries 4M (13 / 243), which Queen does not; at 2M msg/s on 10,000 partitions it reads 64 / 134
+on 30 broker cores against Queen's 31 / 63 on 20, and it does not carry 100,000 partitions, where
+Queen reads 30 / 59. The benchmark pages of the site carry these figures.
+
+**The upgrade rolls both ways.** 2.3.0 changes nothing in the replicated state: the cluster version
+stays 6, and a cluster rolls from 2.2.0 to 2.3.0 and back one node at a time (a standby of several
+raft groups has a rule of its own, below). The JavaScript, Python and Rust clients are 2.3.0, the Go and C++ clients
+are tagged 2.3.0, and the PHP client is 2.5.0; `queen-protocol` stays 1.4.0. A 2.1.0 client and a
+2.3.0 broker, or the reverse with the new options off, talk as before.
+
+**Server: a binary push body, and a client's compressed batch stored as it is.** `POST /api/v1/push`
+reads a body that starts with `QPB1` as length-prefixed groups (queue, partition, payloads, a
+`transactionId` each when the client sends them) instead of a JSON document: same admission, same
+commands, same verdict for every message. A payload is still one JSON document, and is checked.
+The body may be one zstd frame, and its answer may be the counts alone (`count`, `queued`,
+`duplicate`, `error`). In its framed form (flag 8) each partition's batch is the frames the queue
+log stores, with message ids the client minted, compressed by the client as one zstd frame: the
+broker inflates and checks every frame and, when it has nothing to add (no producer identity, no
+payload encryption, no `transactionId` twice in the request), files the client's bytes as the
+stored record and ships them to its followers, so no node compresses them again. A node that does
+not lead hands those bytes to the leader with the forwarded request (`QUEEN_PUSH_FORWARD_STORED`,
+on; an older leader ignores them). A JSON push is read as before, with one clock read a request
+and borrowed strings. The layouts are in the HTTP reference.
+
+**Server: an ack answered with counts, a pop answered with the stored records.** An ack's body was
+parsed twice, the first time whole to read one key; it is parsed once, and its result is looked up
+by index (it was a scan of the batch for every item). `"answer": "counts"` in the body answers
+`count`, `success`, `failed` and the first `error` instead of one object per message. `frames=true`
+on the pop routes answers `application/x-queen-pop`: the records as the queue log holds them, zstd
+frames included, with the claims' offsets, so the broker inflates and renders nothing and the
+client unpacks. It falls back to the JSON answer when the broker runs with payload encryption,
+when a claim is conflated, or when a record is not readable as stored. Without the parameter a
+pop is the JSON one.
+
+**Server: a binary transaction body.** `POST /api/v1/transaction` reads a body that starts with
+`QTB1`: the JSON body without its pushes, then the pushes as framed groups, stored as the client
+compressed them when a group is a partition's whole append. Acks, required leases, KV, timers and
+the lease fence are those of the JSON body; results come back with the head's operations first,
+then the pushes, then the riders, and each SDK hands them back in the caller's order.
+
+**What the three forms measure against 2.2.0.** Same three machines, one queue of 200 partitions,
+a 60 s deduplication window, 2026-10-12 (`benchmark-queen/2026-10-12-three-node-new-forms/`,
+before the fixes below): at 1M msg/s the push goes from 8.1 / 39.9 ms to 5.2 / 8.7 and the end to
+end from 27.1 / 85.0 to 11.5 / 18.4; the three brokers use 13.4 cores for 16.4 and the load
+machines 8.3 for 14.4; offered more than it can take, the cluster pushes 2.45M msg/s for 1.57M.
+Transactions of 10 messages at 12,000 a second commit in 3.6 / 8.6 ms with the binary body for
+5.3 / 12.4 on 2.2.0, and the ceiling moves from 11,320 to 12,890 a second; of 100 messages at
+3,000 a second, 4.1 / 7.0 ms for 6.1 / 19.2. The ceilings are still the planner's: one cycle at a
+time for pushes, one serial phase for transactions that ack.
+
+**Clients: binary push, push compression and framed pop in all six SDKs and the Laravel driver.**
+Three options, off by default everywhere, so a client that does not set them sends and reads JSON
+byte for byte as before: `binaryPush`, `pushCompression`, `framedPop` in JavaScript and PHP,
+`binary_push`, `push_compression`, `framed_pop` in Python, Rust and C++, `BinaryPush`,
+`PushCompression`, `FramedPop` in Go, and three keys of the same names in `config/queen.php`. With
+binary push a push goes out as the binary body; with push compression too, as framed groups, and a
+transaction that pushes as the binary transaction body; with framed pop the client asks for the
+stored records and unpacks them into the messages a JSON pop returns. A push or a transaction that
+carries a trace id stays JSON. zstd comes from Node.js itself, from Python 3.14's standard library
+or the new `zstd` extra before it, from a dependency of the Go module and of the Rust crate, from
+libzstd in C++ (`-DQUEEN_CLIENT_ZSTD`, `-lzstd`), and from the zstd extension in PHP, which the
+client asks for at construction when an option needs it. Binary push and push compression need a
+2.3.0 broker on every node: an older broker answers the binary bodies with 400 and no client falls
+back. Framed pop is safe against any broker.
+
+**Server: the deduplication filter of a busy partition takes 4 bytes a hash.** A push whose
+`transactionId` the filter cannot rule out is looked up in the partition's rows, and for a
+partition at thousands of messages a second one lookup scanned about 1,400 rows of 100 hashes: at
+1.85M msg/s on 200 partitions 0.34 to 0.40% of the messages paid one and the planner's lanes spent
+62% of their time there. A filter generation of 8,192 hashes or more now has 32 bits a hash instead
+of 16; smaller ones, which a quiet partition has, keep 16. The lookups fell to 0.026% of the
+messages and the most that queue pushes rose from 1.85M to 2.45M msg/s. The filter grew from 0.56
+to 1.23 GB in that run, so its default cap (`QUEEN_RAFT_DEDUP_FRONT_MB`) goes from 2 to 4 GiB.
+
+**Server: the durable point every 250 ms, and the checkpoint written in steps.** The store's
+checkpoint was written once a second and synced in one go, and the raft log's own sync waited
+behind it. `QUEEN_RAFT_DURABLE_EVERY_MS` is now 250 by default, each node of a cluster writes its
+checkpoint at its own place in that period (`QUEEN_RAFT_DURABLE_PHASE_MS`; `off` is the 2.2.0
+behaviour), and on Linux the checkpoint is handed to the disk 8 MB at a time before its sync
+(`QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB`; `0` hands it over in one go). No answer ever waited for
+the durable point, and none does now: it bounds what a restart replays. The 2.2.0 figures above
+ran with its 1 s default, so how much of the p99 these settings alone move was not measured on
+three machines.
+
+**A command's recorded outcome leaves when its window ends, not ten seconds' worth at a time.**
+Every command's outcome is kept `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s) to answer a retry. The step
+that retires them ran on a 10 s tick, so ten seconds of outcomes left together, in steps of 4,096
+rows one after the other, and apply did nothing else for 50 to 150 ms: from second 70 of every load
+the p99 doubled or tripled. The leader now looks every `QUEEN_RAFT_REQUEST_EXPIRE_FAST_MS` (10; `0`
+leaves it to the tick) whether 256 outcomes have left the window, and retires what has in its next
+cycle; fewer wait for the tick, so an idle cluster writes no entry for them. The step and its limit
+are unchanged. 1,000 partitions, last 30 s of a 90 s load, end to end p50 / p99: 11.8 / 29.9 → 10.6
+/ 16.3 ms at 1M msg/s, 17.4 / 78.8 → 17.4 / 32.8 at 1.5M, 29.4 / 127 → 30.0 / 60.4 at 2M.
+
+**Ten million partitions: the leader's idle scan works in turns.** The scan that unloads idle consumer
+state walked 625,000 partitions under one lock once a second, on the thread that serves pops: with
+10M partitions 7% of the messages were up to 80 ms late at any load. It now looks at 1,024 partitions
+a turn, a turn every 5 ms, and a consumer's state for a partition is held by a pointer, so a table
+that grows no longer moves 430 bytes for each (100 to 160 ms while 10M partitions were first read).
+10M partitions, end to end p50 / p99: 6.8 / 73.7 → 4.0 / 6.9 ms at 100k msg/s, 13.4 / 130 → 11.1 /
+17.2 at 1M.
+
+**A pop's checkpoint is taken at once.** A pop or an ack is answered once the checkpoint that holds
+its change has committed, and checkpoints were taken every `QUEEN_CONSUME_CHECKPOINT_MS` (5): an
+answer waited half a tick on average before its checkpoint even started. An answer that waits now
+has the checkpoint taken at once when none is in flight (`QUEEN_CONSUME_CHECKPOINT_EAGER`, on; `0`
+waits for the tick). What an answer waits for is unchanged. At 100k msg/s: 6.5 / 10.2 → 3.9 / 6.8
+ms, for more log entries at low load (3.1 → 4.4 broker cores there).
+
+**Retention no longer stops apply.** Three causes, each measured:
+- A round over a small store was one slice: every partition's watermark reached the planner together
+  once an interval and went into one entry (1,000 partitions at 1M msg/s: 50,000 rows retired in one
+  go, apply stalled 44-59 ms every 5 s). The round is now spread over its interval in 100 steps:
+  12.9 / 76.8 → 11.8 / 19.5 ms with deduplication and retention on.
+- The dashboard's node-local retention history was written by the apply thread: for every watermark
+  a JSON record, the file opened, three writes, closed, and the file rewritten with two fsyncs every
+  8,192 records, up to 37 ms at a time and several times in a row. Apply now keeps a step in memory,
+  where the dashboard reads it at once, and the metrics collector writes the file every
+  `METRICS_FLUSH_MS` (60 s) and at shutdown. After a crash the dashboard's history misses up to that
+  last minute; no queue state is involved. A million partitions at 1.5M msg/s: 23 / 120 → 21 / 39 ms;
+  100,000 partitions at 2M msg/s, not carried before (2 s and rising), reads 63 / 106.
+- Not solved: with retention on and 10,000 to 100,000 partitions the store's checkpoint cannot keep
+  its 250 ms pace (a page written per changed row), which lifts the p99 there to about 50 ms at
+  1.5M msg/s against 36-40 at 1,000 and at 1M partitions.
+
+**Two stalls at high partition counts and loads.** The queue log's cross-file directory is merged
+about every 40 s on every node, and its files were synced in one go: with 100,000 partitions at 1.5M
+msg/s the raft log's sync waited behind it (the leader's longest commit 15 → 64 ms, one 10 s window
+at 138 ms). They now reach the disk 8 MB at a time while they are written. And the planner kept a
+queue's partition names in one hash table, which hashes every name again when it doubles: 36 ms at
+458,752 names and 89 ms at 917,504, on the thread every push waits for (a million partitions at 2M
+msg/s: one window at 151 ms against 55-65). The names sit in 256 tables once a queue has 4,096 of
+them, and lookups that are dropped are freed off that thread.
+
+**Kafka facade: a fetch is read to what its response can carry.** Kafka's `max_bytes` is for the whole
+response, and each call the facade makes to the broker now carries it as the call's own ceiling (the
+route's top-level `maxBytes`), counted as Queen stores the records: a key and a value are kept in
+base64, so the client's number is asked for a third larger. The entries are read in order while any
+of it is left, and the rest answer their bounds and no records. Before, every partition of a wide
+assignment was read to its own budget, so a consumer behind on a thousand partitions had a gigabyte
+read for the 32 MiB a response carries, on every fetch; and asked for the client's number as it
+stood, a fetch came back a quarter short. A fetch from an old offset now reads the queue log with the
+log's lock released, as a pop does (the appends to that log waited behind a read from the disk), and
+once a record waits for the disk the kernel is asked to read ahead (`QUEEN_QLOG_READ_AHEAD_MB`, 1;
+`0` is off). Not measured yet.
+
+**Proxy: a plan counts requests and uncompressed bytes, no longer messages.** A plan limited what a
+tenant sends with three caps counted in messages: a rate (`max_msgs_per_sec`, `msgs_burst`), a size
+for one payload (`max_payload_bytes`) and a number of items for one push (`max_batch_items`). The
+proxy could answer them only by parsing the body as JSON, and the binary push and transaction bodies
+the broker now reads (`QPB1`, `QTB1`) were forwarded without any of them. One rate replaces the
+three: `max_bytes_per_sec`, with `bytes_burst`, counted in uncompressed bytes. A push, a
+transaction, an ephemeral push and a streams cycle that emits are weighed on the way in, and a pop's
+answer leaves the same bucket once the broker has answered. The proxy reads the weight off the
+body's headers and inflates nothing: a body compressed as a whole carries its `raw_len`, each group
+of a framed push or of a binary transaction is one zstd frame that declares its content size, and
+the broker refuses a body that holds more than it declares. A binary body whose headers do not say
+what it weighs answers 400 `invalid_request` at the proxy, and the broker now refuses a binary push
+with flags 1 and 8 together (a framed body compressed again as a whole), which hid the groups and
+their sizes. No seeded plan has a byte rate: it is unlimited until `max_bytes_per_sec` is set in a
+cluster's overrides, so set it before a cell that enforces its limits takes this build. An override
+that still names one of the four retired keys is accepted and changes nothing, so a control plane
+that sends them keeps provisioning. `QUEEN_PROXY_MAX_BATCH_ITEMS` is no longer read, and the limits
+log line says `kind=bytes` where it said `kind=msgs`. Still read from a JSON body only: the queues
+and partitions a push names (the plan's `max_queues` and `max_partitions_per_queue`), and the
+messages the meter books.
+
+**Server: a standby cluster can run several raft groups.** A standby replayed one log, so a link
+needed `QUEEN_RAFT_GROUPS=1` on both clusters and a standby started with more refused to boot.
+Each raft group of a standby now replays the source's group of the same number: it reads the nodes
+`QUEEN_LINK_SOURCE` names on their raft port plus the group's number, takes its seed from that
+group's snapshot into its own directory, and keeps its own position, id and lag. Nothing is
+configured per group. Where a tenant lives is each cluster's configuration and not replicated
+state, so every call of a standby's group now states its group, the number of groups and its tenant
+pins in a header (`x-queen-link-placement`), and a source group answers `409` to a standby whose
+`QUEEN_RAFT_GROUPS` or `QUEEN_TENANT_GROUPS` differ from its own: the standby shows `waiting` with
+the reason and replays nothing, and a refused seed stops the boot. That also closes a hole of
+2.1.0 to 2.2.0, where a source of several groups answered a standby of one group, which replayed
+group 0 alone and said nothing: such a standby is now refused, and a standby of several groups
+refuses a source up to 2.2.0, which does not state its placement. A link between clusters of one
+group works as before, in both directions between this build and 2.2.0. On a node of several
+groups `GET /api/v1/system/link` and `/health`'s `raft.link` list every group under `groups`, with
+a `role` on top that is `mixed` when the groups differ, and `POST /api/v1/system/link/promote`
+promotes every group; a group that could not be promoted is named in the answer with its status,
+and the call is repeated. A promotion cuts each group at the entry its own replay had reached: no
+command spans two groups, so every tenant gets a state the source had for it, and tenants in
+different groups can be cut at slightly different moments. The Jepsen failover tests ran one
+group. See [standby cluster](https://queenmq.com/operate/standby/#several-raft-groups).
+
+**Server: a node added to a cluster of several raft groups can become a voter in every group.**
+With `QUEEN_RAFT_GROUPS` above 1 each group prefers one member as its leader, and a group's leader
+handed leadership to that member as soon as it answered and was nearly caught up, without asking
+whether it was a voter. A node being added is a learner first. In the group that preferred it, the
+leader handed leadership to a learner, which cannot be elected, and from then on no longer heard
+its learners: `POST /api/v1/system/raft/membership/promote` answered `409 learner_behind` ("it has
+not answered recently") for that group, for good, while the other groups promoted the node. And
+when the node had become a voter in time, the leader could hand it leadership between the two
+steps of the promotion, which then stayed unfinished (`409 in_flight`) until an operator sent the
+voters again. A group's leader now hands leadership only to a member that is a voter and only
+while no membership change is in flight, so the hand-over happens after the promotion. Found by a
+new test that adds two nodes to a seeded standby of two groups.
+
 ## 2.2.0 - 2026-10-10
 
 **Server: a queue's memory no longer grows with the messages it keeps.** Every push left a row in

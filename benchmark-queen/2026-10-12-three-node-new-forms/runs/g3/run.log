@@ -1,0 +1,17 @@
+[11:37:36] run g3: binary new, groups 3, sync, checkpoint 5 ms, tenants 3, partitions 500000, consumers 33 per process, retention completed, steps of 60s at: 1000000 1900000 2500000 3000000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_TENANCY_HEADER=1 QUEEN_KV_TRUSTED_PROXY=1 QUEEN_RAFT_GROUPS=3 QUEEN_TENANT_GROUPS=00000000-0000-4000-8000-000000000000=0,00000001-0000-4000-8000-000000000000=1,00000002-0000-4000-8000-000000000000=2 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[11:37:46] roles: n1 healthy leader | n2 healthy follower+leader | n3 healthy follower+leader
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 166666 partitions
+[11:39:27] 1,000,000: offered 1,000,014 pushed 1,000,006 consumed 999,994 shed 0 errors 0 lag 0 | push p50 5.2 p99 10.1 | e2e p50 11.1 p99 47.1 | n1 6.6c apply 67% raft 179%; n2 7.1c apply 74% raft 187%; n3 6.8c apply 68% raft 181% | loaders 9.0c  OK 
+[11:40:59] 1,900,000: offered 1,899,986 pushed 1,899,982 consumed 1,900,256 shed 0 errors 0 lag 0 | push p50 10.0 p99 20.7 | e2e p50 21.2 p99 55.3 | n1 8.3c apply 90% raft 141%; n2 8.9c apply 100% raft 143%; n3 8.6c apply 95% raft 140% | loaders 15.7c  OK 
+[11:42:32] 2,500,000: offered 2,499,980 pushed 2,501,894 consumed 2,503,168 shed 0 errors 0 lag 0 | push p50 21.5 p99 75.8 | e2e p50 46.6 p99 239.6 | n1 9.7c apply 109% raft 121%; n2 10.4c apply 121% raft 125%; n3 10.1c apply 116% raft 122% | loaders 20.4c  OK 
+[11:44:04] 3,000,000: offered 2,999,988 pushed 2,955,036 consumed 2,763,425 shed 1,430,900 errors 14 lag 0 | push p50 89.1 p99 1769.5 | e2e p50 843.8 p99 9961.5 | n1 11.3c apply 114% raft 120%; n2 13.4c apply 148% raft 146%; n3 11.8c apply 124% raft 121% | loaders 23.5c  NOT CARRIED 
+[11:44:04] stopping at 3000000
+RUN_DONE

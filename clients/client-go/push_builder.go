@@ -1,6 +1,7 @@
 package queen
 
 import (
+	"encoding/json"
 	"context"
 	"fmt"
 )
@@ -133,6 +134,32 @@ func (pb *PushBuilder) executeBuffered(ctx context.Context, items []PushItem) ([
 
 // executeDirect pushes items directly to the server.
 func (pb *PushBuilder) executeDirect(ctx context.Context, items []PushItem) ([]PushResponse, error) {
+	hc := pb.qb.queen.httpClient
+	if hc.config.BinaryPush {
+		if body, ok := binaryPushBody(items, hc.config.PushCompression); ok {
+			raw, err := hc.PostRaw(ctx, "/api/v1/push", rawRequestBody(body))
+			if err != nil {
+				return nil, fmt.Errorf("push request failed: %w", err)
+			}
+			var answers []struct {
+				Status        string `json:"status"`
+				TransactionID string `json:"transaction_id"`
+				Error         string `json:"error"`
+			}
+			if err := json.Unmarshal(raw, &answers); err != nil {
+				return nil, fmt.Errorf("push answer: %w", err)
+			}
+			responses := make([]PushResponse, len(items))
+			for i := range responses {
+				responses[i] = PushResponse{Status: "queued"}
+				if i < len(answers) {
+					responses[i] = PushResponse{Status: answers[i].Status, TransactionID: answers[i].TransactionID, Error: answers[i].Error}
+				}
+			}
+			return responses, nil
+		}
+	}
+
 	// Build request
 	reqItems := make([]pushRequestItem, len(items))
 	for i, item := range items {

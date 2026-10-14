@@ -35,6 +35,7 @@ pub(super) fn knobs() -> Knobs {
         lanes: 4,
         ckpt_ms: 5,
         fast: false,
+        eager: true,
         lease_ms: 400,
         skew_us: 500_000,
         margin_us: 50_000,
@@ -142,6 +143,8 @@ impl H {
             .expect("open store"),
         );
         let e = Engine::with_knobs(store.clone(), k);
+        // The suite drives the idle-part unloader by hand ([`super::unload`]).
+        e.unload.auto_off.store(true, Ordering::Release);
         e.set_mode(IndexMode::Txns);
         e.on_leader(1, u64::MAX);
         e.serve_after_us.store(0, Ordering::Release);
@@ -164,6 +167,7 @@ impl H {
     pub fn failover_with(&mut self, k: Knobs) {
         self.e.on_step_down();
         let e = Engine::with_knobs(self.store.clone(), k);
+        e.unload.auto_off.store(true, Ordering::Release);
         e.set_mode(IndexMode::Txns);
         e.on_leader(2, u64::MAX);
         e.serve_after_us.store(0, Ordering::Release);
@@ -752,6 +756,81 @@ fn a_claim_is_answered_only_once_its_checkpoint_committed() {
         h.group_exists("q", "g"),
         "the registration was checkpointed"
     );
+}
+
+/// Whether the checkpoint ticker's second clock has fired
+/// ([`Engine::checkpoint_wanted`]); the wake-up is taken.
+fn ticker_woken(h: &H) -> bool {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .expect("a runtime");
+    rt.block_on(async {
+        tokio::time::timeout(std::time::Duration::from_millis(1), h.e.checkpoint_wanted())
+            .await
+            .is_ok()
+    })
+}
+
+/// `QUEEN_CONSUME_CHECKPOINT_EAGER`: an answer that begins to wait on a row
+/// wakes the ticker at once when no checkpoint is in flight; when one is, the
+/// ticker is woken as that one commits. The answer itself still waits for its
+/// row: only the moment of the checkpoint moves.
+#[test]
+fn a_waiting_answer_asks_for_its_checkpoint_at_once() {
+    let mut h = H::new("eager-checkpoint");
+    h.push("q", "p0", &["a"]);
+    h.push("q", "p1", &["b"]);
+    assert!(!ticker_woken(&h), "nothing waits yet");
+
+    let mut c = h.pop_cmd("q", "g", "w1");
+    c.partition = Some("p0".to_string());
+    let mut rx0 = h.later(Command::PopPinned(c));
+    assert!(rx0.try_recv().is_err(), "the claim waits for its row");
+    assert!(ticker_woken(&h), "no checkpoint in flight: taken now");
+
+    // The first checkpoint is in flight when a second claim begins to wait.
+    let first = h.e.take_checkpoint(h.now).expect("the first claim's row");
+    let mut c = h.pop_cmd("q", "g", "w2");
+    c.partition = Some("p1".to_string());
+    let mut rx1 = h.later(Command::PopPinned(c));
+    assert!(rx1.try_recv().is_err());
+    assert!(
+        !ticker_woken(&h),
+        "a checkpoint is in flight: the next one waits for it"
+    );
+
+    // It commits: the first claim is answered and the ticker is woken for the
+    // second.
+    let effects: Vec<Effect> = first
+        .commands
+        .iter()
+        .flat_map(|c| c.effects.clone())
+        .collect();
+    h.apply(&effects);
+    h.e.checkpoint_resolved(first.ticket, true);
+    assert!(rx0.try_recv().is_ok(), "the first claim's row is durable");
+    assert!(rx1.try_recv().is_err(), "the second claim's row is not");
+    assert!(ticker_woken(&h), "the last checkpoint in flight resolved");
+    assert!(h.checkpoint() > 0);
+    assert!(rx1.try_recv().is_ok());
+    assert!(!ticker_woken(&h), "nothing waits any more");
+
+    // Off: the tick alone.
+    let mut h = H::with(
+        "eager-checkpoint-off",
+        Knobs {
+            eager: false,
+            ..knobs()
+        },
+    );
+    h.push("q", "p0", &["a"]);
+    let c = h.pop_cmd("q", "g", "w1");
+    let mut rx = h.later(Command::PopWildcard(c));
+    assert!(rx.try_recv().is_err());
+    assert!(!ticker_woken(&h), "off: the answer waits for the tick");
+    assert!(h.checkpoint() > 0);
+    assert!(rx.try_recv().is_ok());
 }
 
 /// The batcher answers a checkpoint when its entry COMMITS, so the leader

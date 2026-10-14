@@ -172,6 +172,22 @@ fn pop_answer(
     }
     if out.empty && !out.conflation && !out.conflation_conflict {
         StatusCode::NO_CONTENT.into_response()
+    } else if let Some(frames) = out.frames {
+        // The stored records as they are (`frames=true`): not JSON. In front
+        // of them, the answer's own keys (the conflation echo, the autopilot's
+        // choice) as the JSON object the facade built.
+        let mut b = Vec::with_capacity(9 + out.body.len() + frames.len());
+        b.extend_from_slice(b"QPF1");
+        b.push(1);
+        b.extend_from_slice(&(out.body.len() as u32).to_le_bytes());
+        b.extend_from_slice(out.body.as_bytes());
+        b.extend_from_slice(&frames);
+        (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "application/x-queen-pop")],
+            b,
+        )
+            .into_response()
     } else {
         json(StatusCode::OK, out.body)
     }
@@ -190,11 +206,13 @@ pub(crate) async fn dispatch_pop(
     wait: bool,
     timeout_ms: u64,
     options: PopOptions,
+    frames: bool,
 ) -> Response {
     if let Err(e) = facade::check_message_key_names(tenant, &queue, group.as_deref(), None) {
         return err_response(e);
     }
-    let ctx = ReqCtx::new(tenant, deadline_for(timeout_ms));
+    let mut ctx = ReqCtx::new(tenant, deadline_for(timeout_ms));
+    ctx.pop_frames = frames;
     // A conflict needs the names for its log line; only a request that named a
     // policy can conflict, so nothing is copied otherwise.
     let requested = options.conflate_requested;
@@ -246,13 +264,15 @@ pub(crate) async fn dispatch_pop_partition(
     wait: bool,
     timeout_ms: u64,
     options: PopOptions,
+    frames: bool,
 ) -> Response {
     if let Err(e) =
         facade::check_message_key_names(tenant, &queue, group.as_deref(), Some(&partition))
     {
         return err_response(e);
     }
-    let ctx = ReqCtx::new(tenant, deadline_for(timeout_ms));
+    let mut ctx = ReqCtx::new(tenant, deadline_for(timeout_ms));
+    ctx.pop_frames = frames;
     let requested = options.conflate_requested;
     let scope = requested.map(|_| (queue.clone(), group.clone().unwrap_or_default()));
     let req = PopPinnedReq {
@@ -291,13 +311,15 @@ pub(crate) async fn dispatch_pop_discover(
     wait: bool,
     timeout_ms: u64,
     options: PopOptions,
+    frames: bool,
 ) -> Response {
     // The discovery selectors (namespace/task) are not store keys, but the
     // consumer group is; bound it (queue empty — discovery has none in the path).
     if let Err(e) = facade::check_message_key_names(tenant, "", group.as_deref(), None) {
         return err_response(e);
     }
-    let ctx = ReqCtx::new(tenant, deadline_for(timeout_ms));
+    let mut ctx = ReqCtx::new(tenant, deadline_for(timeout_ms));
+    ctx.pop_frames = frames;
     // Discovery spans queues: the conflict is attributed to the namespace/task
     // pair, with no per-queue counter.
     let requested = options.conflate_requested;
@@ -341,14 +363,12 @@ pub(crate) async fn dispatch_pop_discover(
 /// user-supplied name in the composite cursor key, so bound it (R-108); the
 /// partition id is a bounded derived value.
 pub(crate) async fn dispatch_ack(st: &AppState, tenant: &str, body: axum::body::Bytes) -> Response {
-    let group = ack_group(&body);
-    if let Err(e) = facade::check_message_key_names(tenant, "", Some(&group), None) {
-        return err_response(e);
-    }
+    // The group is the body's `consumerGroup` key: the facade reads and
+    // bounds it in the one parse it does anyway (an empty `group` asks for it).
     let ctx = ReqCtx::new(tenant, deadline_for(st.stmt_timeout.as_millis() as u64));
     let req = AckReq {
         queue: None,
-        group,
+        group: String::new(),
         raw: body.to_vec(),
     };
     match st.rsm.ack(ctx, req).await {
@@ -375,20 +395,6 @@ pub(crate) async fn dispatch_transaction(
         ),
         Err(e) => err_response(e),
     }
-}
-
-/// Extract the consumer group from an ack body (single or batch) without the
-/// private `AckSingle`/`AckBatch` types: read the `consumerGroup` key
-/// generically, defaulting to the queue-mode group the handlers use.
-fn ack_group(body: &axum::body::Bytes) -> String {
-    serde_json::from_slice::<serde_json::Value>(body)
-        .ok()
-        .and_then(|v| {
-            v.get("consumerGroup")
-                .and_then(|x| x.as_str())
-                .map(str::to_string)
-        })
-        .unwrap_or_else(|| "__QUEUE_MODE__".to_string())
 }
 
 /// `POST /api/v1/lease/:leaseId/extend`.

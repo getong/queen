@@ -67,6 +67,8 @@ mod inner;
 pub mod kv;
 pub mod lb;
 pub mod locks;
+pub mod pop_frames;
+pub mod push_binary;
 pub mod queue;
 pub mod streams;
 pub mod supervision;
@@ -98,9 +100,9 @@ pub use queen_protocol::{
     AckResult, AckStatus, AutopilotEcho, DlqParams, DlqResponse, EphemeralAck, EphemeralAckResult,
     EphemeralDelivered, EphemeralOptions, EphemeralOutcome, EphemeralPolicy, EphemeralStatus,
     EphemeralWindowBuffer, Expiry, KvOpKind, KvOperation, KvPrecondition, KvReason, KvResult,
-    KvRow, LockHolder, LockOpKind, LockOperation, LockReason, LockResult, Message, PushItem,
-    PushResult, PushStatus, QueueOptions, SeekRequest, SubscriptionMode, TimerListRow, TimerOpKind,
-    TimerOperation, TimerPage, TimerPeek, TimerResult, TimerStatus, TraceRequest,
+    KvRow, LockHolder, LockOpKind, LockOperation, LockReason, LockResult, Message, PopResponse,
+    PushItem, PushResult, PushStatus, QueueOptions, SeekRequest, SubscriptionMode, TimerListRow,
+    TimerOpKind, TimerOperation, TimerPage, TimerPeek, TimerResult, TimerStatus, TraceRequest,
     TransactionResponse, TxnPushItem, TxnResultItem,
 };
 

@@ -73,6 +73,14 @@ verifiedBy:
 # automatic renewal waits at most the renewal interval, encodes the lease id and logs a renewal that
 # failed or renewed nothing. The renewal this page describes, the extend route and renewLease(), is
 # unchanged.
+# sourceOfTruth re-read 2026-10-13 (2.3.0): facade/real.rs and the handlers read a binary push body
+# and a binary transaction body on the routes of the JSON ones, answer an ack with counts when its
+# body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
+# forms is planned, committed and answered as before. consume/state.rs holds a consumer's state for
+# a partition behind a pointer; phase2/admin.rs only converts a frame's type; clients/client-
+# go/consumer_manager.go and clients/client-cpp/queen_client.hpp ask for frames=true when the
+# client's framed pop option is on and hand the same messages to the handler. Groups, cursors,
+# leases, acks and the pop options are as the page says.
 ---
 
 A consumer group reads a queue at its own pace, with one cursor in each partition. Its workers

@@ -89,6 +89,11 @@ verifiedBy:
 # automatic renewal waits at most the renewal interval, encodes the lease id and logs a renewal that
 # failed or renewed nothing. The renewal this page describes, the extend route and renewLease(), is
 # unchanged.
+# sourceOfTruth re-read 2026-10-12 (binary push, push compression, framed pop): consumer_manager.go
+# pops through the HTTP client's framed path when FramedPop is on, queen_client.hpp gains the three
+# wire options and their encoders, and config/queen.php adds binary_push, push_compression and
+# framed_pop. None of them touches a publication, its interval, its timeout or its TTL. Nothing this
+# page states changes.
 ---
 
 The broker dashboard discovers published supervisor status in the `queen-supervisor` KV namespace.

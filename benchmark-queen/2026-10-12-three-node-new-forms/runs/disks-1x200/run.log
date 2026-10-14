@@ -1,0 +1,12 @@
+[10:52:00] run disks-1x200: binary new, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 200, consumers 22 per process, retention completed, steps of 70s at: 300000 600000 1000000 1500000 2000000 2500000 | EXTRA=QUEEN_RAFT_TXN_WINDOW_MIN_S=60 QUEEN_RAFT_DURABLE_EVERY_MS=250 QUEEN_RAFT_CHECKPOINT_FLUSH_STEP_MB=8 | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames
+[10:52:16] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":60,"deadLetterQueue":true,"
+
+[create] done: bench x 200 partitions
+[10:54:00]   300,000: offered 299,990 pushed 300,001 consumed 300,008 shed 0 errors 0 lag 0 | push p50 3.1 p99 5.2 | e2e p50 7.1 p99 11.5 | n1 3.0c apply 15% raft 106%; n2 1.9c apply 16% raft 59%; n3 1.8c apply 15% raft 56% | loaders 3.0c  OK 
+[10:55:42]   600,000: offered 599,997 pushed 599,978 consumed 599,983 shed 0 errors 0 lag 0 | push p50 4.0 p99 6.3 | e2e p50 9.1 p99 14.5 | n1 4.7c apply 25% raft 138%; n2 2.8c apply 25% raft 67%; n3 2.6c apply 23% raft 65% | loaders 5.4c  OK 
+[10:57:25] 1,000,000: offered 999,981 pushed 999,988 consumed 1,000,008 shed 0 errors 0 lag 0 | push p50 5.9 p99 10.1 | e2e p50 13.2 p99 27.6 | n1 6.0c apply 36% raft 124%; n2 3.2c apply 37% raft 48%; n3 3.0c apply 34% raft 45% | loaders 8.3c  OK 
+[10:59:07] 1,500,000: offered 1,500,001 pushed 1,499,973 consumed 1,499,855 shed 0 errors 0 lag 0 | push p50 9.1 p99 20.0 | e2e p50 25.6 p99 58.4 | n1 7.5c apply 45% raft 126%; n2 4.6c apply 49% raft 46%; n3 3.9c apply 42% raft 38% | loaders 12.0c  OK 
+[11:00:50] 2,000,000: offered 1,999,986 pushed 1,851,516 consumed 1,850,324 shed 5,794,800 errors 0 lag 0 | push p50 237.6 p99 2850.8 | e2e p50 290.8 p99 2916.4 | n1 9.3c apply 41% raft 113%; n2 4.9c apply 42% raft 36%; n3 4.7c apply 40% raft 34% | loaders 15.3c  NOT CARRIED 
+[11:00:50] stopping at 2000000
+RUN_DONE

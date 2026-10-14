@@ -265,13 +265,11 @@ fn limits_json(l: &EffectiveLimits) -> Value {
     json!({
         "max_req_per_sec": l.max_req_per_sec,
         "req_burst": l.req_burst,
-        "max_msgs_per_sec": l.max_msgs_per_sec,
-        "msgs_burst": l.msgs_burst,
+        "max_bytes_per_sec": l.max_bytes_per_sec,
+        "bytes_burst": l.bytes_burst,
         "max_queues": l.max_queues,
         "max_partitions_per_queue": l.max_partitions_per_queue,
         "max_parked_pops": l.max_parked_pops,
-        "max_payload_bytes": l.max_payload_bytes,
-        "max_batch_items": l.max_batch_items,
         "max_retained_bytes": l.max_retained_bytes,
         "max_retention_seconds": l.max_retention_seconds,
     })

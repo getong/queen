@@ -22,17 +22,19 @@
 //!      -> 403 storage_quota_exceeded (live quota flag) or push_blocked (DB
 //!      lifecycle status) — two causes, two codes)
 //!   3. authenticate (auth::authenticate) + authorize (auth::authorize vs classify)
-//!   4. limits: check_req; Produce -> buffer body (cap = min(plan, cfg)), count
-//!      items + per-item payload caps, registry.admit each (queue,partition),
-//!      check_msgs(n); POST /configure -> buffer body, retention ceiling +
-//!      registry.admit the created (queue, Default); POST /ephemeral/push ->
-//!      buffer body, check_msgs(messages.len()) and nothing else (no registry,
-//!      no retention: the RAM class creates no rows); POST /streams/v1/cycle ->
-//!      ALWAYS buffer body, whole-cycle refusal when the cluster is blocked and
-//!      push_items is non-empty (§9.6), then the sink items answer the PRODUCE
-//!      caps in enforce_produce's own order — per-item payload cap,
+//!   4. limits: check_req; Produce -> buffer body (cap = cfg), weigh it
+//!      UNCOMPRESSED off its headers (wire.rs; a binary body that does not say
+//!      is refused, 400), registry.admit each (queue,partition) a JSON body
+//!      names, check_bytes(weight); POST /configure -> buffer body, retention
+//!      ceiling + registry.admit the created (queue, Default); POST
+//!      /ephemeral/push -> buffer body, check_bytes(body) and nothing else (no
+//!      registry, no retention: the RAM class creates no rows); POST
+//!      /streams/v1/cycle -> ALWAYS buffer body, whole-cycle refusal when the
+//!      cluster is blocked and push_items is non-empty (§9.6), then the sink
+//!      items answer the PRODUCE caps in enforce_produce's own order —
 //!      registry.admit each distinct (queue,partition) (the cycle SP creates
-//!      those rows lazily, like push auto-create), check_msgs(sink items);
+//!      those rows lazily, like push auto-create), check_bytes(body) when it
+//!      carries sink items;
 //!      Consume wait=true, and
 //!      GET /ephemeral/pop wait=true -> parked_slot RAII guard held across the
 //!      upstream await
@@ -41,7 +43,8 @@
 //!      Authorization (ctx.cell_token), X-Queen-Tenant (cfg.send_tenant_header),
 //!      X-Queen-Request-Id; long-poll timeout = min(client timeout|30s, cfg max) + margin
 //!   6. meter post-response (M1–M6): push -> parse per-item statuses (exclude
-//!      error, dedupe duplicate), pop -> delivered count + debit_deliveries,
+//!      error, dedupe duplicate), pop -> delivered count, and debit_bytes of
+//!      what the answer weighs uncompressed (wire.rs),
 //!      bytes in/out always. The ephemeral push/pop pair meters as
 //!      Push/Delivery like its durable twin (EPHEMERAL_QUEUES.md Q6), off a
 //!      one-number 201 body instead of a status array. The streams cycle keeps
@@ -50,11 +53,16 @@
 //!   7. shadow mode: when !limits.enforcing(), Deny decisions are logged (target
 //!      `limits`, field `would_block`) but the request proceeds
 //!
-//! Steps 4 and 6 are implemented here. Size caps (per-item payload, batch items,
-//! and the body-buffer ceiling) are HARD limits — always enforced, since we must
-//! bound how much we buffer; only the rate/quota decisions (check_req, check_msgs,
-//! registry admit, parked_slot) honour shadow mode. See the crate report for the
-//! semantics flagged for Alice/Agent-D (body-total-vs-per-item cap; 5xx billing).
+//! Steps 4 and 6 are implemented here. The body-buffer ceiling is a HARD limit —
+//! always enforced, since we must bound how much we buffer; the rate/quota
+//! decisions (check_req, check_bytes, registry admit, parked_slot) honour shadow
+//! mode.
+//!
+//! WHAT IS COUNTED, since 2026-10-12: requests, and UNCOMPRESSED BYTES. Until
+//! then the produce caps were in messages (a rate, a size per message, a count
+//! per request), which only a body the proxy could parse could answer, and the
+//! binary push and transaction bodies the broker now reads answered none of
+//! them. A body's weight is read off its headers instead, whatever its form.
 
 use std::collections::HashSet;
 
@@ -378,8 +386,8 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
 
     let (mut parts, body) = req.into_parts();
 
-    // ----- 4b. Produce: buffer body, count items, per-item + batch caps,
-    //           registry admission, msg bucket. Bytes forwarded verbatim. -----
+    // ----- 4b. Produce: buffer body, weigh it uncompressed, registry
+    //           admission, byte bucket. Bytes forwarded verbatim. -----
     let mut produce_n: u64 = 0;
     let mut bytes_in: u64 = 0;
     // The sink half of a streams cycle, read once on the way in (4b'''' below)
@@ -396,17 +404,15 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
     // `is_cycle` does.
     let is_replay = is_dlq_replay(&parts.method, &path_only);
     let forward_body: Body = if class == RouteClass::Produce {
-        // Body-total cap is the instance cap only; the per-item plan cap is
-        // enforced per item inside enforce_produce (a batch of many small
-        // items must not be 413'd by the single-item ceiling).
-        let per_item_cap = ctx.limits.max_payload_bytes.map(|p| p.max(0) as usize);
+        // The instance cap bounds what is buffered here. What the body weighs
+        // once inflated is the byte rate's business, inside enforce_produce.
         let body_cap = st.cfg.max_body_bytes;
         let buffered = match axum::body::to_bytes(body, body_cap).await {
             Ok(b) => b,
             Err(_) => return errors::err_413("request body exceeds cap"),
         };
         bytes_in = buffered.len() as u64;
-        match enforce_produce(&st, &ctx, &path_only, &buffered, per_item_cap, &rid).await {
+        match enforce_produce(&st, &ctx, &path_only, &buffered, &rid).await {
             Ok(n) => produce_n = n,
             Err(resp) => return resp,
         }
@@ -482,7 +488,7 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
         //    fail OPEN on every cycle, sink emits included.
         //  - it buffers only when the cluster is blocked. The cycle must ALWAYS
         //    buffer: its sink items are messages, and messages have to be
-        //    counted for the msg bucket here and for the meter at step 6,
+        //    admitted and weighed here and counted for the meter at step 6,
         //    blocked or not. That is the `/api/v1/ephemeral/push` precedent
         //    directly above — a body whose items bill, so a body always read.
         let buffered = match axum::body::to_bytes(body, st.cfg.max_body_bytes).await {
@@ -493,7 +499,7 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
         // Blocked FIRST, the produce caps after — the order Produce already
         // gets, where `plan_gates` answers the push blocks at step 3 and the
         // caps run at step 4. A request we refuse never reaches the broker, so
-        // it must neither debit the message bucket that shapes real traffic nor
+        // it must neither debit the byte bucket that shapes real traffic nor
         // register a sink pair the broker will never be asked to create.
         if let Some(blocked) = mixed_block {
             if cycle_batch_grows(&buffered) {
@@ -510,9 +516,9 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
         }
         cycle_sinks = count_cycle_push_items(&buffered);
         // From here the sink half is enforced as PRODUCE, in `enforce_produce`'s
-        // own internal order: per-item size cap (hard), registry admission
-        // (shadow-aware), then the message bucket. A sink emit creates the same
-        // rows and stores the same bytes as a push, so it answers the same caps.
+        // own internal order: registry admission (shadow-aware), then the byte
+        // bucket. A sink emit creates the same rows and stores the same bytes
+        // as a push, so it answers the same caps.
         //
         // §9.6 TENSION, acknowledged: a refusal here takes the ack down with the
         // sink items, and this arm is the one that argued an ack must survive a
@@ -520,18 +526,13 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
         // state of the CLUSTER that the request did nothing to cause and can do
         // nothing about except drain — so refusing its ack would lock the tenant
         // out of the only exit. These denials are caused by THIS request's own
-        // sink set: an item over the payload cap, or a queue/partition the plan
-        // does not allow. The fix is in the caller's hands, it is the same
-        // answer the same items would get from `/api/v1/push`, and a runner that
-        // crash-loops on a 413 it can read is the honest surfacing. The
-        // alternative — drop the offending sinks, forward the ack — answers 200
-        // to a half-applied request and loses messages silently, which is the
-        // outcome the whole-batch rule exists to prevent.
-        if let Err(resp) =
-            cycle_payload_cap(&cycle_sinks, ctx.limits.max_payload_bytes.map(|p| p.max(0) as usize))
-        {
-            return resp;
-        }
+        // sink set: a queue or a partition the plan does not allow, or more
+        // bytes than its rate leaves. The fix is in the caller's hands, it is
+        // the same answer the same items would get from `/api/v1/push`, and a
+        // runner that stops on a refusal it can read is the honest surfacing.
+        // The alternative — drop the offending sinks, forward the ack — answers
+        // 200 to a half-applied request and loses messages silently, which is
+        // the outcome the whole-batch rule exists to prevent.
         // Registry admission for each DISTINCT sink pair. The cycle SP creates
         // the queue and partition rows lazily in its sink pre-pass
         // (007_log_streams §2), exactly as push's auto-create does, so the plan's
@@ -549,14 +550,17 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
         {
             return resp;
         }
+        // A cycle that emits is weighed whole, like any body that produces (it
+        // is JSON: it weighs what it measures). One that only acks or keeps
+        // state answers no produce cap at all.
         if cycle_sinks.total > 0 {
-            match st.limits.check_msgs(&ctx, cycle_sinks.total) {
+            match st.limits.check_bytes(&ctx, buffered.len() as u64) {
                 Decision::Allow => {}
                 Decision::Deny { retry_after_s, code } => {
                     if st.limits.enforcing() {
-                        return errors::err_429(code, retry_after_s, "message rate limit exceeded");
+                        return errors::err_429(code, retry_after_s, "byte rate limit exceeded");
                     }
-                    // shadow deny: canonical would_block log emitted inside check_msgs
+                    // shadow deny: canonical would_block log emitted inside check_bytes
                 }
             }
         }
@@ -596,23 +600,22 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
     } else if path_only == EPH_PUSH_PATH {
         // 4b'''. EPHEMERAL_QUEUES.md §5.1: the RAM push is not `Produce` — it
         // creates no queue row and no partition, so registry admission and the
-        // retention ceiling have nothing to say about it — but its items ARE
-        // messages, and the message-rate bucket is the one limit that must see
-        // them (Q6). Same hard body-buffer ceiling as produce, and the same
-        // tolerance: a body we cannot read counts 0 and travels on to the
-        // broker's own 400 rather than being half-enforced here.
+        // retention ceiling have nothing to say about it — but its items are
+        // produced like any others, and the byte rate is the one limit that
+        // must see them (Q6). Same hard body-buffer ceiling as produce. The
+        // body is JSON and weighs what it measures, readable or not.
         let buffered = match axum::body::to_bytes(body, st.cfg.max_body_bytes).await {
             Ok(b) => b,
             Err(_) => return errors::err_413("request body exceeds cap"),
         };
         bytes_in = buffered.len() as u64;
-        match st.limits.check_msgs(&ctx, count_ephemeral_push_items(&buffered)) {
+        match st.limits.check_bytes(&ctx, buffered.len() as u64) {
             Decision::Allow => {}
             Decision::Deny { retry_after_s, code } => {
                 if st.limits.enforcing() {
-                    return errors::err_429(code, retry_after_s, "message rate limit exceeded");
+                    return errors::err_429(code, retry_after_s, "byte rate limit exceeded");
                 }
-                // shadow deny: canonical would_block log emitted inside check_msgs
+                // shadow deny: canonical would_block log emitted inside check_bytes
             }
         }
         Body::from(buffered)
@@ -848,7 +851,9 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
                 }
             };
             let delivered = count_pop_messages(&buffered).unwrap_or(0);
-            st.limits.debit_deliveries(&ctx, delivered);
+            // What the answer weighs uncompressed leaves the byte bucket after
+            // the fact: a framed answer at what its records declare.
+            st.limits.debit_bytes(&ctx, crate::wire::pop_answer_bytes(&buffered));
             st.meter.record(Sample {
                 cluster_id: ctx.cluster_id,
                 op: OpClass::Delivery,
@@ -987,54 +992,55 @@ pub async fn handle(State(st): State<St>, req: Request) -> Response {
     finalize(rparts, Body::new(rbody), &rid)
 }
 
-/// STEP 4 for Produce routes: count push items, enforce per-item + batch size
-/// caps (hard), registry admission and the message bucket (shadow-aware).
-/// Returns the counted push-item count `n`, or a ready error Response.
+/// STEP 4 for Produce routes: weigh the body, admit the queues and partitions
+/// it names, then the byte bucket (both shadow-aware). Returns the counted
+/// push-item count `n` (what the meter books for a transaction), or a ready
+/// error Response.
+///
+/// The weight is the body's UNCOMPRESSED size, read off its headers
+/// (`wire::request_bytes`), so every body the broker takes answers the rate:
+/// JSON, and the binary push and transaction, compressed or not. The names and
+/// the count are read from a JSON body only: a binary body names its queues
+/// inside groups this function does not open, so it is admitted nowhere and
+/// counts no items.
 async fn enforce_produce(
     st: &St,
     ctx: &ClusterCtx,
     path: &str,
     bytes: &Bytes,
-    per_item_cap: Option<usize>,
     rid: &str,
 ) -> Result<u64, Response> {
-    let items = match parse_produce_items(path, bytes) {
-        Ok(v) => v,
-        Err(()) => {
-            // Malformed body: forward verbatim, let the broker return its own 400.
-            // We do not half-enforce an unparseable batch (spec).
+    let weight = match crate::wire::request_bytes(path, bytes) {
+        Ok(n) => n,
+        Err(crate::wire::Unreadable(why)) => {
+            // A binary body whose headers do not say what it weighs is not
+            // forwarded uncounted. The broker refuses every such body as well.
             tracing::warn!(
-                target: "limits", cluster = %ctx.slug, rid,
-                "produce body unparseable; forwarding without msg enforcement"
+                target: "limits", cluster = %ctx.slug, rid, why,
+                "binary produce body unreadable; refused"
             );
-            return Ok(0);
+            return Err(errors::json_error(
+                StatusCode::BAD_REQUEST,
+                "invalid_request",
+                &format!("binary body: {why}"),
+            ));
         }
     };
+    let items = if crate::wire::is_binary(path, bytes) {
+        Vec::new()
+    } else {
+        // Malformed JSON: forward verbatim, let the broker return its own 400.
+        // Its bytes answer the rate below all the same; what it would have
+        // named cannot be admitted.
+        parse_produce_items(path, bytes).unwrap_or_else(|()| {
+            tracing::warn!(
+                target: "limits", cluster = %ctx.slug, rid,
+                "produce body unparseable; forwarding without admission"
+            );
+            Vec::new()
+        })
+    };
     let n = items.len() as u64;
-
-    // Per-item payload cap — hard size limit, always enforced.
-    if let Some(cap) = per_item_cap {
-        for (i, it) in items.iter().enumerate() {
-            if it.payload_len > cap {
-                return Err(errors::err_413(&format!(
-                    "item {i}: payload {} bytes exceeds max_payload_bytes ({cap})",
-                    it.payload_len
-                )));
-            }
-        }
-    }
-
-    // Batch item cap — hard size limit, always enforced.
-    let max_batch = ctx
-        .limits
-        .max_batch_items
-        .map(|v| v.max(0) as u64)
-        .unwrap_or(st.cfg.default_max_batch_items);
-    if n > max_batch {
-        return Err(errors::err_413(&format!(
-            "batch of {n} items exceeds max_batch_items ({max_batch})"
-        )));
-    }
 
     // Registry admission for each DISTINCT (queue, partition) in the batch.
     admit_pairs(
@@ -1046,14 +1052,14 @@ async fn enforce_produce(
     )
     .await?;
 
-    // Message bucket — shadow-aware, same shape as check_req.
-    match st.limits.check_msgs(ctx, n) {
+    // Byte bucket — shadow-aware, same shape as check_req.
+    match st.limits.check_bytes(ctx, weight) {
         Decision::Allow => {}
         Decision::Deny { retry_after_s, code } => {
             if st.limits.enforcing() {
-                return Err(errors::err_429(code, retry_after_s, "message rate limit exceeded"));
+                return Err(errors::err_429(code, retry_after_s, "byte rate limit exceeded"));
             }
-            // shadow deny: canonical would_block log emitted inside check_msgs
+            // shadow deny: canonical would_block log emitted inside check_bytes
         }
     }
 
@@ -1068,9 +1074,9 @@ async fn enforce_produce(
     Ok(n)
 }
 
-/// Total payload bytes of a produce batch, on the same raw-JSON-text basis as
-/// the per-item cap (`ItemInfo::payload_len`). Saturating because the sum is
-/// fed to a quota estimate, where wrapping would read as room to spare.
+/// Total payload bytes of a produce batch, on the raw-JSON-text basis of
+/// `ItemInfo::payload_len`. Saturating because the sum is fed to a quota
+/// estimate, where wrapping would read as room to spare.
 fn payload_bytes(items: &[ItemInfo]) -> u64 {
     items.iter().fold(0u64, |acc, it| acc.saturating_add(it.payload_len as u64))
 }
@@ -1673,26 +1679,6 @@ fn count_push_statuses(bytes: &[u8]) -> Option<u64> {
     Some(arr.iter().filter(|s| s.status == "queued").count() as u64)
 }
 
-/// Items in an ephemeral push body: `{queue, partition?, messages:[...]}`
-/// (EPHEMERAL_QUEUES.md §3.1). Only the array length is wanted — the per-item
-/// payload caps and the registry belong to the durable path — so the elements
-/// are counted without being materialised.
-///
-/// UNPARSEABLE COUNTS 0, deliberately: the same stance `enforce_produce` takes
-/// on a body it cannot read. The broker rejects the malformed body too, so
-/// nothing is stored either way, and the caller gets a named 400 instead of a
-/// 429 about a rate it never consumed.
-fn count_ephemeral_push_items(bytes: &[u8]) -> u64 {
-    #[derive(Deserialize)]
-    struct EphPushLite {
-        #[serde(default)]
-        messages: Vec<serde::de::IgnoredAny>,
-    }
-    serde_json::from_slice::<EphPushLite>(bytes)
-        .map(|p| p.messages.len() as u64)
-        .unwrap_or(0)
-}
-
 /// Count an ephemeral push 201: `{"pushed":N}` (§3.1). The family answers one
 /// number rather than a per-item status array because the request is
 /// all-or-nothing — there is no `duplicate` (no dedup), so `pushed` is the
@@ -1925,7 +1911,7 @@ fn cycle_batch_grows(body: &[u8]) -> bool {
     }
 }
 
-/// The sink half of a cycle request: what the message bucket must see, and the
+/// The sink half of a cycle request: what the produce caps must see, and the
 /// per-group counts the response cannot supply.
 #[derive(Debug, Default, PartialEq, Eq)]
 struct CycleSinks {
@@ -1937,18 +1923,8 @@ struct CycleSinks {
     /// the only place that number exists — it is threaded from step 4 to step 6.
     groups: Vec<((String, String), u64)>,
     /// Payload bytes over every COUNTED item, for the in-flight storage
-    /// account. `heaviest` answers the per-item cap and cannot answer this: the
-    /// quota is about the total a cycle adds to the disk, not its worst element.
+    /// account.
     payload_bytes: u64,
-    /// `(index in push_items as sent, payload bytes)` of the HEAVIEST counted
-    /// item — everything the per-item payload cap needs, without a vector of
-    /// lengths. `enforce_produce` refuses the FIRST item over the cap; this
-    /// refuses the worst one, because the cap is not known down here (this is a
-    /// parse, not a limits decision) and carrying the maximum is the one number
-    /// that answers the question for any cap. The index is the position in the
-    /// array AS SENT, skipped items included, so it points at the element the
-    /// client can actually find.
-    heaviest: Option<(usize, usize)>,
 }
 
 /// Group a cycle body's `push_items` EXACTLY as the broker's own packer does
@@ -1972,16 +1948,15 @@ struct CycleSinks {
 ///
 /// The payload measure is the RAW JSON TEXT of the item's `payload` — the same
 /// basis `enforce_produce` uses (`ItemInfo::payload_len`, `RawValue::get().len()`),
-/// deliberately, so the identical bytes meet the identical cap whether a tenant
-/// sends them through `/api/v1/push` or emits them from a stream. `data` is the
-/// broker's accepted alias for the field and is measured the same; an item with
-/// neither is stored as `{}` and measures 0, which no cap can refuse. Measured
-/// only for items that COUNT: a skipped item never becomes a message, so
-/// refusing a body over its payload would refuse bytes the broker discards.
+/// deliberately, so the identical bytes count the same in the storage account
+/// whether a tenant sends them through `/api/v1/push` or emits them from a
+/// stream. `data` is the broker's accepted alias for the field and is measured
+/// the same; an item with neither is stored as `{}` and measures 0. Measured
+/// only for items that COUNT: a skipped item never becomes a message, so its
+/// bytes are ones the broker discards.
 ///
-/// UNPARSEABLE COUNTS 0, the stance `count_ephemeral_push_items` takes on a
-/// body it cannot read: the broker answers its own 400 and nothing is stored,
-/// so a 429 about a rate the tenant never consumed would be the wrong answer.
+/// UNPARSEABLE COUNTS 0: the broker answers its own 400 and nothing is stored,
+/// so there is nothing to admit and nothing to weigh.
 fn count_cycle_push_items(body: &[u8]) -> CycleSinks {
     #[derive(Deserialize)]
     struct CycleLite<'a> {
@@ -2005,7 +1980,7 @@ fn count_cycle_push_items(body: &[u8]) -> CycleSinks {
         return CycleSinks::default();
     };
     let mut out = CycleSinks::default();
-    for (idx, raw) in parsed.push_items.into_iter().enumerate() {
+    for raw in parsed.push_items {
         let Ok(item) = serde_json::from_str::<SinkItemLite>(raw.get()) else {
             continue;
         };
@@ -2018,10 +1993,6 @@ fn count_cycle_push_items(body: &[u8]) -> CycleSinks {
         // `payload`, else the broker's `data` alias, else the `{}` it stores.
         let payload_len = item.payload.or(item.data).map(|p| p.get().len()).unwrap_or(0);
         out.payload_bytes = out.payload_bytes.saturating_add(payload_len as u64);
-        match out.heaviest {
-            Some((_, len)) if len >= payload_len => {}
-            _ => out.heaviest = Some((idx, payload_len)),
-        }
         // Linear scan rather than a map: one cycle emits to a handful of sinks
         // (the broker builds the same groups the same way), so a HashMap would
         // cost two key clones per ITEM to save a walk over one or two entries.
@@ -2031,30 +2002,6 @@ fn count_cycle_push_items(body: &[u8]) -> CycleSinks {
         }
     }
     out
-}
-
-/// The per-item payload cap for a cycle's sink items — `enforce_produce`'s
-/// first hard check, on the route that emits the same messages by another door.
-/// `Err` is the ready 413.
-///
-/// HARD, like every size cap in this file: enforced whether or not the cell is
-/// enforcing rate limits, because the caps bound what the proxy and the cell
-/// have to hold, not what the tenant is billed for.
-///
-/// The message names `push_items[i]` rather than push's `item {i}`: it is the
-/// field the client actually sent, and the index is the position in that array
-/// as sent (see `CycleSinks::heaviest`, which also explains why the item
-/// reported is the heaviest rather than the first over the cap).
-fn cycle_payload_cap(sinks: &CycleSinks, cap: Option<usize>) -> Result<(), Response> {
-    let (Some(cap), Some((idx, len))) = (cap, sinks.heaviest) else {
-        return Ok(());
-    };
-    if len > cap {
-        return Err(errors::err_413(&format!(
-            "push_items[{idx}]: payload {len} bytes exceeds max_payload_bytes ({cap})"
-        )));
-    }
-    Ok(())
 }
 
 /// Sink messages the broker CONFIRMS it wrote, read off a cycle 2xx response
@@ -2142,8 +2089,8 @@ const EPH_PUSH_PATH: &str = "/api/v1/ephemeral/push";
 const EPH_POP_PATH: &str = "/api/v1/ephemeral/pop";
 
 /// Both pop families: the response shape is the same `{...,"messages":[...]}`,
-/// so the delivery count and the `debit_deliveries` that follows it are read
-/// the same way. The RAM pop is `Gated`, never `Consume`, so widening this
+/// so the delivery count is read the same way, and the answer weighed the same
+/// way for the byte bucket. The RAM pop is `Gated`, never `Consume`, so widening this
 /// does not move any durable route between classes.
 fn is_pop_path(path: &str) -> bool {
     path.starts_with("/api/v1/pop/queue/") || path == EPH_POP_PATH
@@ -2474,7 +2421,7 @@ mod tests {
             {"queue":"enriched","partition":"shard-1","payload":{"a":5}}
         ]}"#;
         let sinks = count_cycle_push_items(body);
-        // the message bucket sees every item...
+        // every item counts...
         assert_eq!(sinks.total, 5);
         // ...and the meter sees them grouped exactly as the broker packs its
         // sink_segments: a missing partition AND an empty one both default to
@@ -2695,51 +2642,25 @@ mod tests {
         assert!(admit_pairs(&reg, true, &ctx, items.iter().map(produce_pair), "rid").await.is_ok());
     }
 
-    /// The per-item payload cap, on the same basis `enforce_produce` measures:
-    /// the raw JSON text of the item's payload.
-    #[tokio::test]
-    async fn a_sink_item_over_the_payload_cap_refuses_the_cycle() {
-        let sinks = count_cycle_push_items(
-            br#"{"push_items":[
-                {"queue":"a","payload":"tiny"},
-                {"queue":"b","payload":{"k":"vvvvvvvvvvvvvvvvvvvv"}}
-            ]}"#,
-        );
-        assert_eq!(sinks.heaviest, Some((1, r#"{"k":"vvvvvvvvvvvvvvvvvvvv"}"#.len())));
-        assert!(cycle_payload_cap(&sinks, Some(64)).is_ok(), "under the cap");
-        assert!(cycle_payload_cap(&sinks, None).is_ok(), "no cap configured");
-
-        let refused = cycle_payload_cap(&sinks, Some(8)).expect_err("over the cap");
-        assert_eq!(refused.status(), StatusCode::PAYLOAD_TOO_LARGE);
-        let body = err_body(refused).await;
-        assert_eq!(body["code"], errors::CODE_PAYLOAD_TOO_LARGE);
-        assert_eq!(body["error"], "push_items[1]: payload 28 bytes exceeds max_payload_bytes (8)");
-    }
-
+    /// What a cycle's sink items add to the in-flight storage account: the raw
+    /// JSON text of each COUNTED item's payload, read as the broker reads it.
     #[test]
     fn the_cycle_payload_measure_mirrors_the_broker_field_by_field() {
-        // `data` is the broker's accepted alias for `payload` and measures the
-        // same; an item with neither is stored as `{}` and can never be over.
+        let measured = |body: &[u8]| count_cycle_push_items(body).payload_bytes;
         assert_eq!(
-            count_cycle_push_items(br#"{"push_items":[{"queue":"a","data":[1,2,3]}]}"#).heaviest,
-            Some((0, "[1,2,3]".len()))
+            measured(br#"{"push_items":[{"queue":"a","payload":"tiny"},{"queue":"b","payload":{"k":"vv"}}]}"#),
+            (r#""tiny""#.len() + r#"{"k":"vv"}"#.len()) as u64
         );
-        let bare = count_cycle_push_items(br#"{"push_items":[{"queue":"a"}]}"#);
-        assert_eq!(bare.heaviest, Some((0, 0)));
-        assert!(cycle_payload_cap(&bare, Some(0)).is_ok());
-
-        // The index is the position AS SENT: a skipped item still occupies one,
-        // so the number points at the element the client can find.
-        let with_skip = count_cycle_push_items(
-            br#"{"push_items":[{"payload":"skipped, no queue"},{"queue":"a","payload":"yyyy"}]}"#,
+        // `data` is the broker's accepted alias for `payload` and measures the
+        // same; an item with neither is stored as `{}` and measures nothing.
+        assert_eq!(measured(br#"{"push_items":[{"queue":"a","data":[1,2,3]}]}"#), "[1,2,3]".len() as u64);
+        assert_eq!(measured(br#"{"push_items":[{"queue":"a"}]}"#), 0);
+        // A skipped item's payload is never measured: the broker discards
+        // those bytes.
+        assert_eq!(
+            measured(br#"{"push_items":[{"payload":"aaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"queue":"a","payload":1}]}"#),
+            1
         );
-        assert_eq!(with_skip.heaviest, Some((1, r#""yyyy""#.len())));
-        // and a skipped item's payload is never measured — the broker discards
-        // those bytes, so a cap must not refuse the body over them
-        let heavy_skip = count_cycle_push_items(
-            br#"{"push_items":[{"payload":"aaaaaaaaaaaaaaaaaaaaaaaaaaaa"},{"queue":"a","payload":1}]}"#,
-        );
-        assert_eq!(heavy_skip.heaviest, Some((1, 1)));
     }
 
     /// The §9.6 line, now that refusals exist on this route: a cycle carrying
@@ -2751,10 +2672,9 @@ mod tests {
             br#"{"query_id":"q","partition_id":"p","state_ops":[{"op":"delete","key":"k"}],
                 "ack":{"transactionId":"t","leaseId":"l","status":"completed","count":10}}"#,
         );
-        assert_eq!(sinks.total, 0);
+        assert_eq!(sinks.total, 0, "nothing to weigh: `handle` asks the byte bucket only of a cycle that emits");
         assert!(sinks.groups.is_empty());
-        assert_eq!(sinks.heaviest, None, "nothing to measure");
-        assert!(cycle_payload_cap(&sinks, Some(1)).is_ok());
+        assert_eq!(sinks.payload_bytes, 0);
 
         // caps of zero: no pair to admit, so nothing to refuse
         let reg = crate::registry::Registry::new(crate::store::Store::None);
@@ -3080,24 +3000,6 @@ mod tests {
         assert_eq!(count_pop_messages(br#"{"queue":"inbox","messages":[]}"#), Some(0));
     }
 
-    /// The ingress count that reaches `limits.check_msgs`. Cheap (elements are
-    /// counted, never materialised) and tolerant (an unreadable body is 0, not
-    /// a refusal), exactly as `enforce_produce` treats a durable batch.
-    #[test]
-    fn ephemeral_push_items_are_counted_from_the_body() {
-        let body = br#"{"queue":"inbox","partition":"c-42","messages":[
-            {"payload":{"a":1}},{"payload":"hello"},{"payload":[1,2,3]}
-        ]}"#;
-        assert_eq!(count_ephemeral_push_items(body), 3);
-        assert_eq!(count_ephemeral_push_items(br#"{"queue":"inbox","messages":[]}"#), 0);
-        // no partition is the common shape (the broker defaults it)
-        assert_eq!(count_ephemeral_push_items(br#"{"queue":"i","messages":[{"payload":1}]}"#), 1);
-        // unreadable / wrong shape -> 0, and the broker answers its own 400
-        assert_eq!(count_ephemeral_push_items(b"not json"), 0);
-        assert_eq!(count_ephemeral_push_items(br#"{"queue":"inbox"}"#), 0);
-        assert_eq!(count_ephemeral_push_items(br#"[{"payload":1}]"#), 0);
-    }
-
     /// The 201 the family answers is one number, not a status array (§3.1).
     #[test]
     fn ephemeral_push_201_is_counted_from_pushed() {
@@ -3259,7 +3161,7 @@ mod tests {
         assert_eq!(op_for("/api/v1/kv", before), OpClass::Read);
         assert_eq!(op_for("/api/v1/kv", after), OpClass::Read);
         // the batch route is not a pop path, so the reclassified `Consume`
-        // cannot fall into the delivery bucket `debit_deliveries` drives
+        // is never counted, or weighed, as a pop's answer is
         assert!(!is_pop_path("/api/v1/kv"));
         // ...and it takes no parked slot either: the long-poll gauge reads the
         // query, and this route has none of it
@@ -4252,6 +4154,453 @@ mod tests {
 
         assert_internal_headers_never_reach(&st, &heads).await;
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // ---- every body answers the same limits, whatever its form ---------------
+    //
+    // The broker reads two produce bodies that are not JSON
+    // (server/src/rsm/facade/real.rs): `QPB1` on `/api/v1/push` and `QTB1` on
+    // `/api/v1/transaction`, which every SDK sends with `binaryPush` /
+    // `pushCompression` on. And it answers a pop that asked `frames=true` with
+    // `QPF1`. Until 2026-10-12 the produce caps were counted in messages, which
+    // only a body the proxy parsed could answer, and the binary ones reached
+    // the broker under every one of them. The tests below send the same three
+    // messages in every form through `handle`, in-process as the single binary
+    // relays them, to a broker that takes them all, and pin what each one
+    // meets now: the request rate, and the byte rate at what the body weighs
+    // UNCOMPRESSED (wire.rs).
+    //
+    // STILL READ FROM A JSON BODY ONLY, and pinned as such: the queues and
+    // partitions a body names (registry admission), and the messages the meter
+    // books.
+
+    use crate::wire::fixtures::{framed_pop_answer, produce_bodies};
+
+    /// The JSON answer of the four messages `framed_pop_answer` carries.
+    fn json_pop_answer() -> String {
+        let messages: Vec<String> = (10..14)
+            .map(|i| {
+                format!(
+                    concat!(
+                        r#"{{"transactionId":"t-{0}","data":{{"n":{0}}},"partitionId":"7","#,
+                        r#""partition":"p1","leaseId":"lease-1","consumerGroup":"__QUEUE_MODE__","#,
+                        r#""deliveryAttempt":1,"offset":{0}}}"#
+                    ),
+                    i
+                )
+            })
+            .collect();
+        format!(
+            concat!(
+                r#"{{"success":true,"queue":"orders","partition":"p1","partitionId":"7","#,
+                r#""leaseId":"lease-1","consumerGroup":"__QUEUE_MODE__","messages":[{}],"#,
+                r#""partitionsClaimed":1}}"#
+            ),
+            messages.join(",")
+        )
+    }
+
+    /// The broker's answers for the three messages: one status per message,
+    /// the counts a `QPB1` body with flag 2 asks for instead, and a committed
+    /// transaction.
+    const THREE_STATUSES: &str = concat!(
+        r#"[{"index":0,"queueName":"orders","status":"queued"},"#,
+        r#"{"index":1,"queueName":"orders","status":"queued"},"#,
+        r#"{"index":2,"queueName":"audit","status":"queued"}]"#
+    );
+    const THREE_COUNTED: &str = r#"{"count":3,"queued":3,"duplicate":0,"error":0}"#;
+    const THREE_COMMITTED: &str = concat!(
+        r#"{"transactionId":"t","success":true,"results":["#,
+        r#"{"index":0,"type":"push","success":true},"#,
+        r#"{"index":1,"type":"push","success":true},"#,
+        r#"{"index":2,"type":"push","success":true}]}"#
+    );
+
+    /// Every request a [`binary_broker`] was handed: (path, body).
+    type Bodies = std::sync::Arc<std::sync::Mutex<Vec<(String, Bytes)>>>;
+
+    /// The three pop answers of the same four messages: (query, content type,
+    /// bytes). JSON; framed, the record as its frames are; framed, the record
+    /// as one zstd frame, the way the queue log stores a batch.
+    fn pop_answers() -> Vec<(&'static str, &'static str, Vec<u8>)> {
+        vec![
+            ("", "application/json", json_pop_answer().into_bytes()),
+            ("?frames=true", "application/x-queen-pop", framed_pop_answer(false)),
+            ("?frames=true&stored=zstd", "application/x-queen-pop", framed_pop_answer(true)),
+        ]
+    }
+
+    /// A broker that takes every encoding, writes down what it was handed and
+    /// answers as the real one does: 201 with one status per message for a
+    /// push of the three (the counts for a `QPB1` body that sets flag 2), a
+    /// committed transaction of three pushes, and for a pop the four messages
+    /// of `pop_answers`, in the form its query asks for.
+    fn binary_broker(seen: Bodies) -> axum::Router {
+        axum::Router::new().fallback(move |req: Request| {
+            let seen = seen.clone();
+            async move {
+                let path = req.uri().path().to_string();
+                let query = req.uri().query().map(|q| format!("?{q}")).unwrap_or_default();
+                let body = axum::body::to_bytes(req.into_body(), 64 * 1024).await.expect("body");
+                seen.lock().unwrap().push((path.clone(), body.clone()));
+                let counts = body.starts_with(b"QPB1") && body.get(4).is_some_and(|f| f & 2 != 0);
+                let json = "application/json";
+                let (status, content_type, answer): (StatusCode, &str, Vec<u8>) = match path.as_str() {
+                    "/api/v1/push" if counts => (StatusCode::CREATED, json, THREE_COUNTED.into()),
+                    "/api/v1/push" => (StatusCode::CREATED, json, THREE_STATUSES.into()),
+                    "/api/v1/transaction" => (StatusCode::OK, json, THREE_COMMITTED.into()),
+                    _ => {
+                        let (_, content_type, answer) = pop_answers()
+                            .into_iter()
+                            .find(|(q, _, _)| *q == query)
+                            .expect("a pop this stub knows");
+                        (StatusCode::OK, content_type, answer)
+                    }
+                };
+                Response::builder()
+                    .status(status)
+                    .header(header::CONTENT_TYPE, content_type)
+                    .body(Body::from(answer))
+                    .expect("stub response")
+            }
+        })
+    }
+
+    /// `replay_st_capped` relaying to `broker` in-process, the way the single
+    /// binary reaches its own broker: `relay_st` with the plan narrowed.
+    async fn binary_st(spool_dir: &str, caps: Option<serde_json::Value>, broker: axum::Router) -> St {
+        let st = replay_st_capped("inprocess://self", spool_dir, caps).await;
+        let Ok(mut state) = std::sync::Arc::try_unwrap(st) else {
+            panic!("a freshly built St has exactly one owner");
+        };
+        state.upstream = crate::upstream::Upstream::InProcess(broker);
+        std::sync::Arc::new(state)
+    }
+
+    fn binary_spool(test: &str) -> String {
+        let dir = std::env::temp_dir().join(format!("queen-proxy-{test}-{}", uuid::Uuid::new_v4()));
+        dir.to_str().expect("temp path").to_string()
+    }
+
+    /// What a produce request met: the broker, or a refusal of the proxy's own
+    /// (status and `code`).
+    #[derive(Debug, PartialEq, Eq)]
+    enum Met {
+        Forwarded,
+        Refused(u16, String),
+    }
+
+    fn over_the_rate() -> Met {
+        Met::Refused(429, errors::CODE_RATE_LIMITED.to_string())
+    }
+
+    /// Sends one produce body through `handle`. `Forwarded` means the broker
+    /// was handed it once, on the same route, byte for byte.
+    async fn produce(st: &St, seen: &Bodies, path: &str, body: Vec<u8>) -> Met {
+        seen.lock().unwrap().clear();
+        let content_type =
+            if body.starts_with(b"Q") { "application/x-queen-push" } else { "application/json" };
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri(path)
+            .header(header::HOST, "cell.test")
+            .header(header::CONTENT_TYPE, content_type)
+            .body(Body::from(body.clone()))
+            .expect("request");
+        let resp = handle(State(st.clone()), req).await;
+        let handed = seen.lock().unwrap().clone();
+        if handed.is_empty() {
+            let status = resp.status().as_u16();
+            let code = err_body(resp).await["code"].as_str().unwrap_or_default().to_string();
+            return Met::Refused(status, code);
+        }
+        assert_eq!(handed, vec![(path.to_string(), Bytes::from(body))], "{path}");
+        assert!(resp.status().is_success(), "{path}: {}", resp.status());
+        Met::Forwarded
+    }
+
+    /// A cluster whose byte bucket holds `burst` and gains nothing (a rate of
+    /// zero): what is in it is exactly what was not taken, however long the
+    /// test takes.
+    async fn st_with_bytes(test: &str, burst: u64, seen: &Bodies) -> (St, String) {
+        let dir = binary_spool(test);
+        let caps = serde_json::json!({"max_bytes_per_sec": 0, "bytes_burst": burst});
+        let st = binary_st(&dir, Some(caps), binary_broker(seen.clone())).await;
+        assert!(st.limits.enforcing());
+        (st, dir)
+    }
+
+    /// The byte rate, body by body. Each of the six answers it at what it
+    /// weighs UNCOMPRESSED, not at what it measures on the wire: a bucket one
+    /// byte short of that weight refuses it, and a bucket of exactly that
+    /// weight takes it once.
+    #[tokio::test]
+    async fn every_produce_body_answers_the_byte_rate_at_its_uncompressed_weight() {
+        let mut weighed = Vec::new();
+        for (name, path, body) in produce_bodies() {
+            let weight = crate::wire::request_bytes(path, &body).expect(name);
+            weighed.push((name, body.len() as u64, weight));
+            let seen = Bodies::default();
+
+            let (st, dir) = st_with_bytes("bytes-short", weight - 1, &seen).await;
+            assert_eq!(produce(&st, &seen, path, body.clone()).await, over_the_rate(), "{name}");
+            let _ = std::fs::remove_dir_all(&dir);
+
+            let (st, dir) = st_with_bytes("bytes-exact", weight, &seen).await;
+            let met = [
+                produce(&st, &seen, path, body.clone()).await,
+                produce(&st, &seen, path, body).await,
+            ];
+            let _ = std::fs::remove_dir_all(&dir);
+            assert_eq!(met, [Met::Forwarded, over_the_rate()], "{name}");
+        }
+        // (name, on the wire, weighed): the two compressed pushes and the
+        // binary transaction weigh more than they measure.
+        let wire_and_weight: Vec<(&str, bool)> =
+            weighed.iter().map(|(name, wire, weight)| (*name, weight > wire)).collect();
+        assert_eq!(
+            wire_and_weight,
+            vec![
+                ("json push", false),
+                ("QPB1", false),
+                ("QPB1 zstd, counts", true),
+                ("QPB1 frames", true),
+                ("json transaction", false),
+                ("QTB1", true),
+            ]
+        );
+    }
+
+    /// The request rate is taken before any body is read. A bucket of two
+    /// requests that gains nothing, and the third push in a row is refused
+    /// whatever it carries.
+    #[tokio::test]
+    async fn every_produce_body_answers_the_request_rate() {
+        for (name, path, body) in produce_bodies() {
+            let dir = binary_spool("binary-req-rate");
+            let seen = Bodies::default();
+            let overrides = serde_json::json!({"max_req_per_sec": 0, "req_burst": 2});
+            let st = binary_st(&dir, Some(overrides), binary_broker(seen.clone())).await;
+            let mut met = Vec::new();
+            for _ in 0..3 {
+                met.push(produce(&st, &seen, path, body.clone()).await);
+            }
+            let _ = std::fs::remove_dir_all(&dir);
+            assert_eq!(met, vec![Met::Forwarded, Met::Forwarded, over_the_rate()], "{name}");
+        }
+    }
+
+    /// A binary body whose headers do not say what it weighs is refused here,
+    /// never forwarded uncounted: on a cell that only logs its limits too, and
+    /// with no byte rate on the plan. The broker refuses every one of these as
+    /// well (the first since the same day; the others always did).
+    #[tokio::test]
+    async fn a_binary_body_that_does_not_say_what_it_weighs_is_refused() {
+        use crate::wire::fixtures::{framed_push, group, zstd_frame};
+        let frames = zstd_frame(b"the frames", Some(10));
+        let good = framed_push(8, &[group("orders", "p1", 1, &frames)]);
+        let mut twice = b"QPB1".to_vec();
+        twice.push(1 | 8);
+        twice.extend_from_slice(&((good.len() - 5) as u32).to_le_bytes());
+        twice.extend_from_slice(&zstd_frame(&good[5..], Some((good.len() - 5) as u64)));
+        let mut txn = b"QTB1\x00".to_vec();
+        txn.extend_from_slice(&2u32.to_le_bytes());
+        txn.extend_from_slice(b"{}");
+        txn.extend_from_slice(&1u32.to_le_bytes());
+        txn.extend_from_slice(&group("orders", "p1", 1, &zstd_frame(b"the frames", None)));
+        let bodies: Vec<(&str, &str, Vec<u8>, &str)> = vec![
+            (
+                "compressed twice",
+                "/api/v1/push",
+                twice,
+                "binary body: flags 1 and 8 together: a framed body is already compressed, group by group",
+            ),
+            (
+                "a group that declares no size",
+                "/api/v1/push",
+                framed_push(8, &[group("orders", "p1", 1, &zstd_frame(b"the frames", None))]),
+                "binary body: a group's zstd frame does not declare its content size",
+            ),
+            ("cut short", "/api/v1/push", good[..good.len() - 4].to_vec(), "binary body: truncated"),
+            (
+                "a flag nobody knows",
+                "/api/v1/push",
+                framed_push(8 | 64, &[]),
+                "binary body: unknown flags",
+            ),
+            (
+                "a transaction group that declares no size",
+                "/api/v1/transaction",
+                txn,
+                "binary body: a group's zstd frame does not declare its content size",
+            ),
+        ];
+
+        let dir = binary_spool("binary-unreadable");
+        let seen = Bodies::default();
+        let st = binary_st(&dir, None, binary_broker(seen.clone())).await;
+        assert!(!st.limits.enforcing(), "a cell that only logs its limits");
+        assert_eq!(produce(&st, &seen, "/api/v1/push", good).await, Met::Forwarded);
+        for (name, path, body, error) in bodies {
+            seen.lock().unwrap().clear();
+            let req = Request::builder()
+                .method(Method::POST)
+                .uri(path)
+                .header(header::HOST, "cell.test")
+                .body(Body::from(body))
+                .expect("request");
+            let resp = handle(State(st.clone()), req).await;
+            assert_eq!(resp.status(), StatusCode::BAD_REQUEST, "{name}");
+            let answer = err_body(resp).await;
+            assert_eq!(answer["code"], "invalid_request", "{name}");
+            assert_eq!(answer["error"], error, "{name}");
+            assert!(seen.lock().unwrap().is_empty(), "{name}: the broker was handed it");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// STILL JSON ONLY: the queues and partitions a body names. A binary body
+    /// names them inside its groups, which the proxy does not open, so a plan
+    /// of one queue refuses the JSON bodies' second queue and takes the binary
+    /// bodies' as they come.
+    #[tokio::test]
+    async fn only_a_json_body_is_admitted_to_the_registry() {
+        let dir = binary_spool("binary-admission");
+        let seen = Bodies::default();
+        let one_queue = serde_json::json!({"max_queues": 1});
+        let st = binary_st(&dir, Some(one_queue), binary_broker(seen.clone())).await;
+        let mut met = Vec::new();
+        for (name, path, body) in produce_bodies() {
+            met.push((name, produce(&st, &seen, path, body).await));
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+        let over = || Met::Refused(403, errors::CODE_QUOTA_EXCEEDED.to_string());
+        assert_eq!(
+            met,
+            vec![
+                ("json push", over()),
+                ("QPB1", Met::Forwarded),
+                ("QPB1 zstd, counts", Met::Forwarded),
+                ("QPB1 frames", Met::Forwarded),
+                ("json transaction", over()),
+                ("QTB1", Met::Forwarded),
+            ]
+        );
+    }
+
+    /// What the meter books for the three messages, body by body. The bytes of
+    /// the request are booked for every body alike. The MESSAGES are still
+    /// read from JSON: a push is counted off the broker's 201 and a
+    /// transaction off the request, so a binary push is counted while it asks
+    /// for one status per message and is not once it asks for the counts, and
+    /// a binary transaction never is.
+    #[tokio::test]
+    async fn the_meter_books_the_bytes_of_every_body_and_the_messages_of_a_json_one() {
+        let dir = binary_spool("binary-meter");
+        let seen = Bodies::default();
+        let st = binary_st(&dir, None, binary_broker(seen.clone())).await;
+        // Sets the KV `drain()` writes through. Unreachable on purpose.
+        let down = crate::store::Store::Kv(std::sync::Arc::new(crate::store::memkv::Down));
+        st.meter.spawn_flush(&down, "test");
+        let totals = |op: &str| -> (u64, u64, u64) {
+            spooled_rows(&dir)
+                .iter()
+                .filter(|r| r.op == op)
+                .fold((0, 0, 0), |(reqs, msgs, bytes_in), r| {
+                    (reqs + r.reqs, msgs + r.msgs, bytes_in + r.bytes_in)
+                })
+        };
+
+        let mut booked = Vec::new();
+        for (name, path, body) in produce_bodies() {
+            let op = if path == "/api/v1/push" { "push" } else { "txn" };
+            let sent = body.len() as u64;
+            // The spool only grows: what this request booked is what one more
+            // drain added to it.
+            let before = totals(op);
+            assert_eq!(produce(&st, &seen, path, body).await, Met::Forwarded, "{name}");
+            st.meter.drain().await;
+            let after = totals(op);
+            assert_eq!(after.2 - before.2, sent, "{name}: the bytes of the request, as sent");
+            booked.push((name, op, after.0 - before.0, after.1 - before.1));
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(
+            booked,
+            vec![
+                ("json push", "push", 1, 3),
+                ("QPB1", "push", 1, 3),
+                // Three messages stored, none booked.
+                ("QPB1 zstd, counts", "push", 1, 0),
+                ("QPB1 frames", "push", 1, 3),
+                ("json transaction", "txn", 1, 3),
+                // The same.
+                ("QTB1", "txn", 1, 0),
+            ]
+        );
+    }
+
+    /// A pop answer crosses the proxy as the broker wrote it, content type
+    /// included, and leaves the byte bucket at what it weighs UNCOMPRESSED: a
+    /// framed answer at what its records declare, whatever it measures on the
+    /// wire. A push of `p` bytes right after it passes when the bucket held
+    /// the answer's weight plus `p`, and not when it held one byte less.
+    ///
+    /// The meter books the answer's bytes as sent. The MESSAGES it books are
+    /// still read from JSON: a framed answer of four counts none.
+    #[tokio::test]
+    async fn a_pop_answer_leaves_the_byte_bucket_at_its_uncompressed_weight() {
+        let push = br#"{"items":[{"queue":"orders","partition":"p1","payload":{"n":1}}]}"#.to_vec();
+        let p = push.len() as u64;
+        let mut seen_weights = Vec::new();
+        for (query, content_type, answer) in pop_answers() {
+            let weight = crate::wire::pop_answer_bytes(&answer);
+            seen_weights.push((query, answer.len() as u64, weight));
+            let rooms = [(weight + p, Met::Forwarded), (weight + p - 1, over_the_rate())];
+            for (room, push_after) in rooms {
+                let seen = Bodies::default();
+                let (st, dir) = st_with_bytes("bytes-pop", room, &seen).await;
+                let down = crate::store::Store::Kv(std::sync::Arc::new(crate::store::memkv::Down));
+                st.meter.spawn_flush(&down, "test");
+
+                let req = Request::builder()
+                    .method(Method::GET)
+                    .uri(format!("/api/v1/pop/queue/orders{query}"))
+                    .header(header::HOST, "cell.test")
+                    .body(Body::empty())
+                    .expect("request");
+                let resp = handle(State(st.clone()), req).await;
+                assert_eq!(resp.status(), StatusCode::OK, "pop{query}");
+                assert_eq!(
+                    resp.headers().get(header::CONTENT_TYPE).and_then(|v| v.to_str().ok()),
+                    Some(content_type),
+                    "pop{query}"
+                );
+                let bytes = axum::body::to_bytes(resp.into_body(), 64 * 1024).await.expect("body");
+                assert_eq!(&bytes[..], &answer[..], "pop{query}: the answer as the broker wrote it");
+
+                let pushed = produce(&st, &seen, "/api/v1/push", push.clone()).await;
+                assert_eq!(pushed, push_after, "a push of {p} bytes after pop{query}, from {room}");
+
+                st.meter.drain().await;
+                let rows = spooled_rows(&dir);
+                let _ = std::fs::remove_dir_all(&dir);
+                let booked = rows.iter().filter(|r| r.op == "delivery").fold(
+                    (0, 0, 0),
+                    |(reqs, msgs, bytes_out), r| (reqs + r.reqs, msgs + r.msgs, bytes_out + r.bytes_out),
+                );
+                let messages = if query.is_empty() { 4 } else { 0 };
+                assert_eq!(booked, (1, messages, answer.len() as u64), "pop{query}");
+            }
+        }
+        // The compressed record is counted at the four frames it holds, so the
+        // two framed answers weigh the same; only the JSON one is its own size.
+        let json = seen_weights[0];
+        let (raw, stored) = (seen_weights[1], seen_weights[2]);
+        assert_eq!(json.1, json.2);
+        assert_eq!(raw.1, raw.2);
+        assert_eq!(stored.2, raw.2);
+        assert_ne!(stored.1, stored.2);
     }
 
     #[test]

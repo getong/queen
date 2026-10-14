@@ -199,7 +199,7 @@ impl Workload {
                 let t = self.txn();
                 PushItem {
                     hash: crate::util::txn_hash128(&t),
-                    frame: format!("{{\"t\":\"{t}\"}}").into_bytes(),
+                    frame: format!("{{\"t\":\"{t}\"}}").into_bytes().into(),
                 }
             })
             .collect();
@@ -1129,7 +1129,7 @@ fn push_cmd(id: u64, queue: &str, partition: &str, txns: &[&str]) -> Command {
             .iter()
             .map(|t| PushItem {
                 hash: crate::util::txn_hash128(t),
-                frame: format!("{{\"t\":\"{t}\"}}").into_bytes(),
+                frame: format!("{{\"t\":\"{t}\"}}").into_bytes().into(),
             })
             .collect(),
         create_cfg: queue_cfg(queue),

@@ -151,7 +151,7 @@ var cgRefreshStatsCmd = &cobra.Command{
 }
 
 func init() {
-	cgLagCmd.Flags().IntVar(&cgLagMinSec, "min-seconds", 0, "filter to lag >= N seconds")
+	cgLagCmd.Flags().IntVar(&cgLagMinSec, "min-seconds", 0, "list the partitions a group is more than N seconds behind on, one row each")
 	cgSeekCmd.Flags().StringVar(&cgSeekTo, "to", "", "target time")
 	cgSeekCmd.Flags().BoolVar(&cgSeekDryRun, "dry-run", false, "print, don't send")
 	cgDeleteCmd.Flags().StringVar(&cgDeleteQueue, "queue", "", "scope deletion to one queue")

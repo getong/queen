@@ -1,0 +1,1 @@
+{"partitions": 10, "rate": 1500000, "carried": false, "offered": 1499990, "pushed": 1341465, "consumed": 1341125, "shed": 2626500, "errors": 0, "push_p50_ms": 2064.38, "push_p99_ms": 3801.09, "e2e_p50_ms": 2129.92, "e2e_p99_ms": 3866.62, "cores": [6.6, 3.6, 3.4], "mem_gb": [7.8, 10.1, 10.0], "loader_cores": 11.1, "dir": "c10-b20000/1500000"}

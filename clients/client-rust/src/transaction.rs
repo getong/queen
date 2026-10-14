@@ -400,11 +400,8 @@ impl TransactionBuilder {
                 kv.append(&mut req.kv);
                 req.kv = kv;
             }
-            let resp: Option<TransactionResponse> = self
-                .inner
-                .http
-                .post_json("/api/v1/transaction", &req, &Opts::default())
-                .await?;
+            let resp: Option<TransactionResponse> =
+                self.inner.http.transaction(&req, &Opts::default()).await?;
             let resp =
                 resp.ok_or_else(|| Error::Decode("transaction returned an empty body".into()))?;
             let lost_guard = resp.lost_precondition().and_then(|lost| {

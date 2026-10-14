@@ -143,7 +143,7 @@ impl RaftFacade {
                 partition: partition.to_string(),
                 items: vec![PushItem {
                     hash: txn_hash128(&txn),
-                    frame,
+                    frame: frame.into(),
                 }],
                 create_cfg: super::super::default_queue_config(queue),
             });

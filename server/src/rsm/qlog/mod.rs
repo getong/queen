@@ -473,6 +473,7 @@ pub struct StoredRecord {
     pub pid: u64,
     pub base_offset: u64,
     pub count: u32,
+    pub created_at_us: i64,
     pub zstd: bool,
     pub payload: Vec<u8>,
 }
@@ -1991,6 +1992,7 @@ impl QLog {
             pid: rr.header.pid,
             base_offset: rr.header.base_offset,
             count: rr.header.count,
+            created_at_us: rr.header.created_at_us,
             zstd: rr.header.payload_zstd(),
             payload: rr.payload.to_vec(),
         }))
@@ -3729,6 +3731,16 @@ impl ReadStep {
     pub(crate) fn read(&self) -> io::Result<OwnedRecord> {
         read_located_in(&self.file, &self.cache.dir, &self.loc)
     }
+
+    /// Read this record's first byte and nothing else. How long that takes
+    /// tells a caller whether the record is in the page cache (microseconds)
+    /// or waits for the disk ([`set::QLogReader::read_owned_ahead`] times
+    /// it). The byte itself is not looked at: [`ReadStep::read`] reads the
+    /// record and reports what is wrong with it.
+    pub(crate) fn peek(&self) -> io::Result<()> {
+        let mut first = [0u8; 1];
+        self.file.read_exact_at(&mut first, self.loc.offset)
+    }
 }
 
 impl WalkStep {
@@ -4547,6 +4559,27 @@ pub fn drop_behind_bytes() -> u64 {
     static V: OnceLock<u64> = OnceLock::new();
     *V.get_or_init(|| {
         (env_usize("QUEEN_QLOG_DROP_BEHIND_MB").unwrap_or(DROP_BEHIND_DEFAULT_MB) as u64)
+            .saturating_mul(1 << 20)
+    })
+}
+
+/// Default read-ahead of a reader behind its log's hot tail, in MiB
+/// ([`read_ahead_bytes`]).
+const READ_AHEAD_DEFAULT_MB: usize = 1;
+
+/// `QUEEN_QLOG_READ_AHEAD_MB` (default 1; 0 = off): when a fetch finds a
+/// record out of the page cache, the kernel is asked for that record and for
+/// this many bytes of the partition's records after it
+/// ([`set::QLogReader::read_owned_ahead`]). A reader further behind than
+/// [`drop_behind_bytes`] finds nothing in memory, and a partition's records
+/// are not next to each other in the file (the log holds every partition of
+/// its lane, interleaved), so the kernel's own read-ahead brings the wrong
+/// bytes: read one at a time, every record waits for the disk in turn. Not
+/// measured yet (2026-10-13).
+pub fn read_ahead_bytes() -> u64 {
+    static V: OnceLock<u64> = OnceLock::new();
+    *V.get_or_init(|| {
+        (env_usize("QUEEN_QLOG_READ_AHEAD_MB").unwrap_or(READ_AHEAD_DEFAULT_MB) as u64)
             .saturating_mul(1 << 20)
     })
 }

@@ -44,6 +44,9 @@ type queenFlags struct {
 	warmConc   int
 	leaseWait  time.Duration
 	verifyConc int
+	pushWire   string
+	pushZstd   bool
+	txnWire    string
 
 	url  string
 	list []string
@@ -51,6 +54,12 @@ type queenFlags struct {
 
 func (q *queenFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&q.urls, "urls", "http://127.0.0.1:6632", "broker base URLs, comma-separated: process i talks to url[i % n] (followers forward to the leader)")
+	fs.StringVar(&tenantHeader, "tenant", "", "x-queen-tenant header on every request (a broker with QUEEN_TENANCY_HEADER=1): the tenant this process works as; empty = no header, the default tenant")
+	fs.StringVar(&q.pushWire, "push-wire", "json", "push body: json | bin (the Go client's binary push body, answered with counts; needs a broker that accepts it)")
+	fs.BoolVar(&popFrames, "pop-frames", false, "pops ask for the messages as the stored records (frames=true) and unpack them here")
+	fs.BoolVar(&ackCounts, "ack-counts", false, "ack batches ask for the totals (\"answer\":\"counts\") instead of one object per message")
+	fs.BoolVar(&q.pushZstd, "push-zstd", false, "with -push-wire bin: the messages framed and zstd-compressed by the client, kept by the broker as they are")
+	fs.StringVar(&q.txnWire, "txn-wire", "json", "-txn: transaction body: json | bin (the Go client's binary transaction body: the acks as JSON, the pushes framed and zstd-compressed here, answered with counts; needs a broker that accepts it)")
 	fs.IntVar(&q.conns, "conns", 2048, "HTTP keep-alive connections kept per broker (MaxIdleConnsPerHost, goload's -idle-conns)")
 	core.DurationVar(fs, &q.timeout, "timeout", 30*time.Second, "request timeout")
 	fs.IntVar(&q.popWidth, "pop-width", 10, "partitions claimed per pop (workers and readers; the 09-30 grid's pop width)")

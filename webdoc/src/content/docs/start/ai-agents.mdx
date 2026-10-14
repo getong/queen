@@ -12,6 +12,9 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-09 (locks in the MCP): tools.mjs lists locks and semaphores among the
 # setup features, and example now answers with the asked language's snippet when the same task in another
 # language matches the question better. The setup bullet names locks; the rest of the page is as described.
+# sourceOfTruth re-read 2026-10-13 (2.3.0 in the MCP): tools.mjs lists the binary wire forms (binary
+# push, push compression, framed pop) among the setup features. The setup bullet names them; the
+# rest of the page is as described.
 ---
 
 Queen runs an MCP server for coding agents at `https://queenmq.com/mcp`. Connect your agent and it
@@ -120,8 +123,8 @@ The server gives your agent six tools, which it calls on its own as it works:
 - `kafka_client(client, version?)` says whether a Kafka client library works against Queen, which
   versions we tested, the configuration it needs and where it falls short.
 - `setup(feature, language?)` walks through setting up one feature: KV state, timers, locks and
-  semaphores, stream processing, ephemeral queues, Kafka clients, the Postgres source and sink, or
-  the S3 sink. It answers with the docs for that feature, the calls in your SDK when you name a
+  semaphores, stream processing, ephemeral queues, the SDKs' binary wire forms for high message
+  rates, Kafka clients, the Postgres source and sink, or the S3 sink. It answers with the docs for that feature, the calls in your SDK when you name a
   language, and the traps that apply.
 
 It also offers three prompts, which you run yourself:

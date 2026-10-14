@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"mqload/internal/core"
+
+	queen "github.com/smartpricing/queen/clients/client-go/v2"
 )
 
 // txnWorkers: the -txn pipeline workers of this process (global indices cons-offset .. +consumers-1). Each one:
@@ -96,6 +98,7 @@ func (w *txnWorkers) fill() []qmsg {
 }
 
 func (w *txnWorkers) commit(ci int, msgs []qmsg) {
+	bin := w.qf.txnWire == "bin"
 	size := 64 + len(w.out)
 	for i := range msgs {
 		size += 200 + len(msgs[i].Data) + len(w.out) + len(msgs[i].Partition) + 48
@@ -103,23 +106,43 @@ func (w *txnWorkers) commit(ci int, msgs []qmsg) {
 	b := make([]byte, 0, size)
 	b = append(b, `{"operations":[`...)
 	for i := range msgs {
-		b = appendAckOp(b, &msgs[i], true)
-		b = append(b, ',')
-	}
-	b = append(b, `{"type":"push","items":[`...)
-	for i := range msgs {
-		if i > 0 {
+		if i > 0 && bin {
 			b = append(b, ',')
 		}
-		b = append(b, `{"queue":"`...)
-		b = append(b, w.out...)
-		b = append(b, `","partition":`...)
-		b = jsonString(b, msgs[i].Partition)
-		b = append(b, `,"payload":`...)
-		b = append(b, core.Transform(msgs[i].Data, ci)...)
-		b = append(b, '}')
+		b = appendAckOp(b, &msgs[i], true)
+		if !bin {
+			b = append(b, ',')
+		}
 	}
-	b = append(b, `]}],"requiredLeases":[`...)
+	// -txn-wire bin: the outputs leave the JSON and travel as frames, one group
+	// for each run of messages of one partition (a pop hands them over that way).
+	var batches []queen.PushBatch
+	if bin {
+		for i := range msgs {
+			n := len(batches)
+			if n == 0 || batches[n-1].Partition != msgs[i].Partition {
+				batches = append(batches, queen.PushBatch{Queue: w.out, Partition: msgs[i].Partition})
+				n++
+			}
+			batches[n-1].Payloads = append(batches[n-1].Payloads, core.Transform(msgs[i].Data, ci))
+		}
+		b = append(b, `],"requiredLeases":[`...)
+	} else {
+		b = append(b, `{"type":"push","items":[`...)
+		for i := range msgs {
+			if i > 0 {
+				b = append(b, ',')
+			}
+			b = append(b, `{"queue":"`...)
+			b = append(b, w.out...)
+			b = append(b, `","partition":`...)
+			b = jsonString(b, msgs[i].Partition)
+			b = append(b, `,"payload":`...)
+			b = append(b, core.Transform(msgs[i].Data, ci)...)
+			b = append(b, '}')
+		}
+		b = append(b, `]}],"requiredLeases":[`...)
+	}
 	seen := map[string]bool{}
 	for i := range msgs {
 		if l := msgs[i].LeaseID; l != "" && !seen[l] {
@@ -131,6 +154,14 @@ func (w *txnWorkers) commit(ci int, msgs []qmsg) {
 		}
 	}
 	b = append(b, `]}`...)
+	if bin {
+		framed, err := queen.EncodeTransactionFrames(b, batches, true)
+		if err != nil {
+			w.stats.Failed("txn", err)
+			return
+		}
+		b = framed
+	}
 
 	t := w.stats.Begin()
 	ctx, cancel := context.WithTimeout(context.Background(), w.qf.timeout)

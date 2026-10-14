@@ -2083,6 +2083,25 @@ const WALK_CHUNK: usize = 128;
 /// page cache answers in a few microseconds.
 const COLD_READ: std::time::Duration = std::time::Duration::from_micros(50);
 
+/// What a reader that goes through one partition's offsets in order keeps
+/// between its reads ([`QLogReader::read_owned_ahead`]).
+#[derive(Debug, Default)]
+pub struct ReadAhead {
+    /// The sealed file the last record came from: the next one is looked for
+    /// there first ([`QLog::plan_read`]).
+    hint: Option<u64>,
+    /// The kernel has been asked for the partition's records below this
+    /// offset: none of them is timed again.
+    asked_to: u64,
+}
+
+impl ReadAhead {
+    #[cfg(test)]
+    pub(super) fn asked_to(&self) -> u64 {
+        self.asked_to
+    }
+}
+
 impl QLogReader {
     /// Pause retention (no file is unlinked or rewritten) until the guard is
     /// dropped: a snapshot links every file and needs them to stay put. A
@@ -2625,6 +2644,20 @@ impl QLogReader {
         }
     }
 
+    /// [`QLogReader::read_owned`] with the payload as it is stored (a zstd
+    /// payload stays compressed): what a pop answered as frames sends.
+    pub fn read_stored(
+        &self,
+        queue_id: u64,
+        pid: u64,
+        offset: u64,
+    ) -> io::Result<Option<crate::rsm::qlog::StoredRecord>> {
+        match self.log_for(queue_id, pid) {
+            Some(l) => l.read().expect("qlog poisoned").read_stored(pid, offset),
+            None => Ok(None),
+        }
+    }
+
     /// [`QLogReader::read_owned`] for the consecutive offsets of one
     /// partition ([`QLog::read_owned_hinted`]).
     pub fn read_owned_hinted(
@@ -2646,6 +2679,91 @@ impl QLogReader {
             Some(step) => Ok(Some(step.read()?)),
             None => Ok(None),
         }
+    }
+
+    /// [`QLogReader::read_owned_hinted`] for a fetch, whose reader may be far
+    /// behind its log's end: the same lookup under the queue's lock and the
+    /// same read after it, and one thing more. A node drops written pages
+    /// behind its tail ([`super::drop_behind_bytes`]), so a reader further
+    /// back than that finds nothing in memory, and its partition's records
+    /// are not next to each other in the file: read one by one, every record
+    /// waits for the disk in turn. So once a record's first byte has waited
+    /// ([`COLD_READ`]), the kernel is asked for that record whole and for the
+    /// ones after it, up to `end` and to [`super::read_ahead_bytes`]: the
+    /// disk reads overlap, and this walk — and the reader's next fetch, which
+    /// starts where this one stops — finds them in memory. No record below
+    /// what was asked for is timed again. What is read never differs: the
+    /// request is a hint to the kernel.
+    pub fn read_owned_ahead(
+        &self,
+        queue_id: u64,
+        pid: u64,
+        offset: u64,
+        end: u64,
+        ahead: &mut ReadAhead,
+    ) -> io::Result<Option<OwnedRecord>> {
+        self.read_owned_ahead_at(
+            queue_id,
+            pid,
+            offset,
+            end,
+            ahead,
+            COLD_READ,
+            super::read_ahead_bytes(),
+        )
+    }
+
+    /// [`QLogReader::read_owned_ahead`] with what counts as a wait and how
+    /// many bytes are asked for stated (a test makes every read a cold one).
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn read_owned_ahead_at(
+        &self,
+        queue_id: u64,
+        pid: u64,
+        offset: u64,
+        end: u64,
+        ahead: &mut ReadAhead,
+        cold: std::time::Duration,
+        bytes: u64,
+    ) -> io::Result<Option<OwnedRecord>> {
+        let Some(l) = self.log_for(queue_id, pid) else {
+            return Ok(None);
+        };
+        // The lookup under the queue's lock, the read after it.
+        let step = l
+            .read()
+            .expect("qlog poisoned")
+            .plan_read(pid, offset, &mut ahead.hint)?;
+        let Some(step) = step else {
+            return Ok(None);
+        };
+        if bytes > 0 && offset >= ahead.asked_to {
+            let began = std::time::Instant::now();
+            if step.peek().is_ok() && began.elapsed() >= cold {
+                // The records from this one on (the plan's first step is the
+                // record itself), looked up under the lock and asked for
+                // after it. A lookup that fails asks for nothing: the read
+                // below reports what is wrong.
+                let mut hint = ahead.hint;
+                let steps = l
+                    .read()
+                    .expect("qlog poisoned")
+                    .walk_plan(pid, offset, end, &mut hint, WALK_CHUNK)
+                    .unwrap_or_default();
+                let mut left = bytes;
+                for (i, s) in steps.iter().enumerate() {
+                    if i > 0 {
+                        if left == 0 {
+                            break;
+                        }
+                        left = left.saturating_sub(u64::from(s.rec.len));
+                    }
+                    s.will_need();
+                    ahead.asked_to = s.rec.end;
+                }
+            }
+        }
+        Ok(Some(step.read()?))
     }
 
     /// Seek a message-list candidate using only the active/sealed indexes.
