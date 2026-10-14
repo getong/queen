@@ -11,7 +11,7 @@ Queen MQ is a transactional event broker. When a worker handles an event, the ac
 changes, the events it emits and the timer it sets commit as one entry of a replicated log, or not
 at all. 
 
-On three nodes it carries 1M msg/s in and out of one queue of 10M partitions.
+On three nodes it carries up to 2M msg/s in and out of one queue of 10M partitions.
 
 Queen speaks HTTP but is also compatible with Kafka clients.
 
