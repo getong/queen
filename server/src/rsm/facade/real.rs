@@ -2010,6 +2010,16 @@ fn default_queue_config(queue: &str) -> QueueConfig {
     crate::rsm::planner::timers::implicit_queue_config_for(queue)
 }
 
+#[cfg(test)]
+thread_local! {
+    /// TEST ONLY: what the next store a facade opens ON THIS THREAD is told
+    /// about the checkpoint's form of the `txns` rows
+    /// ([`StoreOpts::txns_without_hashes`]): a test of the production form
+    /// without moving the process-wide dedup mode the other tests rely on.
+    pub(crate) static TEST_TXNS_WITHOUT_HASHES: std::cell::Cell<Option<bool>> =
+        const { std::cell::Cell::new(None) };
+}
+
 /// The store options, honouring `QUEEN_RAFT_MAP_BYTES`, `QUEEN_STORE_VERIFY`
 /// (scrub the whole store at open, default off) and `QUEEN_STORE_MIGRATE`
 /// (`0` keeps a format-0 store unverified instead of migrating it), with the
@@ -2017,6 +2027,10 @@ fn default_queue_config(queue: &str) -> QueueConfig {
 /// exempt from the I2 clock/env ban that `rsm/store` itself carries).
 fn store_opts_from_env() -> StoreOpts {
     let mut o = StoreOpts::default();
+    #[cfg(test)]
+    {
+        o.txns_without_hashes = TEST_TXNS_WITHOUT_HASHES.with(|c| c.get());
+    }
     if let Some(v) = std::env::var("QUEEN_RAFT_MAP_BYTES")
         .ok()
         .and_then(|v| v.parse::<usize>().ok())
@@ -2024,6 +2038,10 @@ fn store_opts_from_env() -> StoreOpts {
     {
         o.map_bytes = Some(v);
     }
+    // The queue logs hold every `txns` row's hashes (`QUEEN_RAFT_QLOG`, the
+    // same default `ApplyConfig::from_env` reads): the checkpoint may leave
+    // them out, the boot refills them.
+    o.qlog_holds_hashes = env_flag("QUEEN_RAFT_QLOG", true);
     o.verify_at_open = env_flag("QUEEN_STORE_VERIFY", false);
     o.verify_reads = env_flag("QUEEN_STORE_VERIFY_READS", false);
     o.migrate_legacy = env_flag("QUEEN_STORE_MIGRATE", true);

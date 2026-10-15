@@ -827,6 +827,12 @@ pub struct StoreOpts {
     /// Called once with the first corrupt value found at runtime
     /// ([`integrity::CorruptHook`]). The binary's ends the process.
     pub on_corrupt: Option<integrity::CorruptHook>,
+    /// The queue logs are this node's store of record (`QUEEN_RAFT_QLOG`, on by
+    /// default), so every `txns` row's hash list is in a message record and
+    /// the boot refills it ([`crate::rsm::txns_refill`]): the checkpoint may
+    /// leave the lists out. Off (a store opened by a tool, or the segment
+    /// path), rows are checkpointed whole.
+    pub qlog_holds_hashes: bool,
     /// TEST ONLY: create a NEW store in format 0 (no checksums), as a build
     /// before format 1 did: a legacy fixture, and the A/B of the overhead.
     #[cfg(test)]
@@ -835,6 +841,11 @@ pub struct StoreOpts {
     /// commit — the path on which a legacy store must stay untouched.
     #[cfg(test)]
     pub(crate) fail_migration: bool,
+    /// TEST ONLY: `Some` forces whether the checkpoint writes the `txns` rows
+    /// without their hash lists; `None` decides as production does (the dedup
+    /// mode, `QUEEN_RAFT_CHECKPOINT_TXNS`, the cluster version).
+    #[cfg(test)]
+    pub(crate) txns_without_hashes: Option<bool>,
 }
 
 impl Default for StoreOpts {
@@ -851,10 +862,13 @@ impl Default for StoreOpts {
             migrate_legacy: true,
             verify_reads: false,
             on_corrupt: None,
+            qlog_holds_hashes: false,
             #[cfg(test)]
             create_legacy: false,
             #[cfg(test)]
             fail_migration: false,
+            #[cfg(test)]
+            txns_without_hashes: None,
         }
     }
 }
@@ -1337,6 +1351,22 @@ pub trait Store: Send + Sync {
     /// Put the rows of a cut that was NOT written back into the dirty sets, so
     /// the next checkpoint still carries them.
     fn restore_cut(&self, _cut: CheckpointCut) {}
+
+    /// The `txns` rows this store loaded without their hash lists (a
+    /// checkpoint keeps them in the queue logs,
+    /// [`crate::rsm::dedup::txns_without_hashes`]), per partition in key
+    /// order: `(pid, [(base_offset, inclusive end)])`. Empty for a store
+    /// that keeps them whole.
+    fn txns_without_hashes(&self) -> Result<Vec<(u64, Vec<(u64, u64)>)>> {
+        Ok(Vec::new())
+    }
+
+    /// Put hash lists back into those rows (`(base_offset, hashes)`), in RAM
+    /// only and not dirty. A boot step ([`crate::rsm::txns_refill`]). Returns
+    /// how many rows took them.
+    fn refill_txns(&self, _pid: u64, _rows: &[(u64, Vec<u8>)]) -> Result<usize> {
+        Ok(0)
+    }
 }
 
 /// One keyspace's rows in a [`CheckpointCut`]: its dirty sets as they were

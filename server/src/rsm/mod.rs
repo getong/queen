@@ -125,6 +125,9 @@ pub mod qlog;
 /// `(pid, hash) → (offset, created_at)`, pruned by the txns window, whose hash
 /// lists outlive the segments retention deletes. Owner: WP-1.2.
 pub mod dedup;
+/// The boot's refill of the `txns` rows' hash lists from the queue logs
+/// (the checkpoint keeps them there, [`dedup::txns_without_hashes`]).
+pub mod txns_refill;
 
 /// The cycle driver (§7.1): drain the command channel under the batch caps,
 /// plan, propose, wait for local apply, clear the overlay. Owner: WP-1.6.

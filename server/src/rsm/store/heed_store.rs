@@ -284,6 +284,22 @@ static CKPT_FLUSH_STEP: std::sync::LazyLock<u64> = std::sync::LazyLock::new(|| {
         << 20
 });
 
+/// `QUEEN_RAFT_CHECKPOINT_TXNS` (default `log`): `whole` writes the `txns`
+/// rows into the checkpoint with their hash lists, as earlier builds did;
+/// anything else leaves the hashes in the queue log, where every message
+/// record holds them already, and the boot refills them
+/// ([`HeedStore::txns_without_hashes_in_checkpoint`]).
+static CKPT_TXNS_WITHOUT_HASHES: std::sync::LazyLock<bool> = std::sync::LazyLock::new(|| {
+    !matches!(
+        std::env::var("QUEEN_RAFT_CHECKPOINT_TXNS")
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase()
+            .as_str(),
+        "whole"
+    )
+});
+
 pub struct HeedStore {
     env: Env<WithTls>,
     /// Indexed by [`Keyspace::slot`].
@@ -339,6 +355,13 @@ pub struct HeedStore {
     /// did not happen".
     #[cfg(test)]
     fail_sync: AtomicBool,
+    /// TEST ONLY ([`StoreOpts::txns_without_hashes`]): force the checkpoint's
+    /// form of the `txns` rows, whatever the process-wide dedup mode and the
+    /// cluster version say.
+    #[cfg(test)]
+    txns_without_hashes: Option<bool>,
+    /// [`StoreOpts::qlog_holds_hashes`].
+    qlog_holds_hashes: bool,
 }
 
 impl HeedStore {
@@ -553,6 +576,9 @@ impl HeedStore {
             sigbus,
             #[cfg(test)]
             fail_sync: AtomicBool::new(false),
+            #[cfg(test)]
+            txns_without_hashes: opts.txns_without_hashes,
+            qlog_holds_hashes: opts.qlog_holds_hashes,
         })
     }
 
@@ -1185,6 +1211,7 @@ impl HeedStore {
     fn write_cut_inner(&self, cut: &CheckpointCut) -> Result<()> {
         // The transaction walks the B-tree through the map to find each leaf.
         let _watch = MapWatch::new(&self.sigbus);
+        let strip = self.txns_without_hashes_in_checkpoint();
         let mut txn = self.env.write_txn().map_err(|e| err(self, e))?;
         for (ks, maps) in &cut.rows {
             // Key order: LMDB's B-tree is written leaf after leaf, not at
@@ -1193,11 +1220,29 @@ impl HeedStore {
                 maps.iter().flat_map(|m| m.iter()).collect();
             pairs.sort_unstable_by(|a, b| a.0.cmp(b.0));
             let db = *self.db(*ks);
+            let strip_rows = strip && *ks == Keyspace::Txns;
+            let seed = self.seeds[ks.slot()];
             for (k, v) in pairs {
                 match v {
                     Some(v) => {
                         self.check_for_file(*ks, k, v)?;
-                        db.put(&mut txn, k, v).map_err(|e| err(self, e))?
+                        // A `txns` row goes to the file without its hashes
+                        // (they are in its queue log; the boot refills them),
+                        // sealed again for the bytes it holds there.
+                        let without = if strip_rows {
+                            integrity::open(seed, k, v)
+                                .ok()
+                                .and_then(crate::rsm::dedup::txns_without_hashes)
+                        } else {
+                            None
+                        };
+                        match without {
+                            Some(row) => {
+                                let sealed = integrity::seal_vec(seed, k, &row);
+                                db.put(&mut txn, k, &sealed[..]).map_err(|e| err(self, e))?
+                            }
+                            None => db.put(&mut txn, k, v).map_err(|e| err(self, e))?,
+                        }
                     }
                     None => {
                         db.delete(&mut txn, k).map_err(|e| err(self, e))?;
@@ -1209,6 +1254,146 @@ impl HeedStore {
         self.flush_in_steps()
             .map_err(|e| err(self, heed::Error::Io(e)))?;
         self.sync_now()
+    }
+
+    /// Whether this checkpoint writes the `txns` rows without their hash lists
+    /// ([`crate::rsm::dedup::txns_without_hashes`]): a format-1 store (the
+    /// stripped row is sealed again), the `txns` dedup authority (in `rows`
+    /// mode apply deletes a row's `dedup` occurrences BY ITS HASHES, so a row
+    /// must stay whole there), `QUEEN_RAFT_CHECKPOINT_TXNS` not `whole`, and a
+    /// cluster version at which every member refills them at boot (D20: an
+    /// image this node checkpoints may install on any member as a snapshot).
+    fn txns_without_hashes_in_checkpoint(&self) -> bool {
+        if !self.checksummed {
+            return false;
+        }
+        #[cfg(test)]
+        if let Some(forced) = self.txns_without_hashes {
+            return forced;
+        }
+        if !self.qlog_holds_hashes || !*CKPT_TXNS_WITHOUT_HASHES {
+            return false;
+        }
+        if crate::rsm::dedup::record_index_mode() != crate::rsm::dedup::IndexMode::Txns {
+            return false;
+        }
+        let key = super::meta::CLUSTER_VERSION;
+        let cluster = self
+            .ram(Keyspace::Meta)
+            .and_then(|t| t.get(key))
+            .and_then(|stored| {
+                integrity::open(self.seeds[Keyspace::Meta.slot()], key, &stored)
+                    .ok()
+                    .and_then(|v| super::rows::u32_decode(v).ok())
+            })
+            .unwrap_or(crate::rsm::effect::BASELINE_KINDS_VERSION);
+        crate::rsm::effect::cluster_allows(cluster, crate::rsm::effect::VERSION_7)
+    }
+
+    /// The `txns` rows held without their hash lists (loaded from a
+    /// checkpoint that left them out), per partition in key order:
+    /// `(pid, [(base_offset, end)])` with `end` inclusive. A boot step: the
+    /// caller refills them ([`HeedStore::refill_txns`]) before anything reads
+    /// them ([`crate::rsm::txns_refill`]).
+    pub fn txns_without_hashes(&self) -> Result<Vec<(u64, Vec<(u64, u64)>)>> {
+        self.check_poison()?;
+        let Some(t) = self.ram(Keyspace::Txns) else {
+            return Ok(Vec::new());
+        };
+        let seed = self.seeds[Keyspace::Txns.slot()];
+        let mut out: Vec<(u64, Vec<(u64, u64)>)> = Vec::new();
+        let mut buf = ScanBuf::new();
+        let mut after: Vec<u8> = Vec::new();
+        let mut first = true;
+        loop {
+            buf.clear();
+            let lo = if first {
+                Bound::Unbounded
+            } else {
+                Bound::Excluded(&after[..])
+            };
+            t.copy_range(lo, Bound::Unbounded, false, RAM_SCAN_CHUNK, &mut buf);
+            for i in 0..buf.len() {
+                let (k, stored) = (buf.key(i), buf.stored(i));
+                let v = if self.checksummed {
+                    integrity::open(seed, k, stored).map_err(|m| {
+                        self.corrupt_found(integrity::mismatch_error(
+                            Keyspace::Txns,
+                            k,
+                            m,
+                            "at the txns refill",
+                        ))
+                    })?
+                } else {
+                    stored
+                };
+                if !crate::rsm::dedup::txns_lacks_hashes(v) {
+                    continue;
+                }
+                let (Some(pid), Some(base)) =
+                    (super::keys::pid_of(k), super::keys::txns_base_of(k))
+                else {
+                    return Err(StoreError::corrupt(Keyspace::Txns, "txns key"));
+                };
+                let end = u64::from_le_bytes(v[0..8].try_into().expect("8 bytes"));
+                match out.last_mut() {
+                    Some((p, rows)) if *p == pid => rows.push((base, end)),
+                    _ => out.push((pid, vec![(base, end)])),
+                }
+            }
+            if buf.len() < RAM_SCAN_CHUNK {
+                break;
+            }
+            after.clear();
+            after.extend_from_slice(buf.key(buf.len() - 1));
+            first = false;
+        }
+        Ok(out)
+    }
+
+    /// Put the hash lists back into rows [`HeedStore::txns_without_hashes`]
+    /// listed: `(base_offset, hashes)` for partition `pid`. In RAM only and
+    /// NOT dirty: the checkpoint keeps them out on purpose. A boot step, before
+    /// apply or any reader runs; a row that has its hashes already, or is gone,
+    /// is left as it is. Returns how many rows took their hashes.
+    pub fn refill_txns(&self, pid: u64, rows: &[(u64, Vec<u8>)]) -> Result<usize> {
+        self.check_poison()?;
+        let Some(t) = self.ram(Keyspace::Txns) else {
+            return Ok(0);
+        };
+        let seed = self.seeds[Keyspace::Txns.slot()];
+        let mut n = 0usize;
+        for (base, hashes) in rows {
+            let k = super::keys::txns(pid, *base);
+            let Some(stored) = t.get(&k) else {
+                continue;
+            };
+            let v = if self.checksummed {
+                integrity::open(seed, &k, &stored).map_err(|m| {
+                    self.corrupt_found(integrity::mismatch_error(
+                        Keyspace::Txns,
+                        &k,
+                        m,
+                        "at the txns refill",
+                    ))
+                })?
+            } else {
+                &stored[..]
+            };
+            if !crate::rsm::dedup::txns_lacks_hashes(v) {
+                continue;
+            }
+            let whole = crate::rsm::dedup::txns_with_hashes(v, hashes);
+            let sealed: RamVal = if self.checksummed {
+                integrity::seal_vec(seed, &k, &whole).into()
+            } else {
+                whole.into()
+            };
+            if t.refill(&k, sealed).is_some() {
+                n += 1;
+            }
+        }
+        Ok(n)
     }
 
     /// Push the pages the cut's commit left in the page cache to the device a
@@ -1387,6 +1572,14 @@ impl Store for HeedStore {
 
     fn copy_checkpoint(&self, dir: &Path) -> Result<(u64, u64)> {
         HeedStore::copy_checkpoint(self, dir)
+    }
+
+    fn txns_without_hashes(&self) -> Result<Vec<(u64, Vec<(u64, u64)>)>> {
+        HeedStore::txns_without_hashes(self)
+    }
+
+    fn refill_txns(&self, pid: u64, rows: &[(u64, Vec<u8>)]) -> Result<usize> {
+        HeedStore::refill_txns(self, pid, rows)
     }
 
     fn write_cut(&self, cut: &mut CheckpointCut) -> Result<()> {

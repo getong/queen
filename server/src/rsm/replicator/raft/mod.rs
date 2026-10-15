@@ -1432,6 +1432,9 @@ impl<S: Store + 'static> RaftReplicator<S> {
             poison: poison.clone(),
             cache_cap: opts.cache_cap,
         })?;
+        // The `txns` rows' hash lists the checkpoint left in the queue logs:
+        // back before openraft applies the replayed entries or anything reads.
+        crate::rsm::txns_refill::refill(&*store, &opened.reader)?;
         let qlog_tails = opened.tails.clone();
         let log = opened.store;
         let mut writer_join = Some(opened.writer);

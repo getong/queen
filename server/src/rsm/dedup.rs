@@ -268,6 +268,54 @@ impl TxnsRow {
 pub const TXNS_LEN_TAIL: usize = 4;
 
 // ---------------------------------------------------------------------------
+// The checkpoint's form of a row: without its hash list
+// ---------------------------------------------------------------------------
+
+/// The LMDB checkpoint's form of a `txns` row: the row WITHOUT its hash list
+/// (`end | created_at [| retained_len]`), or `None` when there is none to leave
+/// out. The hashes are written once already, in the message record the
+/// append wrote to its queue log; in the checkpoint a 100-message row was
+/// 1.6 KB, and LMDB gave every such row a 4 KiB leaf page of its own
+/// (`benchmark-queen/2026-10-15-bytes-per-msg`). The boot puts them back from
+/// the queue log before anything reads them ([`crate::rsm::txns_refill`]).
+/// Node-local: the RAM row, the digest and every read are unchanged.
+pub fn txns_without_hashes(v: &[u8]) -> Option<Vec<u8>> {
+    if v.len() < TXNS_HEADER_LEN {
+        return None;
+    }
+    let body = v.len() - TXNS_HEADER_LEN;
+    let tail = match body % 16 {
+        0 => 0,
+        TXNS_LEN_TAIL => TXNS_LEN_TAIL,
+        _ => return None,
+    };
+    if body == tail {
+        return None;
+    }
+    let mut out = Vec::with_capacity(TXNS_HEADER_LEN + tail);
+    out.extend_from_slice(&v[..TXNS_HEADER_LEN]);
+    out.extend_from_slice(&v[v.len() - tail..]);
+    Some(out)
+}
+
+/// Whether a `txns` row carries no hash list: one the checkpoint stored
+/// without it ([`txns_without_hashes`]). Never a row apply writes: an append
+/// carries at least one message.
+pub fn txns_lacks_hashes(v: &[u8]) -> bool {
+    v.len() == TXNS_HEADER_LEN || v.len() == TXNS_HEADER_LEN + TXNS_LEN_TAIL
+}
+
+/// A row [`txns_without_hashes`] made, with its hash list put back: byte for
+/// byte the row apply wrote.
+pub fn txns_with_hashes(stripped: &[u8], hashes: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(stripped.len() + hashes.len());
+    out.extend_from_slice(&stripped[..TXNS_HEADER_LEN]);
+    out.extend_from_slice(hashes);
+    out.extend_from_slice(&stripped[TXNS_HEADER_LEN..]);
+    out
+}
+
+// ---------------------------------------------------------------------------
 // Probe (003) — planning
 // ---------------------------------------------------------------------------
 
