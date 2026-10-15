@@ -238,6 +238,24 @@ pub fn unpack_frames_ref(raw: &[u8]) -> Option<Vec<FrameRef<'_>>> {
     }
 }
 
+/// Whether any frame of a segment carries the encrypted flag, reading only
+/// each frame's length and flags. A malformed segment answers true, so a caller
+/// that would send the frames as they are leaves them to the full unpack.
+pub fn any_encrypted(raw: &[u8]) -> bool {
+    let mut o = 0usize;
+    while o + 4 <= raw.len() {
+        let len = u32::from_le_bytes([raw[o], raw[o + 1], raw[o + 2], raw[o + 3]]) as usize;
+        if len < 19 || len > raw.len() - (o + 4) {
+            return true;
+        }
+        if raw[o + 4] & FLAG_ENCRYPTED != 0 {
+            return true;
+        }
+        o += 4 + len;
+    }
+    o != raw.len()
+}
+
 #[cfg(any(test, feature = "fuzzing"))]
 pub fn unpack_frames(raw: &[u8]) -> Option<Vec<FrameOut>> {
     let mut out = Vec::new();
@@ -370,5 +388,27 @@ mod tests {
         assert_eq!(brw[0].trace_id, Some(trace));
         assert_eq!(brw[1].trace_id, None);
         assert_eq!(brw[0].payload, br#"{"a":1}"#);
+    }
+
+    #[test]
+    fn any_encrypted_reads_each_frames_flag() {
+        let frame = |txn: &'static str, encrypted: bool| FrameIn {
+            message_id: [1; 16],
+            txn,
+            trace_id: Some([2; 16]),
+            producer_sub: Some("sub"),
+            payload: br#"{"a":1}"#,
+            encrypted,
+        };
+        assert!(!any_encrypted(&[]));
+        let plain = pack_frames(&[frame("t1", false), frame("t2", false)]);
+        assert!(!any_encrypted(&plain));
+        let second = pack_frames(&[frame("t1", false), frame("t2", true)]);
+        assert!(any_encrypted(&second));
+        // A segment it cannot follow answers true: the caller unpacks it whole.
+        assert!(any_encrypted(&plain[..plain.len() - 1]));
+        let mut short = plain.clone();
+        short[..4].copy_from_slice(&3u32.to_le_bytes());
+        assert!(any_encrypted(&short));
     }
 }

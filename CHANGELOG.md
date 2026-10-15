@@ -5,6 +5,15 @@ Release history for the Queen MQ server and client SDKs. Full release notes live
 
 ## Unreleased
 
+**Server: an encryption key no longer turns off the framed forms on every queue.** A broker that
+ran with `QUEEN_ENCRYPTION_KEY` answered every `frames=true` pop in JSON, and compressed every
+framed push and binary transaction again, on the queues that do not encrypt too. A framed group is
+now filed as the client compressed it unless its queue encrypts, and a framed pop answers JSON only
+when a record it would send holds an encrypted message. A queue whose encryption was switched off
+keeps its older messages encrypted, so its answers stay JSON, decrypted, until those are consumed.
+With a key, a framed pop reads the flags of each record's messages, one decompression per record;
+without one nothing changes.
+
 **Laravel: a job whose timeout its lease cannot cover fails alone.** Without lease renewal, a job
 whose own `$timeout` is 0 or at least `retry_after` was refused at every delivery: it never ran,
 never reached `tries` and held its partition, and since PHP client 2.4.2 every supervised worker

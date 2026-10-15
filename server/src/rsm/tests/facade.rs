@@ -2905,3 +2905,250 @@ async fn a_framed_push_compressed_again_as_a_whole_is_refused() {
     facade.shutdown().await;
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// ---------------------------------------------------------------------------
+// A broker with an encryption key: the client's frames are kept, and answered
+// as they are, for every queue that does not encrypt
+// ---------------------------------------------------------------------------
+
+/// One group of a framed body, compressed as the broker never does (level 19,
+/// with a checksum), so a stored record shows whose bytes it holds. Each
+/// message is `{"txn": <txn>, "pad": <600 x>}`, over the codec's 512-byte
+/// floor alone. Returns the group and its zstd frame.
+fn client_group(queue: &str, txns: &[&str]) -> (Vec<u8>, Vec<u8>) {
+    let mut raw = Vec::new();
+    for txn in txns {
+        let payload = serde_json::json!({"txn": txn, "pad": "x".repeat(600)}).to_string();
+        raw.extend_from_slice(&crate::frames::pack_frames(&[crate::frames::FrameIn {
+            message_id: crate::util::uuidv7_bytes(),
+            txn,
+            trace_id: None,
+            producer_sub: None,
+            payload: payload.as_bytes(),
+            encrypted: false,
+        }]));
+    }
+    let mut c = zstd::bulk::Compressor::new(19).expect("zstd");
+    c.set_parameter(zstd::zstd_safe::CParameter::ChecksumFlag(true))
+        .expect("checksum");
+    let z = c.compress(&raw).expect("zstd");
+    let mut g = Vec::new();
+    g.extend_from_slice(&(queue.len() as u16).to_le_bytes());
+    g.extend_from_slice(queue.as_bytes());
+    g.extend_from_slice(&7u16.to_le_bytes());
+    g.extend_from_slice(b"Default");
+    g.extend_from_slice(&(txns.len() as u32).to_le_bytes());
+    g.extend_from_slice(&(z.len() as u32).to_le_bytes());
+    g.extend_from_slice(&z);
+    (g, z)
+}
+
+async fn keyed_facade(tag: &str) -> (RaftFacade, PathBuf) {
+    let dir = scratch(tag);
+    let mut facade = RaftFacade::open(&build_ctx(&dir)).expect("open facade");
+    facade.set_encryption_for_test(crate::encryption::Encryption::for_test([7; 32]));
+    (facade, dir)
+}
+
+async fn set_queue_encryption(facade: &RaftFacade, queue: &str, on: bool) {
+    let out = facade
+        .api(
+            ctx(),
+            ApiReq {
+                method: "POST".into(),
+                path: "/api/v1/configure".into(),
+                query: None,
+                body: serde_json::to_vec(&serde_json::json!({
+                    "queue": queue,
+                    "options": {"encryptionEnabled": on}
+                }))
+                .unwrap(),
+            },
+        )
+        .await
+        .expect("configure");
+    assert_eq!(out.status, 200, "{}", out.body);
+}
+
+/// `"QPB1" | flags 8 (client-built frames) | u32 groups | the groups`.
+async fn push_framed(facade: &RaftFacade, groups: &[&[u8]]) {
+    let mut raw = b"QPB1".to_vec();
+    raw.push(8);
+    raw.extend_from_slice(&(groups.len() as u32).to_le_bytes());
+    for g in groups {
+        raw.extend_from_slice(g);
+    }
+    let out = facade.push(ctx(), PushReq { raw }).await.expect("push");
+    for r in parse(&out.body).as_array().expect("one result per message") {
+        assert_eq!(r["status"], "queued", "{}", out.body);
+    }
+}
+
+/// A pop that asks for the stored records (`frames=true`), auto-acked.
+async fn pop_framed(facade: &RaftFacade, queue: &str) -> crate::rsm::facade::PopOut {
+    let mut c = ctx();
+    c.pop_frames = true;
+    facade
+        .pop_wildcard(
+            c,
+            PopReq {
+                queue: queue.into(),
+                group: None,
+                batch: 10,
+                auto_ack: true,
+                wait: false,
+                timeout_ms: 1000,
+                options: Default::default(),
+            },
+        )
+        .await
+        .expect("pop")
+}
+
+/// Each record of a framed pop answer (`render_pop_frames`' layout, after the
+/// route's first line): its codec byte and its bytes.
+fn framed_records(b: &[u8]) -> Vec<(u8, Vec<u8>)> {
+    let u16_at = |p: &mut usize| {
+        let v = u16::from_le_bytes([b[*p], b[*p + 1]]) as usize;
+        *p += 2;
+        v
+    };
+    let u32_at = |p: &mut usize| {
+        let v = u32::from_le_bytes([b[*p], b[*p + 1], b[*p + 2], b[*p + 3]]) as usize;
+        *p += 4;
+        v
+    };
+    let mut p = 0usize;
+    for _ in 0..3 {
+        // queue, leaseId, consumerGroup
+        let n = u16_at(&mut p);
+        p += n;
+    }
+    let mut out = Vec::new();
+    for _ in 0..u32_at(&mut p) {
+        p += 8; // partitionId
+        let n = u16_at(&mut p);
+        p += n + 8 + 8 + 4; // partition, start, end, deliveryAttempt
+        for _ in 0..u32_at(&mut p) {
+            p += 8 + 8 + 4; // base_offset, created_at_us, count
+            let codec = b[p];
+            p += 1;
+            let len = u32_at(&mut p);
+            out.push((codec, b[p..p + len].to_vec()));
+            p += len;
+        }
+    }
+    assert_eq!(p, b.len(), "the whole answer read");
+    out
+}
+
+/// The transaction ids and the `txn` each payload carries, of a JSON pop answer.
+fn txns_and_data(out: &crate::rsm::facade::PopOut) -> Vec<(String, String)> {
+    popped(&parse(&out.body))
+        .iter()
+        .map(|m| {
+            (
+                m["transactionId"].as_str().unwrap_or_default().to_string(),
+                m["data"]["txn"].as_str().unwrap_or_default().to_string(),
+            )
+        })
+        .collect()
+}
+
+fn pairs(txns: &[&str]) -> Vec<(String, String)> {
+    txns.iter()
+        .map(|t| (t.to_string(), t.to_string()))
+        .collect()
+}
+
+/// The key encrypts only the queues that ask for it: a framed push to any
+/// other queue is stored as the client compressed it, and a framed pop answers
+/// those bytes as they are.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn with_a_key_a_plain_queue_keeps_the_clients_bytes_and_pops_framed() {
+    let (facade, dir) = keyed_facade("key-plain").await;
+    let (g, z) = client_group("plain-frames", &["p1", "p2"]);
+    push_framed(&facade, &[&g]).await;
+    let out = pop_framed(&facade, "plain-frames").await;
+    let records = framed_records(out.frames.as_deref().expect("a framed answer"));
+    assert_eq!(records, vec![(1, z)], "one record: the client's zstd frame");
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A queue that encrypts packs the frames again around the encrypted payloads,
+/// and a framed pop of it answers JSON, decrypted.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn with_a_key_an_encrypted_queue_pops_json_decrypted_when_frames_are_asked() {
+    let (facade, dir) = keyed_facade("key-secret").await;
+    set_queue_encryption(&facade, "secret-frames", true).await;
+    let (g, _) = client_group("secret-frames", &["s1", "s2"]);
+    push_framed(&facade, &[&g]).await;
+    let out = pop_framed(&facade, "secret-frames").await;
+    assert!(
+        out.frames.is_none(),
+        "an encrypted message goes out as JSON"
+    );
+    assert_eq!(txns_and_data(&out), pairs(&["s1", "s2"]), "{}", out.body);
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Switching a queue's encryption off leaves its older messages encrypted on
+/// disk: an answer that holds one is JSON, decrypted. Once they are consumed,
+/// the queue's answers are framed again.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn a_queue_whose_encryption_was_switched_off_pops_its_older_messages_as_json() {
+    let (facade, dir) = keyed_facade("key-was-secret").await;
+    set_queue_encryption(&facade, "was-secret", true).await;
+    let (old, _) = client_group("was-secret", &["old"]);
+    push_framed(&facade, &[&old]).await;
+    set_queue_encryption(&facade, "was-secret", false).await;
+    let (new, _) = client_group("was-secret", &["new"]);
+    push_framed(&facade, &[&new]).await;
+
+    let out = pop_framed(&facade, "was-secret").await;
+    assert!(out.frames.is_none(), "the older message is still encrypted");
+    assert_eq!(txns_and_data(&out), pairs(&["old", "new"]), "{}", out.body);
+
+    let (newer, z) = client_group("was-secret", &["newer"]);
+    push_framed(&facade, &[&newer]).await;
+    let out = pop_framed(&facade, "was-secret").await;
+    let records = framed_records(out.frames.as_deref().expect("a framed answer"));
+    assert_eq!(records, vec![(1, z)]);
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A binary transaction that pushes to an encrypted and a plain queue keeps
+/// the client's bytes for the plain queue's group only.
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn with_a_key_a_binary_transaction_keeps_the_clients_bytes_for_its_plain_queue() {
+    let (facade, dir) = keyed_facade("key-txn").await;
+    set_queue_encryption(&facade, "txn-secret", true).await;
+    let (secret, _) = client_group("txn-secret", &["s1"]);
+    let (plain, z) = client_group("txn-plain", &["p1"]);
+    let (status, ok) = txn_raw(
+        &facade,
+        txn_binary(0, &serde_json::json!({}), &[secret, plain]),
+    )
+    .await;
+    assert_eq!(status, 200, "{ok}");
+    assert_eq!(ok["success"], true, "{ok}");
+
+    let out = pop_framed(&facade, "txn-plain").await;
+    let records = framed_records(out.frames.as_deref().expect("a framed answer"));
+    assert_eq!(records, vec![(1, z)], "the client's zstd frame");
+    let out = pop_framed(&facade, "txn-secret").await;
+    assert!(
+        out.frames.is_none(),
+        "an encrypted message goes out as JSON"
+    );
+    assert_eq!(txns_and_data(&out), pairs(&["s1"]), "{}", out.body);
+
+    facade.shutdown().await;
+    let _ = std::fs::remove_dir_all(&dir);
+}

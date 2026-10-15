@@ -2533,13 +2533,10 @@ impl RaftFacade {
         // The client's compressed bytes as a partition's stored form, as a
         // framed push does it: when the group is the whole of what this bundle
         // appends to its partition, in order, and its frames go into the log
-        // exactly as they came (no producer identity, no encryption, no
-        // transaction id twice). Anything else is compressed here as before.
-        if binary
-            && ctx.producer_sub.is_none()
-            && !self.encryption.is_enabled()
-            && crate::rsm::qlog::codec::level() > 0
-        {
+        // exactly as they came (no producer identity, not a queue that
+        // encrypts, no transaction id twice). Anything else is compressed here
+        // as before.
+        if binary && ctx.producer_sub.is_none() && crate::rsm::qlog::codec::level() > 0 {
             use crate::rsm::qlog::codec;
             let whole = |&(start, end): &(usize, usize)| {
                 end > start
@@ -2551,7 +2548,7 @@ impl RaftFacade {
                 .iter()
                 .zip(&bin_blobs)
                 .zip(&bin_spans)
-                .filter(|(_, span)| whole(span))
+                .filter(|((g, _), span)| whole(span) && !encrypted_queues.contains(g.queue))
                 .map(|(pair, _)| pair);
             if self.early_codec() {
                 for (g, raw) in as_sent {
@@ -3237,7 +3234,7 @@ impl RaftFacade {
                 prebuilt: None,
             })
             .collect();
-        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false, None).await?;
         Ok(PushOut {
             body: render_push(&resolved, &out),
         })
@@ -3352,7 +3349,7 @@ impl RaftFacade {
         if inputs.is_empty() {
             return Ok(PushOut { body: "[]".into() });
         }
-        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, false, None).await?;
         if flags & PUSH_BINARY_SHORT != 0 {
             let (mut queued, mut duplicate, mut error) = (0usize, 0usize, 0usize);
             for o in &out {
@@ -3384,8 +3381,8 @@ impl RaftFacade {
     ///
     /// Each group is decompressed and every frame checked here (layout, a
     /// version-7 id, the transaction id, one JSON document as payload). When
-    /// nothing has to be added to the frames (no producer identity, no
-    /// encryption, no transaction id twice), the client's compressed bytes go
+    /// nothing has to be added to the frames (no producer identity, not a queue
+    /// that encrypts, no transaction id twice), the client's compressed bytes go
     /// to the queue-log codec as the group's stored form ([`codec::preseed`]):
     /// this node does not compress them again, and ships them to its
     /// followers as they are.
@@ -3439,32 +3436,46 @@ impl RaftFacade {
             }
         }
         // 3. The client's compressed bytes as the stored form, when the frames
-        //    go into the log exactly as they came.
-        let as_sent = unique
-            && ctx.producer_sub.is_none()
-            && !self.encryption.is_enabled()
-            && codec::level() > 0;
-        let preseeded = as_sent && self.early_codec();
-        if preseeded {
-            for (g, raw) in groups.iter().zip(&blobs) {
+        //    go into the log exactly as they came: not a group of a queue that
+        //    encrypts, whose frames are packed again around the encrypted
+        //    payloads. The policy read here is the one the push resolves with.
+        let encrypted = self
+            .encrypted_queues(
+                &ctx.tenant,
+                groups.iter().map(|g| g.queue.to_string()).collect(),
+            )
+            .await?;
+        let as_sent = unique && ctx.producer_sub.is_none() && codec::level() > 0;
+        let plain = || {
+            groups
+                .iter()
+                .zip(&blobs)
+                .filter(|(g, _)| !encrypted.contains(g.queue))
+        };
+        let early = as_sent && self.early_codec();
+        if early {
+            for (g, raw) in plain() {
                 codec::preseed(raw, g.z.to_vec());
             }
         } else if as_sent && self.offload && *FORWARD_STORED_FORMS {
             // Another node leads: the stored forms travel beside the
             // forwarded command, and the leader files them the same way.
-            ctx.stored_forms = Some(Arc::new(
-                groups
-                    .iter()
-                    .zip(&blobs)
-                    .map(|(g, raw)| super::StoredForm {
-                        key: codec::early_key(raw),
-                        raw_len: raw.len() as u32,
-                        z: bytes::Bytes::copy_from_slice(g.z),
-                    })
-                    .collect(),
-            ));
+            let forms: Vec<super::StoredForm> = plain()
+                .map(|(g, raw)| super::StoredForm {
+                    key: codec::early_key(raw),
+                    raw_len: raw.len() as u32,
+                    z: bytes::Bytes::copy_from_slice(g.z),
+                })
+                .collect();
+            if !forms.is_empty() {
+                ctx.stored_forms = Some(Arc::new(forms));
+            }
         }
-        let (resolved, out) = self.push_inputs(&ctx, &inputs, t_prep, preseeded).await?;
+        // A group of an encrypted queue still needs its early compression.
+        let preseeded = early && plain().count() == groups.len();
+        let (resolved, out) = self
+            .push_inputs(&ctx, &inputs, t_prep, preseeded, Some(encrypted))
+            .await?;
         if flags & PUSH_BINARY_SHORT != 0 {
             let (mut queued, mut duplicate, mut error) = (0usize, 0usize, 0usize);
             for o in &out {
@@ -3515,7 +3526,7 @@ impl RaftFacade {
                 prebuilt: None,
             })
             .collect();
-        let (_, out) = self.push_inputs(&ctx, &inputs, t_prep, false).await?;
+        let (_, out) = self.push_inputs(&ctx, &inputs, t_prep, false, None).await?;
         Ok(out
             .into_iter()
             .map(|o| super::RecordPushed {
@@ -3539,20 +3550,27 @@ impl RaftFacade {
         &self,
         ctx: &ReqCtx,
         inputs: &[PushInput<'_>],
+        // The inputs' encrypted queues, when the caller has read them already.
+        known_encrypted: Option<std::collections::BTreeSet<String>>,
     ) -> Result<(Vec<PushResolved>, indexed_groups::Groups), RsmError> {
         if self.storage_pressure() {
             return Err(RsmError::StorageFull);
         }
-        // The distinct queue names: a batch is one queue, so one string, not one per message.
-        let mut queue_names = std::collections::BTreeSet::new();
-        let mut last_queue: Option<&str> = None;
-        for item in inputs {
-            if last_queue != Some(item.queue) {
-                queue_names.insert(item.queue.to_string());
-                last_queue = Some(item.queue);
+        let encrypted_queues = match known_encrypted {
+            Some(known) => known,
+            None => {
+                // The distinct queue names: a batch is one queue, so one string, not one per message.
+                let mut queue_names = std::collections::BTreeSet::new();
+                let mut last_queue: Option<&str> = None;
+                for item in inputs {
+                    if last_queue != Some(item.queue) {
+                        queue_names.insert(item.queue.to_string());
+                        last_queue = Some(item.queue);
+                    }
+                }
+                self.encrypted_queues(&ctx.tenant, queue_names).await?
             }
-        }
-        let encrypted_queues = self.encrypted_queues(&ctx.tenant, queue_names).await?;
+        };
         let mut resolved: Vec<PushResolved> = Vec::with_capacity(inputs.len());
         // (queue, partition, txn) → the flat index of its leader.
         let mut seen: std::collections::HashMap<(String, String, String), usize> =
@@ -3762,9 +3780,11 @@ impl RaftFacade {
         _t_prep: Option<std::time::Instant>,
         // The groups' stored forms are already with the codec (`codec::preseed`).
         preseeded: bool,
+        // The inputs' encrypted queues, when the caller has read them already.
+        known_encrypted: Option<std::collections::BTreeSet<String>>,
     ) -> Result<(Vec<PushResolved>, Vec<PushVerdictOut>), RsmError> {
         let mut _submit_ns: u64 = 0;
-        let (mut resolved, groups) = self.push_resolve(ctx, inputs).await?;
+        let (mut resolved, groups) = self.push_resolve(ctx, inputs, known_encrypted).await?;
 
         // 2. One PushCommand per (queue, partition) group, its items the group's
         //    survivors in order. Submit them all, then await every reply.
@@ -4647,13 +4667,22 @@ fn render_pop_blocking(
     }
     // The stored records as they are, when the client asked for them and
     // nothing has to be done to a message on the way out (no decryption, no
-    // conflation). A record that is not readable here leaves the whole answer
-    // to the JSON render, which waits for it and stops before a gap.
-    if frames && !encryption.is_enabled() && !claims.iter().any(|c| c.conflated) {
+    // conflation). A record that is not readable here, or that holds a message
+    // the key encrypted, leaves the whole answer to the JSON render, which
+    // waits for it and stops before a gap.
+    if frames && !claims.iter().any(|c| c.conflated) {
         if let Some(ql) = qlog_reader {
-            if let Some(out) =
-                render_pop_frames(ql, tenant, top_queue, group, worker, auto_ack, claims, &infos)?
-            {
+            if let Some(out) = render_pop_frames(
+                ql,
+                encryption.is_enabled(),
+                tenant,
+                top_queue,
+                group,
+                worker,
+                auto_ack,
+                claims,
+                &infos,
+            )? {
                 return Ok(out);
             }
         }
@@ -5002,10 +5031,14 @@ fn render_pop_body(
 /// the claim's `start..=end`. The JSON object is [`PopOut::body`]
 /// (`{"frames":true}` plus the conflation echo and the autopilot's choice);
 /// the first line is written by the route (`handlers::raft::pop_answer`), the
-/// rest here. `None` when a claimed record is not readable.
+/// rest here. `None` when a claimed record is not readable, or, with
+/// `check_encrypted` (the broker has a key), when one holds an encrypted
+/// message: the queue's policy may have changed since, the message's own flag
+/// has not, and only the JSON render decrypts.
 #[allow(clippy::too_many_arguments)]
 fn render_pop_frames(
     ql: &QLogReader,
+    check_encrypted: bool,
     tenant: &str,
     top_queue: &str,
     group: &str,
@@ -5060,6 +5093,9 @@ fn render_pop_frames(
                     ))
                 }
             };
+            if check_encrypted && holds_encrypted(&rec) {
+                return Ok(None);
+            }
             out.extend_from_slice(&rec.base_offset.to_le_bytes());
             out.extend_from_slice(&rec.created_at_us.to_le_bytes());
             out.extend_from_slice(&rec.count.to_le_bytes());
@@ -5113,6 +5149,19 @@ fn render_pop_frames(
         conflation_conflict: false,
         frames: Some(out),
     }))
+}
+
+/// Whether a stored record holds a message the broker encrypted (the frame's
+/// own flag, which the JSON render decrypts by). A payload that does not
+/// decompress counts as one: the JSON render deals with it.
+fn holds_encrypted(rec: &crate::rsm::qlog::StoredRecord) -> bool {
+    if !rec.zstd {
+        return crate::frames::any_encrypted(&rec.payload);
+    }
+    match crate::rsm::qlog::codec::decompress(&rec.payload) {
+        Ok(raw) => crate::frames::any_encrypted(&raw),
+        Err(_) => true,
+    }
 }
 
 // ---------------------------------------------------------------------------
