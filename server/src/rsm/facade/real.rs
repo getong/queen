@@ -1971,6 +1971,7 @@ fn split_multi_reply(reply: Reply, sizes: &[usize]) -> Result<Vec<Reply>, RsmErr
                 .map(|&n| Reply::Done {
                     outcome: Outcome::Push(crate::rsm::entry::PushOutcome {
                         items: items.by_ref().take(n).collect(),
+                        compact: p.compact,
                     }),
                     at,
                 })

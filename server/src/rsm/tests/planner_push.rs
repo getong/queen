@@ -8,7 +8,7 @@ use crate::rsm::store::keys::Counter;
 
 fn verdicts(o: &Outcome) -> &Vec<PushVerdict> {
     match o {
-        Outcome::Push(PushOutcome { items }) => items,
+        Outcome::Push(PushOutcome { items, .. }) => items,
         other => panic!("not a push outcome: {other:?}"),
     }
 }

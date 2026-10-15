@@ -299,7 +299,12 @@ fn only_pushes_and_acks_that_render_from_their_outcome_answer_at_commit() {
         created_at_us: 0,
     };
     let dup = PushVerdict::Duplicate { pid: 1, offset: 0 };
-    let push = |items: Vec<PushVerdict>| done(Outcome::Push(PushOutcome { items }));
+    let push = |items: Vec<PushVerdict>| {
+        done(Outcome::Push(PushOutcome {
+            items,
+            compact: false,
+        }))
+    };
     assert!(RaftFacade::answers_at_commit(
         &push_cmd(),
         &push(vec![created.clone(), created.clone()])

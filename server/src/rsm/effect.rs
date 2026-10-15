@@ -143,11 +143,25 @@ pub const VERSION_5: u16 = 5;
 /// `log_start`.
 pub const VERSION_6: u16 = 6;
 
+/// The seventh catalogue version: a push outcome written as RUNS
+/// ([`crate::rsm::entry::PushOutcome::compact`]). Version 1 writes one
+/// 25-byte verdict per message, `tag | pid | offset | created_at`, although
+/// the created messages of a push are one partition's consecutive offsets
+/// with one stamp: a 100-message push carried 2.5 KB of outcome in its entry
+/// and in its `request_ids` row, and that row took a whole LMDB page of its
+/// own at every checkpoint. Version 7 writes a run of created messages as
+/// `pid | first offset | created_at | count`, and a run of duplicates as
+/// `pid | first offset | count`; it decodes to the same verdict list. The
+/// planner writes it only where [`cluster_allows`]`(cluster, VERSION_7)`
+/// (`planner/push.rs`, the multi-push merge, the transaction outcome); below
+/// it a push outcome keeps its version-1 shape.
+pub const VERSION_7: u16 = 7;
+
 /// The highest catalogue version this build can decode and apply. The
 /// replicated cluster version (§12.8) may be lower; it never rises above the
 /// minimum of every member's value (D20). A node reports it to the leader on
 /// every append it answers.
-pub const SUPPORTED_KINDS_VERSION: u32 = VERSION_6 as u32;
+pub const SUPPORTED_KINDS_VERSION: u32 = VERSION_7 as u32;
 
 /// The cluster version of a store that holds none, and of a member that
 /// reports none: 3. Every node of a 2.0.0-beta.1 cluster or later reads it

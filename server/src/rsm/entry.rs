@@ -139,10 +139,16 @@ fn outcome_tag_is_known(tag: u16) -> bool {
 /// versions whose decoder is compiled in beside the new one, one tag at a time.
 fn outcome_version_is_known(tag: u16, version: u16) -> bool {
     match tag {
-        tag::EMPTY | tag::PUSH | tag::POP | tag::ACK | tag::RENEW | tag::DLQ_HEAD | tag::KV => {
+        // Version 7: the push outcome written as runs (`PushOutcome::compact`).
+        tag::PUSH => version == super::effect::VERSION_1 || version == super::effect::VERSION_7,
+        tag::EMPTY | tag::POP | tag::ACK | tag::RENEW | tag::DLQ_HEAD | tag::KV => {
             version == super::effect::VERSION_1
         }
-        other if other >= tag::PLACEHOLDER_MIN => version == super::effect::VERSION_1,
+        // A placeholder minted at 7 is a transaction outcome whose pushes are
+        // written as runs (`planner/txn.rs`, `TxnOutcome::into_outcome`).
+        other if other >= tag::PLACEHOLDER_MIN => {
+            version == super::effect::VERSION_1 || version == super::effect::VERSION_7
+        }
         // A tag this build does not know has no version it knows either; the
         // caller reports the tag first, so this arm is the belt to that brace.
         _ => false,
@@ -255,6 +261,198 @@ pub enum PushVerdict {
 pub struct PushOutcome {
     /// In INPUT order, one per item the client sent.
     pub items: Vec<PushVerdict>,
+    /// Written as runs, catalogue version 7 ([`super::effect::VERSION_7`]):
+    /// consecutive created messages of one partition with one stamp as
+    /// `pid | first offset | created_at | count`, consecutive duplicates as
+    /// `pid | first offset | count`, consecutive identical refusals once with
+    /// their count. The verdicts are the same either way; only the bytes in
+    /// the entry and in the `request_ids` row differ, so the flag is part of
+    /// the value (a decoded outcome re-encodes to the bytes it came from). The
+    /// planner sets it only where the cluster version admits 7.
+    pub compact: bool,
+}
+
+/// One run of a version-7 push outcome ([`PushOutcome::compact`]).
+const RUN_CREATED: u8 = 0;
+const RUN_DUPLICATE: u8 = 1;
+const RUN_REFUSED: u8 = 2;
+
+impl PushOutcome {
+    /// A planned push's outcome: written as runs where the cluster admits
+    /// version 7 (`runs_allowed`, D20) AND the runs are smaller than one
+    /// verdict per item. A one-message push stays at version 1 (29 bytes
+    /// against 37), so the flag never costs a byte.
+    pub fn planned(items: Vec<PushVerdict>, runs_allowed: bool) -> PushOutcome {
+        let compact = runs_allowed && runs_are_smaller(&items);
+        PushOutcome { items, compact }
+    }
+
+    /// The version-7 body after the item count: `runs:u32 | runs…`, each run
+    /// `kind:u8 | fields | count:u32` (see [`PushOutcome::compact`]).
+    fn encode_runs(&self, w: &mut Writer) {
+        let runs = runs_of(&self.items);
+        w.u32(runs.len() as u32);
+        for (first, n) in runs {
+            match first {
+                PushVerdict::Created {
+                    pid,
+                    offset,
+                    created_at_us,
+                } => {
+                    w.u8(RUN_CREATED);
+                    w.u64(*pid);
+                    w.u64(*offset);
+                    w.i64(*created_at_us);
+                }
+                PushVerdict::Duplicate { pid, offset } => {
+                    w.u8(RUN_DUPLICATE);
+                    w.u64(*pid);
+                    w.u64(*offset);
+                }
+                PushVerdict::Refused { code, message } => {
+                    w.u8(RUN_REFUSED);
+                    w.str(code);
+                    w.str(message);
+                }
+            }
+            w.u32(n);
+        }
+    }
+}
+
+/// The verdicts grouped into version-7 runs: each run's first verdict and how
+/// many verdicts it stands for.
+fn runs_of(items: &[PushVerdict]) -> Vec<(&PushVerdict, u32)> {
+    let mut runs: Vec<(&PushVerdict, u32)> = Vec::new();
+    for it in items {
+        if let Some((first, n)) = runs.last_mut() {
+            let extends = match (*first, it) {
+                (
+                    PushVerdict::Created {
+                        pid,
+                        offset,
+                        created_at_us,
+                    },
+                    PushVerdict::Created {
+                        pid: p2,
+                        offset: o2,
+                        created_at_us: c2,
+                    },
+                ) => {
+                    pid == p2
+                        && created_at_us == c2
+                        && offset.checked_add(u64::from(*n)) == Some(*o2)
+                }
+                (
+                    PushVerdict::Duplicate { pid, offset },
+                    PushVerdict::Duplicate {
+                        pid: p2,
+                        offset: o2,
+                    },
+                ) => pid == p2 && offset.checked_add(u64::from(*n)) == Some(*o2),
+                (a @ PushVerdict::Refused { .. }, b @ PushVerdict::Refused { .. }) => a == b,
+                _ => false,
+            };
+            if extends && *n < u32::MAX {
+                *n += 1;
+                continue;
+            }
+        }
+        runs.push((it, 1));
+    }
+    runs
+}
+
+/// Whether the version-7 body of these verdicts is smaller than the version-1
+/// body (both after the item count): `runs:u32` plus 29 bytes a created run,
+/// 21 a duplicate run, a refusal's strings plus 13; against 25, 17 and the
+/// strings plus 9 an ITEM.
+fn runs_are_smaller(items: &[PushVerdict]) -> bool {
+    let refused = |code: &str, message: &str| 4 + code.len() + 4 + message.len();
+    let v1: usize = items
+        .iter()
+        .map(|it| match it {
+            PushVerdict::Created { .. } => 25,
+            PushVerdict::Duplicate { .. } => 17,
+            PushVerdict::Refused { code, message } => 1 + refused(code, message),
+        })
+        .sum();
+    let v7: usize = 4 + runs_of(items)
+        .iter()
+        .map(|(first, _)| match first {
+            PushVerdict::Created { .. } => 29,
+            PushVerdict::Duplicate { .. } => 21,
+            PushVerdict::Refused { code, message } => 1 + refused(code, message) + 4,
+        })
+        .sum::<usize>();
+    v7 < v1
+}
+
+impl PushOutcome {
+    /// The inverse of [`PushOutcome::encode_runs`], `n` items in all.
+    fn decode_runs(r: &mut Reader<'_>, n: u32) -> Result<PushOutcome, CodecError> {
+        // Runs expand, so the bytes left do not bound the item count the way
+        // they bound version 1's (17 bytes or more a verdict). No version-1
+        // body of these many items would fit the codec's limit either: refuse
+        // before anything is allocated (the anti-OOM rule).
+        if n as usize > MAX_BODY_LEN as usize / 16 {
+            return Err(CodecError::Field("push items"));
+        }
+        let runs = r.u32("push runs")?;
+        let mut items = Vec::with_capacity((n as usize).min(1 << 16));
+        for _ in 0..runs {
+            let kind = r.u8("push run")?;
+            let first = match kind {
+                RUN_CREATED => PushVerdict::Created {
+                    pid: r.u64("pid")?,
+                    offset: r.u64("offset")?,
+                    created_at_us: r.i64("created_at")?,
+                },
+                RUN_DUPLICATE => PushVerdict::Duplicate {
+                    pid: r.u64("pid")?,
+                    offset: r.u64("offset")?,
+                },
+                RUN_REFUSED => PushVerdict::Refused {
+                    code: r.str("code")?,
+                    message: r.str("message")?,
+                },
+                _ => return Err(CodecError::Field("push run")),
+            };
+            let count = r.u32("push run count")?;
+            if count == 0 || items.len() as u64 + count as u64 > n as u64 {
+                return Err(CodecError::Field("push run count"));
+            }
+            for k in 0..count as u64 {
+                items.push(match &first {
+                    PushVerdict::Created {
+                        pid,
+                        offset,
+                        created_at_us,
+                    } => PushVerdict::Created {
+                        pid: *pid,
+                        offset: offset
+                            .checked_add(k)
+                            .ok_or(CodecError::Field("push run offset"))?,
+                        created_at_us: *created_at_us,
+                    },
+                    PushVerdict::Duplicate { pid, offset } => PushVerdict::Duplicate {
+                        pid: *pid,
+                        offset: offset
+                            .checked_add(k)
+                            .ok_or(CodecError::Field("push run offset"))?,
+                    },
+                    refused => refused.clone(),
+                });
+            }
+        }
+        if items.len() != n as usize {
+            return Err(CodecError::Field("push run count"));
+        }
+        Ok(PushOutcome {
+            items,
+            compact: true,
+        })
+    }
 }
 
 /// One claimed batch (004). The receiver reads the payloads itself once its
@@ -563,6 +761,7 @@ impl Outcome {
     /// that gate.
     pub fn version(&self) -> u16 {
         match self {
+            Outcome::Push(p) if p.compact => super::effect::VERSION_7,
             Outcome::Empty
             | Outcome::Push(_)
             | Outcome::Pop(_)
@@ -610,6 +809,10 @@ impl Outcome {
         let mut w = Writer::with_capacity(64);
         match self {
             Outcome::Empty => {}
+            Outcome::Push(p) if p.compact => {
+                w.u32(p.items.len() as u32);
+                p.encode_runs(&mut w);
+            }
             Outcome::Push(p) => {
                 w.u32(p.items.len() as u32);
                 for it in &p.items {
@@ -708,6 +911,10 @@ impl Outcome {
         let mut r = Reader::new(body);
         let out = match tag_id {
             tag::EMPTY => Outcome::Empty,
+            tag::PUSH if version == super::effect::VERSION_7 => {
+                let n = r.u32("push items")?;
+                Outcome::Push(PushOutcome::decode_runs(&mut r, n)?)
+            }
             tag::PUSH => {
                 let n = r.u32("push items")?;
                 let mut items = Vec::with_capacity(r.cap_hint(n, 1));
@@ -729,7 +936,10 @@ impl Outcome {
                         _ => return Err(CodecError::Field("push verdict")),
                     });
                 }
-                Outcome::Push(PushOutcome { items })
+                Outcome::Push(PushOutcome {
+                    items,
+                    compact: false,
+                })
             }
             tag::POP => {
                 let n = r.u32("pop claims")?;

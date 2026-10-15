@@ -75,6 +75,7 @@ mod planner_overlay;
 mod planner_push;
 mod planner_txn;
 mod positions;
+mod push_runs;
 mod qlog_read;
 mod qlog_shadow;
 mod qlog_wal;

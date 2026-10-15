@@ -48,7 +48,7 @@ fn two_pushes_to_one_partition_in_one_cycle_are_gapless() {
     // Both logged in one entry.
     assert!(cy.logged);
     match &cy.outcome(1) {
-        Outcome::Push(PushOutcome { items }) => match &items[0] {
+        Outcome::Push(PushOutcome { items, .. }) => match &items[0] {
             PushVerdict::Created { offset: 2, .. } => {}
             v => panic!("the second push did not see the overlay tail: {v:?}"),
         },

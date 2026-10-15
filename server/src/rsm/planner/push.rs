@@ -14,7 +14,7 @@
 //! on the RECEIVER: it pre-packs one frame per message, and the survivors'
 //! frames are CONCATENATED into the append blob, never repacked here.
 
-use crate::rsm::effect::{Effect, Pid, QueueConfig};
+use crate::rsm::effect::{cluster_allows, Effect, Pid, QueueConfig, VERSION_7};
 use crate::rsm::entry::{Outcome, PushOutcome, PushVerdict};
 
 use super::{Overlay, Plan, Planned, Planner, PushCommand, SEC_US};
@@ -114,7 +114,10 @@ impl<'a, R: Reads + ?Sized> Planner<'a, R> {
             // on a retry, so recording the id would only make cost follow the
             // push-retry rate (G-3).
             let items = verdicts.into_iter().map(|v| v.unwrap()).collect();
-            return Ok(Plan::Empty(Outcome::Push(PushOutcome { items })));
+            return Ok(Plan::Empty(Outcome::Push(PushOutcome {
+                items,
+                compact: false,
+            })));
         }
 
         let base = (part_last_offset + 1) as u64;
@@ -217,6 +220,13 @@ impl<'a, R: Reads + ?Sized> Planner<'a, R> {
                 floor,
             );
         }
-        Ok(Plan::logged(effects, Outcome::Push(PushOutcome { items })))
+        // Version 7 writes the verdicts as runs (one for this push's created
+        // messages) where that is smaller, and only once every member reads it
+        // (D20).
+        let runs = cluster_allows(self.cluster_version()?, VERSION_7);
+        Ok(Plan::logged(
+            effects,
+            Outcome::Push(PushOutcome::planned(items, runs)),
+        ))
     }
 }
