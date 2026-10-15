@@ -1,0 +1,25 @@
+[10:51:19] start bpm1-230-p1000
+[10:51:19] run bpm1-230-p1000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[10:51:40] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[10:53:24] 3,000,000: offered 2,999,987 pushed 3,000,137 consumed 3,000,057 shed 0 errors 0 lag 0 | push p50 8.3 p99 36.4 | e2e p50 19.2 p99 67.6 | n1 11.2c apply 73% raft 215%; n2 5.3c apply 55% raft 56%; n3 5.0c apply 53% raft 51% | loaders 18.4c  OK 
+[10:53:27] done bpm1-230-p1000
+[10:53:27] start bpm1-fix-p1000
+[10:53:27] run bpm1-fix-p1000: binary fix, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[10:53:44] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[10:55:28] 3,000,000: offered 2,999,997 pushed 2,999,992 consumed 3,000,088 shed 0 errors 0 lag 0 | push p50 3.2 p99 7.2 | e2e p50 6.7 p99 15.5 | n1 12.5c apply 83% raft 266%; n2 5.2c apply 57% raft 73%; n3 5.4c apply 60% raft 75% | loaders 19.2c  OK 
+[10:55:31] done bpm1-fix-p1000
+[10:55:31] start bpm2-230-p1000
+[10:55:31] run bpm2-230-p1000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[10:55:52] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[10:57:35] 3,000,000: offered 2,999,982 pushed 2,999,917 consumed 2,999,922 shed 0 errors 0 lag 0 | push p50 8.8 p99 28.4 | e2e p50 20.2 p99 53.8 | n1 11.2c apply 72% raft 215%; n2 5.3c apply 54% raft 55%; n3 5.0c apply 53% raft 50% | loaders 18.8c  OK 
+[10:57:40] done bpm2-230-p1000
+[10:57:40] start bpm2-fix-p1000
+[10:57:40] run bpm2-fix-p1000: binary fix, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[10:57:47] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[10:59:31] 3,000,000: offered 2,999,988 pushed 3,000,173 consumed 3,000,326 shed 0 errors 0 lag 0 | push p50 3.2 p99 7.2 | e2e p50 6.5 p99 15.5 | n1 12.5c apply 84% raft 267%; n2 5.8c apply 63% raft 82%; n3 5.3c apply 60% raft 74% | loaders 18.8c  OK 
+[10:59:36] done bpm2-fix-p1000
+AB_GCP_DONE

@@ -1,0 +1,7 @@
+[11:09:50] run fxc-p1000-r4000000: binary fix, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 4000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[11:10:11] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[11:11:54] 4,000,000: last 30 s: offered 4,000,002 pushed 4,000,322 consumed 4,000,232 | run: shed 0 errors 0 | push p50 6.8 p99 21.8 | e2e p50 16.3 p99 44.0 worst 46.1 | cores 14.5 / 6.8 / 7.1 | mem GB 7.0 / 6.4 / 6.4 | loaders 24.5c  OK 
+RUN_DONE

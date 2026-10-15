@@ -1,0 +1,41 @@
+files 105, file bytes 6972429070, logical 6971589275, message records 422336, messages 42223700, entry records 95628, stubs 0
+category                                          bytes        count      B/msg
+msgrec/payload_zstd                          4410225475       422236     104.45
+outcome/push                                 1057281448       422237      25.04
+msgrec/hashes                                 675579200       422336      16.00
+append/hashes                                 675579200       422336      16.00
+effect_body/cursor_set                         79180976       469771       1.88
+msgrec/header                                  20694464       422336       0.49
+cmd/request_id+effect_range                    13909560       579565       0.33
+append/fixed_fields                            12670080       422336       0.30
+entryrec/header                                 4685772        95628       0.11
+cmd/outcome_header                              4636520       579565       0.11
+effect_header/cursor_set                        3758168       469771       0.09
+append/frame_len_blob                           3378688       422336       0.08
+effect_header/append                            3378688       422336       0.08
+entry/header                                    3251284        95626       0.08
+append/hashes_len_prefix                        1689344       422336       0.04
+entry/frame(len+xxh3)                           1147512        95626       0.03
+file/zero_tail                                   839795            2       0.02
+entry/effect_count                               382504        95626       0.01
+effect_body/watermark                             66066         2002       0.00
+msgrec/payload_raw                                34400          100       0.00
+effect_header/watermark                           16016         2002       0.00
+effect_body/request_ids_expire                    15304         1913       0.00
+effect_header/request_ids_expire                  15304         1913       0.00
+effect_body/partition_create                       8790          100       0.00
+file/header                                        3360          105       0.00
+effect_header/partition_create                      800          100       0.00
+effect_body/queue_upsert                            147            1       0.00
+effect_body/group_upsert                            114            1       0.00
+entry/garbled                                        63            2       0.00
+effect_header/queue_upsert                            8            1       0.00
+effect_header/group_upsert                            8            1       0.00
+effect_header/cluster_version_set                     8            1       0.00
+effect_body/cluster_version_set                       4            1       0.00
+outcome/empty                                         0       157328       0.00
+TOTAL                                        6972429070                  165.13
+commands by outcome tag: empty=157328 push=422237
+effects by kind: cluster_version_set=1 request_ids_expire=1913 queue_upsert=1 append=422336 watermark=2002 partition_create=100 cursor_set=469771 group_upsert=1
+push items 42223700, verdicts map[0:42223700]
+BAD: entry body_len 4294967295 != 46

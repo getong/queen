@@ -1,0 +1,36 @@
+qload tag=d1000 loader=0/1 mode=batch rate=300000 msg/s batch=100 batch-max=0 max-inflight=5000 ramp=10s duration=1m30s report=10s drain=10s GOMAXPROCS=10 GOGC=400(default) seed=1792054136201076440
+  offered: 300000 msg/s = 3000.0 units/s (avg 100.0 msgs/unit) across 61 pacer workers (49.18 units/s each)
+  topics: 1 x 100 partitions (bench..bench), entities/topic=0 (explicit partition) | picker: topics=rr entities: rr over space=100 starting at 0
+  payload: goload jsonEvent target 256 B, avg 289.5 B raw, ~320 B stamped ({"ts":µs,"src":0,...}), pool 64x100
+  consumers: 30 here (ci 0..29 of 30), poll=1000 proc-us=0 ack=async ack-inflight=256 local-src=[0]
+  queen: url=http://127.0.0.1:17842 (of 1) conns=2048 timeout=30s pop-width=10 pop-batch=1000 pop-timeout=2s lease=30s | configure: leaseTime=30 completedRetention=3600 dedup=0 retryLimit=1000000 | plain: consumers pop+ack the queue
+  [queen] http://127.0.0.1:17842 healthy: version 2.3.0, this node leader
+  [consume] 30 consumers of bench: pop width 10, batch 1000, long poll 2s, lease 30s, async batch acks (ack-inflight 256)
+READY 1792054105883
+[start] GO 08:48:25.883 (unix ms 1792054105883)
+[08:48:35] offered=   149980/s achieved=   149790/s shed=        0/s inflight=    19 | p50=   1.29 p99=   24.19 p999=   28.80 ms | push=1497900 pop=1495600 lag=2300 | errs push=0 pop=0 empty=0 gor=340 | ack=   149410/s ackErr=0 ackAvg=3.77ms | e2e p50=4.38 p99=37.63 p999=42.75 n=1495600 | e2e_local p50=4.38 p99=37.63 n=1495600
+[08:48:45] offered=   299970/s achieved=   300000/s shed=        0/s inflight=    16 | p50=   2.51 p99=   26.24 p999=   51.46 ms | push=4497900 pop=4495400 lag=2500 | errs push=0 pop=0 empty=0 gor=584 | ack=   299890/s ackErr=0 ackAvg=6.92ms | e2e p50=10.43 p99=62.21 p999=248.83 n=2999800 | e2e_local p50=10.43 p99=62.21 n=2999800
+[08:48:55] offered=   300000/s achieved=   295280/s shed=        0/s inflight=   488 | p50=   2.45 p99=  103.94 p999= 1056.77 ms | push=7450700 pop=7447700 lag=3000 | errs push=0 pop=0 empty=0 gor=1661 | ack=   295070/s ackErr=0 ackAvg=8.43ms | e2e p50=11.58 p99=423.94 p999=2834.43 n=2952300 | e2e_local p50=11.58 p99=423.94 n=2952300
+[08:49:05] offered=   300008/s achieved=   304748/s shed=        0/s inflight=    14 | p50=   0.77 p99=   86.53 p999=  173.06 ms | push=10498200 pop=10494800 lag=3400 | errs push=0 pop=0 empty=0 gor=1297 | ack=   304908/s ackErr=0 ackAvg=8.66ms | e2e p50=8.51 p99=156.67 p999=209.92 n=3047100 | e2e_local p50=8.51 p99=156.67 n=3047100
+[08:49:15] offered=   300011/s achieved=   295771/s shed=        0/s inflight=   438 | p50=   2.80 p99=  929.79 p999= 1171.46 ms | push=13455900 pop=13442700 lag=13200 | errs push=0 pop=0 empty=0 gor=4730 | ack=   293951/s ackErr=0 ackAvg=10.18ms | e2e p50=13.38 p99=1482.75 p999=2088.96 n=2947900 | e2e_local p50=13.38 p99=1482.75 n=2947900
+[08:49:25] offered=   300021/s achieved=   304081/s shed=        0/s inflight=    32 | p50=   3.41 p99=  280.58 p999=  651.26 ms | push=16496700 pop=16471600 lag=25100 | errs push=0 pop=0 empty=0 gor=4296 | ack=   303621/s ackErr=0 ackAvg=11.20ms | e2e p50=16.06 p99=2899.97 p999=3489.79 n=3028900 | e2e_local p50=16.06 p99=2899.97 n=3028900
+[08:49:35] offered=   299969/s achieved=   299569/s shed=        0/s inflight=    72 | p50=   6.24 p99=  211.97 p999=  452.61 ms | push=19492400 pop=19484600 lag=7800 | errs push=0 pop=0 empty=0 gor=4340 | ack=   301039/s ackErr=0 ackAvg=12.42ms | e2e p50=24.70 p99=667.65 p999=3129.34 n=3013000 | e2e_local p50=24.70 p99=667.65 n=3013000
+[err consume #1] 08:49:42.834 pop bench: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[err consume #2] 08:49:42.834 pop bench: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[err consume #3] 08:49:42.837 pop bench: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[err consume #4] 08:49:42.837 pop bench: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[err consume #5] 08:49:42.849 pop bench: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[08:49:45] offered=   299976/s achieved=   171468/s shed=    79679/s inflight=  4961 | p50= 115.20 p99= 4554.75 p999= 5341.18 ms | push=21207100 pop=20830800 lag=376300 | errs push=0 pop=14 empty=0 gor=15406 | ack=   134378/s ackErr=0 ackAvg=15.32ms | e2e p50=643.07 p99=4947.97 p999=5341.18 n=1346200 | e2e_local p50=643.07 p99=4947.97 n=1346200
+[08:49:55] offered=   300041/s achieved=   207834/s shed=   129386/s inflight=  1237 | p50=1548.29 p99=11599.87 p999=13172.74 ms | push=23285500 pop=21201800 lag=2083700 | errs push=0 pop=41 empty=0 gor=7908 | ack=    35599/s ackErr=0 ackAvg=19.71ms | e2e p50=11468.80 p99=15138.82 p999=15532.03 n=371000 | e2e_local p50=11468.80 p99=15138.82 n=371000
+[08:50:05] offered=        0/s achieved=    11130/s shed=        0/s inflight=   124 | p50=3686.40 p99=23461.89 p999=23724.03 ms | push=23396800 pop=23349800 lag=47000 | errs push=0 pop=41 empty=0 gor=4567 | ack=   216915/s ackErr=0 ackAvg=21.70ms | e2e p50=7372.80 p99=19267.58 p999=23724.03 n=2148000 | e2e_local p50=7372.80 p99=19267.58 n=2148000
+[err produce #1] 08:50:11.280 Post "http://127.0.0.1:17842/api/v1/push": context deadline exceeded
+[err produce #2] 08:50:11.280 Post "http://127.0.0.1:17842/api/v1/push": context deadline exceeded
+[err produce #3] 08:50:11.280 Post "http://127.0.0.1:17842/api/v1/push": context deadline exceeded
+[err produce #4] 08:50:11.280 Post "http://127.0.0.1:17842/api/v1/push": context deadline exceeded
+[err produce #5] 08:50:11.280 Post "http://127.0.0.1:17842/api/v1/push": context deadline exceeded
+[08:50:15] offered=        0/s achieved=      420/s shed=        0/s inflight=    67 | p50=28442.62 p99=28704.77 p999=28704.77 ms | push=23401000 pop=23377900 lag=23100 | errs push=15 pop=41 empty=144 gor=4391 | ack=     2910/s ackErr=0 ackAvg=22.02ms | e2e p50=27656.19 p99=34865.15 p999=35389.44 n=28100 | e2e_local p50=27656.19 p99=34865.15 n=28100
+[info] steady window 80s (after the ramp, before the producers stopped): offered 299999/s pushed 272343/s popped 246326/s cpu 156.9% = 0.58 cores per 100k msg/s (produce+consume)
+[info] errors consume=41 first: pop bench: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[info] errors produce=1500 first: Post "http://127.0.0.1:17842/api/v1/push": context deadline exceeded
+[final] offered=254999 achieved=234077 shed=20907 (msgs: offered=25499900 achieved=23407700 shed=2090700) pushErr=15 | pushed=23407700 popped=23407700 lag=0 | popErr=41 empty=164 | overall p50=3.25 p99=5275.65 p999=15138.82 ms | acked=23407600 ackErr=0 ackLag=100 ackAvg=22.33ms | e2e p50=13.50 p99=15007.74 p999=28180.48 ms
+load_cpu=123.5%

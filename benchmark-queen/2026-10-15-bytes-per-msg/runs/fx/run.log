@@ -1,0 +1,10 @@
+[10:26:02] health: {"status":"healthy","engine":"raft","version":"2.3.0","raft":{"role":"leader","leader":true,"term":1,"applied":3,"commit":3,"lag":0,"quorumAckMs":0,"storageReady":true,"clusterVersion":7,"kinds":7,"ap
+[10:26:02] cluster version: "clusterVersion":7
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true,"dedupWindowSeconds":0,"delayedProcessing":0,"dlqAfterMaxRetries":true,"encryptionEnabled":false,"l
+
+[10:26:02] created: [create] done: bench x 100 partitions
+[10:26:02] load: 100 partitions, 300000 msg/s, 30 consumers, 150 s
+[10:28:42] load done rc=0
+[10:28:45] broker stopped: 0
+[10:29:50] parsed
+[10:29:50] RUN_DONE
