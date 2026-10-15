@@ -1675,14 +1675,54 @@ async fn stub_layout_a_lost_part_is_cut_and_its_index_reused() {
 /// one log holding it and every payload from its queue log.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn read_range_rehydrates_stub_layout_entries() {
-    use crate::rsm::replicator::local::{GroupBody, GroupItem, QlogWrite};
+    read_range_case(false).await;
+}
+
+/// The same with every entry record leaving out the hash lists its message
+/// records hold ([`super::record::REC_ENTRY_ELIDED`]): the readers hand back
+/// the payload-free bytes exactly as they were.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn read_range_rehydrates_elided_entry_records() {
+    read_range_case(true).await;
+}
+
+/// Every `.qlog` record of the directory whose kind is `kind`.
+fn records_of_kind(root: &Path, kind: u8) -> usize {
+    let mut n = 0usize;
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        for ent in std::fs::read_dir(&d).unwrap().flatten() {
+            let p = ent.path();
+            if p.is_dir() {
+                stack.push(p);
+            } else if p.extension().is_some_and(|x| x == "qlog") {
+                let len = std::fs::metadata(&p).unwrap().len();
+                super::scan_records(&p, len, |h, _, _| {
+                    if h.kind() == kind {
+                        n += 1;
+                    }
+                    Ok(())
+                })
+                .unwrap();
+            }
+        }
+    }
+    n
+}
+
+async fn read_range_case(elide: bool) {
+    use crate::rsm::replicator::local::{ElideGate, GroupBody, GroupItem, QlogWrite};
     use crate::rsm::replicator::raft::log_store::{LogStore, OpenCfg};
     use crate::rsm::replicator::raft::types::{log_id, REntry};
     use openraft::{EntryPayload, RaftLogReader};
 
     const QC: &str = "phase-c-c";
     const TERM: u64 = 3;
-    let td = TmpDir::new("stub-read-range");
+    let td = TmpDir::new(if elide {
+        "elided-read-range"
+    } else {
+        "stub-read-range"
+    });
     let dir = td.path();
     one_lane(dir);
     let root = dir.join("qlog");
@@ -1721,6 +1761,11 @@ async fn read_range_rehydrates_stub_layout_entries() {
             pid_qid: HashMap::new(),
             lookup: Arc::new(|_| Ok(None)),
             layout: EntryLayout::Stub,
+            elide: if elide {
+                ElideGate::always()
+            } else {
+                ElideGate::never()
+            },
         };
         let mut items: Vec<GroupItem> = entries
             .iter()
@@ -1741,6 +1786,12 @@ async fn read_range_rehydrates_stub_layout_entries() {
         w.write_group(g2).unwrap();
     };
     write_all(&root);
+    // The entries with pushes left their hash lists out (E2, E3, E5); none
+    // did with the gate shut.
+    assert_eq!(
+        records_of_kind(&root, super::record::REC_ENTRY_ELIDED),
+        if elide { 3 } else { 0 }
+    );
     {
         // One whole record per entry; the multi-queue entries also have stubs.
         let set = reopen(&root, qopts);
@@ -1780,6 +1831,7 @@ async fn read_range_rehydrates_stub_layout_entries() {
             qlog_tail: Box::new(|_| Ok(None)),
             poison: Arc::new(std::sync::Mutex::new(None)),
             cache_cap: 64 << 20,
+            cluster_version: None,
         })
     };
     let check = |got: &[REntry], upto: u64| {
@@ -1829,6 +1881,7 @@ async fn read_range_rehydrates_stub_layout_entries() {
             qlog_tail: Box::new(|_| Ok(None)),
             poison: Arc::new(std::sync::Mutex::new(None)),
             cache_cap: 64 << 20,
+            cluster_version: None,
         })
         .expect("open the log store");
         assert_eq!(opened.recovered, n);

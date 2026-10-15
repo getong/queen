@@ -95,10 +95,18 @@ pub const REC_ENTRY_STUB: u8 = 3;
 /// A stub's payload: `digest:u64 | entry_len:u32`.
 pub const STUB_PAYLOAD: usize = 8 + 4;
 
-/// Whether `kind` ([`Header::kind`]) is an entry record, whole or stub: a
-/// record that holds no partition's messages and is never indexed.
+/// `txn_kind == 4`: a whole entry record ([`REC_ENTRY`]) whose `Append`s carry
+/// no hash list where the message record in front of it, in this log, holds it
+/// ([`super::entry_hashes`]): 16 bytes a message written once instead of twice.
+/// Read back, it is the [`REC_ENTRY`] it was made from, byte for byte. Written
+/// only where the cluster version admits 7 (every member reads it, D20): a
+/// build without this kind refuses the file rather than misreading it.
+pub const REC_ENTRY_ELIDED: u8 = 4;
+
+/// Whether `kind` ([`Header::kind`]) is an entry record, whole, elided or
+/// stub: a record that holds no partition's messages and is never indexed.
 pub fn is_entry_kind(kind: u8) -> bool {
-    kind == REC_ENTRY || kind == REC_ENTRY_STUB
+    kind == REC_ENTRY || kind == REC_ENTRY_STUB || kind == REC_ENTRY_ELIDED
 }
 
 /// The digest a stub carries for an entry's payload-free bytes.
@@ -450,6 +458,19 @@ pub fn encode_entry_record_into(
     encode_entry_kind_into(out, REC_ENTRY, seq, now_us, copies, term, entry)
 }
 
+/// [`encode_entry_record_into`] for an entry whose `Append` hash lists were
+/// left out ([`REC_ENTRY_ELIDED`]); `entry` is the elided form.
+pub fn encode_entry_elided_into(
+    out: &mut Vec<u8>,
+    seq: u64,
+    now_us: i64,
+    copies: u64,
+    term: u64,
+    entry: &[u8],
+) -> usize {
+    encode_entry_kind_into(out, REC_ENTRY_ELIDED, seq, now_us, copies, term, entry)
+}
+
 /// Append one entry STUB ([`REC_ENTRY_STUB`]) for an entry whose whole record
 /// ([`encode_entry_record_into`]) goes to another log: the same header fields,
 /// and `digest | entry_len` of the whole record's entry bytes as its payload.
@@ -568,7 +589,7 @@ pub fn hashes_from_prefix(buf: &[u8]) -> Result<Option<(Header, &[u8])>, RecordE
     let header = parse_header(buf)?;
     match header.kind() {
         // Entry records (whole or stub) carry count 0: an empty hash block.
-        TXN_NONE | REC_ENTRY | REC_ENTRY_STUB => {
+        TXN_NONE | REC_ENTRY | REC_ENTRY_STUB | REC_ENTRY_ELIDED => {
             let end = FIXED_PREFIX + header.hashes_len();
             if end > header.record_len() {
                 return Err(RecordError::Stride {
@@ -617,7 +638,7 @@ pub fn decode(buf: &[u8]) -> Result<RecordRef<'_>, RecordError> {
         // below is the whole entry-bytes tail. It is NOT a message — the index
         // build and the pop/dedup read skip it (count 0, txn_kind 2). A stub
         // (txn_kind 3) has the same shape with its 12-byte payload.
-        TXN_NONE | REC_ENTRY | REC_ENTRY_STUB => None,
+        TXN_NONE | REC_ENTRY | REC_ENTRY_STUB | REC_ENTRY_ELIDED => None,
         TXN_CROSS_QUEUE => {
             if off + TXN_ENVELOPE > total {
                 return Err(RecordError::Stride {

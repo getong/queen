@@ -1431,6 +1431,14 @@ impl<S: Store + 'static> RaftReplicator<S> {
             },
             poison: poison.clone(),
             cache_cap: opts.cache_cap,
+            cluster_version: {
+                let store = store.clone();
+                Some(Arc::new(move || {
+                    store
+                        .read(|r| r.cluster_version())
+                        .unwrap_or(crate::rsm::effect::BASELINE_KINDS_VERSION)
+                }))
+            },
         })?;
         // The `txns` rows' hash lists the checkpoint left in the queue logs:
         // back before openraft applies the replayed entries or anything reads.
