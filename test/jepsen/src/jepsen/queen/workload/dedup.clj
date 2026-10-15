@@ -10,6 +10,14 @@
                     offset.
     :final-read     every record of every d<p> partition, from offset 0.
 
+  With --batch-sends N the sends are instead
+    :send-batch [p [[id n] ...]]  ONE push of 2 to N items, distinct ids of
+                    partition d<p>: one push command of one partition, whose
+                    outcome the broker writes as runs (catalogue version 7).
+                    An unknown answer is retried once, the same push, on
+                    another node. :ok with each item's status and offset.
+  The checker judges each item of a :send-batch as the :send it stands for.
+
   Checker, against the last final read:
     - at most one record per (partition, id);
     - every :ok answer's offset holds a record with that id (a duplicate
@@ -74,6 +82,88 @@
       retry    (assoc op :type :info, :error [:after-retry (:error first-r) (:error r)])
       :else    (assoc op :type (:type r), :error (:error r)))))
 
+(defn batch-sends [test] (long (:batch-sends test 0)))
+
+(defn- push-batch-once
+  "One push of items [[id n] ...] to partition d<p> via base:
+  {:ok true, :statuses [...], :offsets [...]} | {:type t :error e}. A refusal
+  refuses a whole push group, so an answer that mixes refused and accepted
+  items is not expected: :info."
+  [client test base p items]
+  (let [r (qh/request! (:http client) :post (str base "/api/v1/push")
+                       {:items (mapv (fn [[id n]]
+                                       {:queue         (queue-name test)
+                                        :partition     (str "d" p)
+                                        :payload       {:id id, :n n}
+                                        :transactionId id})
+                                     items)}
+                       (:client-timeout-ms test))]
+    (if (= 201 (:status r))
+      (let [answers (vec (:body r))
+            ok?     (fn [a] (contains? #{"queued" "duplicate"} (:status a)))
+            all?    (= (count answers) (count items))]
+        (cond
+          (and all? (every? ok? answers))
+          {:ok true, :statuses (mapv :status answers), :offsets (mapv :offset answers)}
+
+          (and all? (not-any? ok? answers))
+          {:type :fail, :error [:item-errors (vec (distinct answers))]}
+
+          :else
+          {:type :info, :error [:mixed-item-answers answers]}))
+      {:type  (log/push-failure test (:status r) (:body r))
+       :error [(:status r) (:body r)]})))
+
+(defn- guarded-batch
+  "push-batch-once, with a transport failure turned into an answer."
+  [client test base p items]
+  (try (push-batch-once client test base p items)
+       (catch clojure.lang.ExceptionInfo e
+         (let [{:keys [type msg]} (ex-data e)]
+           (if (#{::qh/refused ::qh/timeout ::qh/io} type)
+             {:type (kv/exception-type type), :error [(keyword (name type)) msg]}
+             (throw e))))))
+
+(defn- send-batch!
+  [client test op]
+  (let [[p items] (:value op)
+        first-r   (guarded-batch client test (:base client) p items)
+        [r retry] (if (= :info (:type first-r))
+                    (let [others (vec (remove #{(:node client)} (:nodes test)))
+                          other  (if (seq others) (rand/nth others) (:node client))]
+                      [(guarded-batch client test (qh/base-url other) p items) other])
+                    [first-r nil])]
+    (cond
+      (:ok r)  (assoc op :type :ok, :statuses (:statuses r), :offsets (:offsets r)
+                      :retried-on retry :first-error (when retry (:error first-r)))
+      retry    (assoc op :type :info, :error [:after-retry (:error first-r) (:error r)])
+      :else    (assoc op :type (:type r), :error (:error r)))))
+
+(defn- distinct-ids
+  "k distinct ids of partition p's pool (k at most the pool's size)."
+  [test p k]
+  (let [k (min k (id-pool test))]
+    (loop [picked #{}, out []]
+      (if (= k (count out))
+        out
+        (let [i (rand/long (id-pool test))]
+          (if (picked i)
+            (recur picked out)
+            (recur (conj picked i) (conj out (str "d" p "-" i)))))))))
+
+(defn- item-sends
+  "The :ok sends the checker judges: a :send as it is, a :send-batch as one
+  :send per item, with that item's status and offset."
+  [ops]
+  (mapcat (fn [op]
+            (if (= :send-batch (:f op))
+              (let [[p items] (:value op)]
+                (map (fn [[id n] status offset]
+                       (assoc op :value [p id n], :status status, :offset offset))
+                     items (:statuses op) (:offsets op)))
+              [op]))
+          ops))
+
 (defn- fetch-partition
   [client test partition]
   (loop [off 0, out []]
@@ -107,6 +197,7 @@
     (try
       (case (:f op)
         :send       (send! this test op)
+        :send-batch (send-batch! this test op)
         :final-read (final-read! this test op))
       (catch clojure.lang.ExceptionInfo e
         (let [{:keys [type msg]} (ex-data e)]
@@ -141,7 +232,10 @@
           (let [recs    (:value (apply max-key #(:time (h/invocation history %)) finals))
                 by-pid  (group-by (juxt :partition :id) recs)
                 at      (into {} (map (juxt (juxt :partition :offset) identity)) recs)
-                sends   (->> ops (h/filter #(and (= :send (:f %)) (= :ok (:type %)))) vec)
+                sends   (->> ops
+                             (h/filter #(and (#{:send :send-batch} (:f %)) (= :ok (:type %))))
+                             item-sends
+                             vec)
                 dups    (->> by-pid (filter #(< 1 (count (val %))))
                              (map (fn [[[p id] rs]] {:partition p, :id id
                                                      :offsets (mapv :offset rs)}))
@@ -193,8 +287,13 @@
     {:client          (client)
      :checker         (checker)
      :generator       (fn [test ctx]
-                        (let [p (rand/long (partitions test))]
-                          {:f     :send
-                           :value [p (str "d" p "-" (rand/long (id-pool test)))
-                                   (swap! n inc)]}))
+                        (let [p (rand/long (partitions test))
+                              b (batch-sends test)]
+                          (if (pos? b)
+                            {:f     :send-batch
+                             :value [p (mapv (fn [id] [id (swap! n inc)])
+                                             (distinct-ids test p (+ 2 (rand/long (dec b)))))]}
+                            {:f     :send
+                             :value [p (str "d" p "-" (rand/long (id-pool test)))
+                                     (swap! n inc)]})))
      :final-generator (gen/each-thread {:f :final-read, :value nil})}))

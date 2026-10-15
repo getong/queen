@@ -16,6 +16,14 @@
   pushes over several partitions and queues (one raft entry, all or nothing);
   its answer names no offsets, so its sends complete as [:send k [nil v]].
 
+  With --batch-sends N a :send op is 1 to N sends to ONE key, sent as ONE
+  POST /api/v1/push of all its items in op order: one push command of one
+  partition, whose outcome the broker writes as runs (catalogue version 7)
+  when it has two items or more. The op keeps the sends to its most used key
+  (a plain push is not atomic across partitions, and the checker judges an op
+  as one transaction); each completes as [:send k [offset v]], and the items
+  of one push must get consecutive offsets.
+
   The client is bound to one node and never retries; a poll's positions are
   committed only when the whole op succeeds. The checker is the Kafka one with
   nothing allowed (every push or bundle is one raft entry, so G0 and G1c are
@@ -134,6 +142,46 @@
       :else
       {:error [(:status r) b]
        :type  (push-failure test (:status r) b)})))
+
+(defn- send-batch!
+  "--batch-sends: an op's sends, all to one key (one-key-sends), as ONE push
+  of all its items in op order. Every item answered queued or duplicate: :ok,
+  each send completing as [:send k [offset v]]. Every item refused: :fail. A
+  refusal refuses a whole push group (batcher.rs refused_items), so an answer
+  that mixes both is not expected: :info, with the answer as the error."
+  [client test op]
+  (let [mops (:value op)
+        body {:items (mapv (fn [[_ k v]]
+                             {:queue         (queue-name test k)
+                              :partition     (partition-name k)
+                              :payload       v
+                              :transactionId (txn-id k v)})
+                           mops)}
+        r    (qh/request! (:http client) :post
+                          (str (:base client) "/api/v1/push")
+                          body (:client-timeout-ms test))]
+    (if (= 201 (:status r))
+      (let [items (vec (:body r))
+            ok?   (fn [item] (contains? #{"queued" "duplicate"} (:status item)))
+            all?  (= (count items) (count mops))]
+        (cond
+          (and all? (every? ok? items))
+          (let [done (mapv (fn [[_ k v] item] [:send k [(:offset item) v]])
+                           mops items)
+                dups (vec (keep (fn [[mop item]]
+                                  (when (= "duplicate" (:status item)) mop))
+                                (map vector done items)))]
+            (cond-> (assoc op :type :ok, :value done)
+              (seq dups) (assoc :duplicate-acks dups)))
+
+          (and all? (not-any? ok? items))
+          (assoc op :type :fail, :error [:item-errors (vec (distinct items))])
+
+          :else
+          (assoc op :type :info, :error [:mixed-item-answers items])))
+      (assoc op
+             :type  (push-failure test (:status r) (:body r))
+             :error [(:status r) (:body r)]))))
 
 (defn- check-records
   "Anomalies in one key's fetched records: not starting at the requested
@@ -292,11 +340,18 @@
         (assoc op :type :fail, :error :subscribe-unsupported)
 
         :send
-        (if (:txn-sends? test)
+        (cond
+          (:txn-sends? test)
           (let [res (send-txn! this test (:value op))]
             (if (:mops res)
               (assoc op :type :ok, :value (:mops res))
               (assoc op :type (:type res), :error (:error res))))
+
+          (and (pos? (long (:batch-sends test 0)))
+               (every? (comp #{:send} first) (:value op)))
+          (send-batch! this test op)
+
+          :else
           (send-or-poll this test op))
 
         :poll
@@ -558,6 +613,23 @@
                  op)))
            gen))
 
+(defn one-key-sends
+  "--batch-sends: a send op keeps only its sends to the key it sends to most
+  (the first such key on a tie), so its one push goes to ONE partition. The
+  values of the sends it drops are never sent. Run after sends-only."
+  [gen]
+  (gen/map (fn [op]
+             (let [mops (:value op)]
+               (if (and (< 1 (count mops))
+                        (every? (comp #{:send} first) mops))
+                 (let [ks   (map second mops)
+                       freq (frequencies ks)
+                       best (reduce (fn [b k] (if (> (freq k) (freq b)) k b))
+                                    (first ks) ks)]
+                   (assoc op :value (filterv #(= best (second %)) mops)))
+                 op)))
+           gen))
+
 (defn workload
   "jepsen.tests.kafka/workload's generator, final polls and checker, with the
   highest-offset tracking moved OUT of the main phase: :wrap-generator must
@@ -570,10 +642,16 @@
   :max-writes-per-key, :sub-via #{:assign}, ...)."
   [opts]
   (let [txn?        (:txn-sends? opts)
-        opts        (assoc opts :txn? false, :max-txn-length (if txn? 4 1))
+        batch       (long (:batch-sends opts 0))
+        opts        (assoc opts :txn? false
+                                :max-txn-length (cond txn?        4
+                                                      (pos? batch) batch
+                                                      :else       1))
         la          (append/test opts)
         ops         (kafka/txn-generator (:generator la))
-        ops         (if txn? (sends-only ops) ops)
+        ops         (cond txn?         (sends-only ops)
+                          (pos? batch) (one-key-sends (sends-only ops))
+                          :else        ops)
         max-offsets (atom (sorted-map))]
     {:client          (client)
      :checker         (checker/compose {:kafka (strict-checker)
