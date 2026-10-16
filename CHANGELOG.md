@@ -3,7 +3,7 @@
 Release history for the Queen MQ server and client SDKs. Full release notes live on
 [GitHub Releases](https://github.com/queen-mq/queen/releases).
 
-## 2.4.0
+## 2.4.0 - 2026-10-16
 
 **41% fewer bytes written a message, and end to end about three times faster at 3M msg/s.**
 Measured on 2026-10-15 on three GCP brokers (c4-standard-24-lssd, four local NVMe disks in a RAID 0
