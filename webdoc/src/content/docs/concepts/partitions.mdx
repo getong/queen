@@ -93,8 +93,9 @@ leader's memory only while the partition is in use: after `QUEEN_CONSUME_IDLE_UN
 with nothing to deliver it is dropped, and the next message loads it back. That is why there is no count to
 plan and nothing to provision, and why a queue can hold millions of them: on three nodes, one
 queue of ten million partitions carried 3,000,000 messages a second, pushed and consumed, at an
-end-to-end p99 of 54 ms on 23 cores, the cores it took with 100 partitions (2.3.0 on GCP nodes with
-24 vCPU and local NVMe, 2026-10-14; see [Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/)).
+end-to-end p99 of 25 ms on 25 cores, about the cores it took with 100 partitions (2.4.0-beta.1 on
+GCP nodes with 24 vCPU and local NVMe, 2026-10-15; see
+[Queen vs Kafka, Pulsar and Redpanda on NVMe](/benchmarks/queen-vs-kafka/)).
 
 Choose the partition key at the boundary where order matters to you. If a customer's events must
 be handled in order, the partition is the customer. A partition per message would give you no

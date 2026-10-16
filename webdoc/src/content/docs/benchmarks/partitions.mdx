@@ -1,6 +1,6 @@
 ---
-title: "Partition scaling to 10 million vs Kafka and Pulsar"
-description: "One queue from 10 to 10,000,000 partitions at 100,000 to 2,000,000 msg/s on three 16-vCPU nodes with pre-release builds of Queen 2.3.0, Kafka on the same machines at 2,000,000 msg/s, and September's comparison with Redpanda and Pulsar: latency, CPU, what a partition costs Queen in memory, and what many queues cost."
+title: "Partition scaling to 10M vs Kafka, Pulsar, Redpanda"
+description: "One queue from 10 to 10,000,000 partitions on three GCP nodes with local NVMe: Queen 2.4 at 3,000,000 msg/s of 256-byte messages and 1,000,000 msg/s of 1 KB messages, beside Kafka 4.3.1, Pulsar 4.2.4 and Redpanda 26.2.3 on the same machines: latency, CPU, disk, and what a partition costs Queen in memory."
 type: reference
 tier: operate
 sidebar:
@@ -9,109 +9,125 @@ sidebar:
 ---
 
 This is the test Queen was built for. Give every entity its own partition and your partition
-count is your entity count: a million customers, ten million orders. On three 16-vCPU
-DigitalOcean nodes we offered one queue from 100,000 to 2,000,000 messages a second at partition
-counts from 10 to 10,000,000. Pre-release builds of Queen 2.3.0 carried every one of the 35 points,
-and the count hardly shows: at 1,000,000 msg/s the end-to-end p99 is 18 to 21 ms from 10 to 100,000
-partitions, 32 ms at a million and 38 ms at ten million (2026-10-12 and 13). Kafka, on the same
-machines at 2,000,000 msg/s, is ahead up to 1,000 partitions, behind at 10,000, and does not carry
-100,000. On three GCP nodes with 24 vCPU and local NVMe, the released 2.3.0 carried 3,000,000 msg/s
-at every count from 10 to 10,000,000 with a p99 of 47 to 78 ms in the worst window; Kafka there was
-faster up to 10,000 partitions and did not carry 50,000
-([Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/)). [Compare](/start/compare/) explains how
-each system gets order per entity.
+count is your entity count: a million customers, ten million orders. On three GCP nodes with 24
+vCPU and local NVMe disks, Queen 2.4 carried 3,000,000 messages a second of 256 bytes in and out
+of one queue at every partition count from 10 to 10,000,000, with an end-to-end p99 of 15 to 25
+ms on 21 to 28 cores, and 1,000,000 messages a second of 1 KB at 16 to 22 ms. On the same machines
+Kafka was the fastest up to 1,000 partitions and did not carry 50,000, Redpanda read 782 ms at
+10,000 and did not carry 50,000, and Pulsar held 20 to 25 ms up to 50,000 and did not carry
+100,000 (2026-10-14 to 16). [Compare](/start/compare/) explains how each system gets order per
+entity.
 
 ## The shape
 
-The load is the one on [throughput and latency](/benchmarks/throughput/): 256-byte JSON messages
-pushed 100 at a time to one partition, a fresh cluster for every point, 90 seconds of load (Kafka
-70), figures over seconds 30 to 60. Every partition existed before the timed run: Queen's load
-generator pushed one message into each partition and drained it, and Kafka's topic was created and
-warmed first. No system was measured while it created partitions. Queen ran as pre-release builds
-of 2.3.0 with the binary push, compressed groups, framed pops and counted acks, deduplication off
-and nothing deleted during a point; 9 consumers read 10 partitions, 99 read 100, and 297 read
-every larger count with pops of up to 10 partitions and 1,000 messages. The ten-million column ran
-with `QUEEN_CONSUME_IDLE_UNLOAD_S=30`. Runs:
-[`benchmark-queen/2026-10-12-three-node-new-forms/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-10-12-three-node-new-forms)
-(`runs/grid-final.jsonl`, and `NIGHT.md` for what each build fixed); Kafka's are the `-oct13`
-folders of `benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/`.
+The load of [Queen vs Kafka, Pulsar and Redpanda on NVMe](/benchmarks/queen-vs-kafka/#how-we-ran-it),
+where the machines and every setting are: 256-byte JSON messages pushed 100 at a time to one
+partition by nine open-loop load processes, a fresh cluster for every point, 70 seconds of load
+(90 for Queen's runs of 2026-10-16 at 1,000 and 50,000 partitions). A latency is the median of the
+three 10-second windows in seconds 30 to 60, each window the slowest load process, with the worst
+window's p99 in brackets. Every partition existed before the timed run: Queen's load generator
+pushed one message into each partition and drained it, and the other systems' topics were created
+and warmed first. No system was measured while it created partitions.
 
-## Every load at every count
+Queen ran as 2.4.0-beta.1 with the binary push, compressed groups, framed pops and counted acks,
+deduplication off and nothing deleted during a point; 9 consumers read 10 partitions, 99 read 100,
+and 297 read every larger count with pops of up to 10 partitions and 1,000 messages. The
+ten-million column ran with `QUEEN_CONSUME_IDLE_UNLOAD_S=30`. Every point was carried: nothing
+shed, no error, and at least 99% of what was pushed consumed.
 
-Queen 2.3.0, end-to-end latency, p50 / p99 in milliseconds: the worst load process's worst
-10-second window in seconds 30 to 60. Every point was carried: nothing shed, no error, and at
-least 99% of what was pushed consumed.
+## Every count at 3,000,000 msg/s
 
-| Partitions | 100,000 msg/s | 500,000 | 1,000,000 | 1,500,000 | 2,000,000 |
-|---|---|---|---|---|---|
-| 10 | 4 / 8 | 6 / 11 | 12 / 21 | 20 / 57 | 44 / 100 |
-| 100 | 3 / 6 | 5 / 9 | 10 / 19 | 20 / 41 | 31 / 63 |
-| 1,000 | 4 / 8 | 6 / 10 | 10 / 18 | 17 / 36 | 27 / 70 |
-| 10,000 | 4 / 7 | 5 / 10 | 10 / 19 | 17 / 37 | 31 / 63 |
-| 100,000 | 4 / 7 | 6 / 10 | 10 / 18 | 18 / 38 | 30 / 59 |
-| 1,000,000 | 4 / 7 | 5 / 12 | 10 / 32 | 17 / 36 | 30 / 66 |
-| 10,000,000 | 4 / 7 | 5 / 10 | 10 / 38 | 19 / 37 | 39 / 73 |
+Queen 2.4 with 256-byte messages: end-to-end p50 / p99 in milliseconds, the cores of the three
+brokers (the leader's and the two followers' in brackets), the resident memory of the leader and of
+a follower at the end of the point, and the mean write rate of a broker's disks with the bytes it
+wrote for each message.
 
-<Figure id="benchmarks/partitions-230-p99" />
-
-The two figures above 30 ms in the 1,000,000 column are one process's one window; the median
-process reads 23 ms at a million partitions and 20 ms at ten million. Ten partitions are the
-slowest row at the high rates because nine consumers take more than 200,000 messages a second
-each.
-2,500,000 msg/s was tried on 1,000 partitions and not carried
-([the ceiling](/benchmarks/throughput/#the-ceiling)).
-
-## Kafka on the same machines
-
-Kafka 4.3.1 at 2,000,000 msg/s on the same three brokers, 2026-10-13, three replicas and
-`acks=all`. End-to-end p50 / p99 in milliseconds and the cores of the three brokers summed.
-
-| Partitions | Queen 2.3.0 | Queen cores | Kafka 4.3.1 | Kafka cores |
+| Partitions | e2e p50 / p99 | Cores | Leader, follower | Disk a broker |
 |---|---|---|---|---|
-| 10 | 44 / 100 | 16.4 | 11 / 403 | 10.7 |
-| 100 | 31 / 63 | 19.9 | 8 / 43 | 15.8 |
-| 1,000 | 27 / 70 | 20.1 | 9 / 25 | 19.5 |
-| 10,000 | 31 / 63 | 20.2 | 64 / 134 | 29.8 |
-| 100,000 | 30 / 59 | 20.2 | not carried: 1.92M in, 1.67M out, e2e 10 s / 15 s and rising | 33.3 |
-| 1,000,000 | 30 / 66 | 20.4 | not run | |
-| 10,000,000 | 39 / 73 | 20.6 | not run | |
+| 10 | 10 / 24 (27) | 21.0 (10.9, 5.0, 5.1) | 5.2, 4.8 GB | 416 MB/s, 138 B a message |
+| 100 | 7.5 / 17 (17) | 27.7 (13.9, 6.8, 7.0) | 5.1, 4.6 GB | 418 MB/s, 139 B |
+| 1,000 | 6.9 / 16.5 (19) | 24.6 (12.8, 5.9, 5.9) | 6.4, 5.9 GB | 443 MB/s, 147 B |
+| 10,000 | 7.1 / 20 (26) | 24.8 (12.8, 6.0, 6.0) | 5.6, 4.9 GB | 561 MB/s, 187 B |
+| 50,000 | 7.7 / 20 (23) | 24.8 (13.0, 5.9, 5.9) | 7.0, 6.1 GB | 497 MB/s, 166 B |
+| 100,000 | 7.1 / 15 (17) | 25.0 (13.0, 5.9, 6.1) | 6.0, 5.0 GB | 468 MB/s, 156 B |
+| 1,000,000 | 7.5 / 20 (21) | 24.9 (13.0, 5.9, 6.0) | 7.7, 5.8 GB | 438 MB/s, 146 B |
+| 10,000,000 | 8.9 / 25 (29) | 25.4 (13.3, 6.1, 6.0) | 17.2, 14.2 GB | 430 MB/s, 143 B |
 
-<Figure id="benchmarks/partitions-230-kafka" />
+<Figure id="benchmarks/partitions-p99" />
 
-Up to 1,000 partitions Kafka delivers at a third of Queen's median. At 10,000 the order reverses:
-Kafka pays 30 cores for a p99 of 134 ms where Queen stays at 63 ms on 20. At 100,000 partitions
-Kafka fell behind from the first window, and the topic alone took about six minutes to create;
-its ladder stopped there. The first run of that point lost four of its nine load processes to the
-load machines' out-of-memory killer and is not the one in the table; the rerun gave each process a
-9 GiB memory limit and all nine finished. Kafka's row at 10 partitions carries the rate with nine
-consumers and a p99 of 403 ms.
+From 100 partitions to ten million the median stays between 6.9 and 8.9 ms and the p99 between
+15 and 25 ms, on about 13 cores of the leader and 6 of each follower. Ten partitions are the slowest
+row: a partition goes to one consumer at a time, so nine consumers take more than 300,000 messages
+a second each. The 1,000- and 50,000-partition rows ran 90 seconds instead of 70, so their nodes
+held 20 seconds more of messages' rows (nothing is deleted during a point). Six runs of the
+1,000-partition point on two days read a p99 of 15, 16.5, 17, 18 and 20 ms, and once 65 ms, in a
+run where the log's group commit settled on fewer, larger groups from the first seconds; why, we
+did not find. A broker wrote 138 to 187 bytes for each message; Kafka's wrote 147 at 1,000
+partitions.
 
-## CPU and memory
+## With 1 KB messages at 1,000,000 msg/s
 
-Queen's cores at 1,000,000 msg/s, summed over the three brokers, and the memory of the leader and
-of a follower (anonymous, seconds 30 to 60) at 100,000 and at 2,000,000 msg/s. Nothing is deleted
-or trimmed during a point, so the memory at 2,000,000 includes a minute and a half of messages'
-rows.
+The same counts with 1 KB JSON messages (1,027 bytes on average), about 1 GB/s of messages,
+everything else as above. Kafka's numbers for this load are on
+[the comparison](/benchmarks/queen-vs-kafka/#1000000-msgs-of-1-kb-messages); Pulsar and Redpanda
+were not run with 1 KB messages.
 
-| Partitions | Cores at 1M msg/s | Leader, follower at 100k msg/s | Leader, follower at 2M msg/s |
+| Partitions | e2e p50 / p99 | Cores | Leader, follower | Disk a broker |
+|---|---|---|---|---|
+| 10 | 9.7 / 20 (24) | 15.2 | 2.3, 1.9 GB | 539 MB/s |
+| 100 | 6.7 / 19 (19) | 18.2 | 2.4, 1.9 GB | 541 MB/s |
+| 1,000 | 6.8 / 16 (17) | 17.1 | 3.3, 2.1 GB | 559 MB/s |
+| 10,000 | 6.9 / 16.5 (17) | 17.4 | 3.7, 2.1 GB | 580 MB/s |
+| 100,000 | 6.8 / 20 (21) | 17.5 | 4.2, 2.2 GB | 551 MB/s |
+| 1,000,000 | 7.4 / 17 (17) | 17.4 | 6.5, 3.1 GB | 544 MB/s |
+| 10,000,000 | 7.0 / 22 (25) | 17.7 | 14.1, 11.5 GB | 546 MB/s |
+
+The median is 6.7 to 7.4 ms from 100 partitions up and the p99 16 to 22 ms at every count, on 15
+to 18 cores. Kafka with 1 KB messages read 9.4 ms at p99 up to 1,000 partitions and 19 ms at
+10,000, on 31 cores against Queen's 17, and did not carry 50,000.
+
+## The other systems on the same machines
+
+Kafka 4.3.1, Pulsar 4.2.4 and Redpanda 26.2.3 at 3,000,000 msg/s of 256-byte messages, on the same
+machine types, each with the settings on
+[the comparison](/benchmarks/queen-vs-kafka/#the-settings). p50 / p99 in milliseconds (worst
+window in brackets) and the cores of the three brokers; Redpanda's cores are its shards' busy time,
+because its reactors poll and the operating system counts 66 to 71 of the 72.
+
+| Partitions | Kafka | Pulsar | Redpanda |
 |---|---|---|---|
-| 10 | 11.7 | 0.4, 0.3 GB | 6.1, 5.5 GB |
-| 100 | 15.1 | 0.4, 0.3 GB | 5.7, 5.6 GB |
-| 1,000 | 13.4 | 0.5, 0.4 GB | 6.1, 5.6 GB |
-| 10,000 | 13.5 | 0.5, 0.4 GB | 6.5, 5.6 GB |
-| 100,000 | 13.5 | 0.9, 0.5 GB | 7.1, 5.7 GB |
-| 1,000,000 | 13.5 | 2.5, 1.4 GB | 9.0, 6.5 GB |
-| 10,000,000 | 14.0 | 11.4, 9.8 GB | 17.7, 15.5 GB |
+| 10 | 6.4 / 11 (45), 14.9 | 13 / 25 (26), 5.4 | 14 / 44 (45), 8.8 |
+| 100 | 6.0 / 7.5 (8), 18.5 | 13 / 25 (26), 11.4 | 6.9 / 14 (14), 19.9 |
+| 1,000 | 6.0 / 8.1 (8), 21.0 | 6.2 / 20 (21), 15.1 | 6.8 / 14 (20), 22.4 |
+| 10,000 | 8.4 / 21 (78), 52.8 | 6.7 / 20 (21), 17.2 | 68 / 782 (815), 30.7 |
+| 25,000 | 58 / 105 (146), 57.0 | not run | not run |
+| 50,000 | not carried: 601,000 msg/s pushed, p99 32 s; 50.2 | 6.7 / 21 (21), 21.7 | not carried: 2,820,000 msg/s pushed, p99 8.8 s; 33.8 |
+| 100,000 | not carried: 174,000 msg/s pushed, p99 38 s; 60.5 | not carried: 2,520,000 msg/s pushed, p99 28 s; 22.8 | not run |
+
+<Figure id="benchmarks/partitions-cpu" />
+
+Kafka is the fastest up to 1,000 partitions, where it answers a write from memory and the others
+wait for two fsyncs. From there its CPU follows the count: 21 cores at 1,000, 53 at 10,000 for a
+p99 of 21 ms, 57 at 25,000 for 105 ms, and at 50,000 and 100,000 it pushed 601,000 and 174,000 of
+the 3,000,000 messages a second. Its topic of 100,000 partitions took about four minutes to create.
+Redpanda reads 14 ms at 100 and 1,000 partitions and 782 ms at 10,000, and fell behind at 50,000.
+Pulsar uses the fewest cores and holds 20 to 25 ms up to 50,000 partitions; at 50,000 and 100,000
+its Go client needed six load generators instead of three, and at 100,000 it pushed 2,520,000 of
+the 3,000,000 with its brokers at 23 of 72 cores and the load generators at about 13 of their 16,
+so these runs do not tell whether its brokers or its client stopped it. None of the three was run
+past 100,000 partitions.
+
+## What a partition costs
+
+Memory is the one thing in Queen that follows the partition count. From 10 partitions to ten
+million the leader went from 5.2 to 17.2 GB and a follower from 4.8 to 14.2: about 1.2 KB per
+partition on the leader and 0.9 KB on a follower, with 1 KB messages the same. The leader holds a
+little more because it also keeps each consumer group's state for the partitions it has read, for
+`QUEEN_CONSUME_IDLE_UNLOAD_S` after their last use (600 s by default; the ten-million column ran
+with 30 s). Up to 100,000 partitions the difference is under a gigabyte. Memory is what sets the
+partition ceiling: ten million partitions took 17 GB of a node's 88.
 
 <Figure id="benchmarks/partitions-memory" />
-
-That is about 1 KB per partition on every node, and a little more on the leader, which also
-holds each consumer group's state for the partitions it has read. Memory is what sets the
-partition ceiling: ten million partitions took more than a third of a 31 GB node at 100,000 msg/s,
-and more than half at 2,000,000. A leader keeps a group's state for a partition
-`QUEEN_CONSUME_IDLE_UNLOAD_S` after its last use (600 s by default); the ten-million column ran
-with 30 s, which took 6 GB off the leader at 1,000,000 msg/s and cost nothing we could measure
-(e2e 11 / 18 ms with either).
 
 ## Why the line stays flat
 
@@ -123,120 +139,41 @@ replication stream nor an fsync of its own, and the leader's CPU at ten million 
 it was at a thousand.
 
 Kafka keeps a log of its own for every partition on every replica, with its own files and its own
-place in replication; Redpanda runs a raft group per partition; Pulsar keeps a managed ledger per
-partition in BookKeeper. That machinery is cheap with a few hundred partitions and grows with every
-one you add, which is what Kafka's cores show from 10,000 on.
+place in replication; Redpanda runs a raft group per partition, each served by one core; Pulsar
+keeps a managed ledger per partition in BookKeeper, though a bookie writes one journal for all of
+them. That machinery is cheap with a few hundred partitions and grows with every one you add, which
+is what Kafka's cores and Redpanda's latency show from 10,000 on.
 
-Before 2.3.0 the line was flat and higher: 2.0.0-beta.2 read a p99 of 103 to 163 ms at 1,000,000
-msg/s from 200 to ten million partitions, and before the fixes of this release ten million
-partitions did not carry 1,500,000. The release removed the costs that showed at high counts: the
-leader's scan for idle consumer state, which held 625,000 partitions under one lock; a table of
-partition names that hashed every name again each time it doubled; and the merge of the queue
-log's directory, synced in one go.
-
-## With deduplication and retention on
-
-The matrix has deduplication off and deletes nothing. With a 60-second deduplication window and
-completed messages deleted after 60 seconds, 1,500,000 msg/s reads 19 to 28 ms at the median and
-36 to 51 ms at p99 from 100 to a million partitions. It is not carried on 10 partitions (the
-planner, with deduplication at 150,000 msg/s a partition) nor on ten million (memory: a minute of
-deduplication state and outcomes on top of ten million partitions needs more than these 31 GB
-brokers have). The table is on
-[throughput and latency](/benchmarks/throughput/#deduplication-and-retention-on).
-
-## The four systems in September
-
-Redpanda and Pulsar have not been run again, so this is the comparison of 2026-09-30 and 10-01 as
-it was measured, at 1,000,000 msg/s, 60 seconds a point with the figures over the last 30, on
-other machines of the same size: Queen 2.0.0-beta.2 with its JSON forms, Kafka 4.3.1, Redpanda
-26.2.3 and Pulsar 4.2.4. Queen's column is that old build: read it for the other three, and take
-Queen's numbers from the tables above. Runs: tags `mb2c-q1-t*` in
-`benchmark-queen/2026-09-30-stage03-3node/runs/` and
-[`benchmark-queen/2026-09-30-kafka-pulsar/runs/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-09-30-kafka-pulsar/runs).
-
-End-to-end latency, p50 / p99 in milliseconds, the worst of the load processes. "Behind" marks a
-point where the system consumed under 97% of the offered rate or its p99 passed 5 seconds.
-
-| Partitions | Queen 2.0.0-beta.2 | Kafka | Redpanda | Pulsar |
-|---|---|---|---|---|
-| 200 | 61 / 146 | 8 / 18 | 16 / 187 | 7 / 21 |
-| 2,000 | not run | 9 / 194 | 18 / 105 | 7 / 15 |
-| 10,000 | 51 / 144 | 15 / 46 | 371 / 1,810 | 7 / 32 |
-| 50,000 | 49 / 103 | 692 / 1,466 | behind: 881k out, p99 21 s | behind: 232k out, p99 47 s |
-| 100,000 | 50 / 163 | behind: p50 2.7 s, p99 10.9 s | behind: 236k out, p99 47 s | behind: 199k out, p99 47 s |
-| 1,000,000 | 46 / 123 | not run | not run | setup failed after 31 min |
-| 5,000,000 | 45 / 138 | not run | not run | not run |
-| 10,000,000 | 51 / 122 | not run | not run | not run |
-
-<Figure id="benchmarks/partitions-p99" />
-
-Three points need a footnote. At 50,000 partitions, three of Redpanda's nine load processes were
-killed partway through (exit status 137), so that point is partly the load generator's. Pulsar's
-points at 50,000 and 100,000 ran with client-side batching off, one message per batch, because the
-Go client cannot keep that many batching producers in one load process, which makes them harder on
-Pulsar than its other points; six of the nine load processes at 50,000 and three at 100,000
-crashed with a nil-pointer panic inside the Pulsar Go client (v0.21.0), and the brokers were at 38
-of their 48 cores. Kafka took 255 seconds to create a 100,000-partition topic and another minute to
-warm it, and Pulsar's setup for 1,000,000 partitions failed after 31 minutes.
-
-Cores used by each system's own processes in those runs, summed over the three brokers:
-
-| Partitions | Queen 2.0.0-beta.2 | Kafka | Redpanda | Pulsar |
-|---|---|---|---|---|
-| 200 | 17.2 | 9.7 | 14.2 | 7.1 |
-| 2,000 | not run | 15.3 | 16.2 | 7.8 |
-| 10,000 | 18.4 | 28.3 | 32.5 | 10.1 |
-| 50,000 | 18.0 | 29.2 | 35.1, fell behind | 37.4, fell behind |
-| 100,000 | 18.3 | 32.4, fell behind | 38.7, fell behind | 38.2, fell behind |
-| 1,000,000 | 18.3 | | | |
-| 10,000,000 | 17.3 | | | |
-
-<Figure id="benchmarks/partitions-cpu" />
-
-Redpanda's column is its count of busy shard time; the operating system counts more, because its
-reactors poll.
-
-## Many queues
-
-A queue costs more than a partition. One million partitions spread over many queues, at the same
-1M msg/s:
-
-| Queues × partitions | In / out | e2e p50 / p99 |
-|---|---|---|
-| 1 × 1,000,000 | 1.00M / 1.00M | 46 / 123 ms |
-| 1,000 × 1,000 | 1.00M / 1.00M | 95 / 216 ms |
-| 10,000 × 100 | 1.00M / 1.01M | 185 / 561 ms; 76 pops timed out at their 2 s deadline |
-
-<Figure id="benchmarks/partitions-queues" />
-
-The run at 10,000 queues was repeated the same day at 167 / 518 ms. There were 10,008 consumers for
-10,000 queues, about one each, so a pop carried about 205 messages against about 450 with one
-queue, half the pops came back empty, and an ack took 60 ms against 20. Kafka and Pulsar ran their
-many-topic shapes at 10,000 and 100,000 partitions in total, so the totals differ by ten times or
-more: with 1,000 topics of 10 partitions Kafka held 20 / 79 ms and Pulsar 8 / 34 ms, and with 1,000
-topics of 100 partitions Kafka fell behind (p99 5.8 s).
-
-These three runs are 2.0.0-beta.2, on 2026-10-01, and the shape has not been measured on 2.3.0.
-
-## Keys hashed onto partitions
-
-If all you need is order per key, Kafka and Pulsar can hash the keys onto a fixed set of
-partitions, and they are very good at it. Kafka spread 10,000,000 keys over 1,000 partitions at
-8 / 13 ms, Pulsar 10,000,000 keys over 48 partitions with a Key_Shared subscription at 12 / 21 ms,
-and Redpanda, laid out as Kafka, at 64 / 293 ms. What a hash gives up is isolation: a slow key holds
-up every key that shares its partition, and you cannot give a consumer one key or ask where one key
-stands. Queen's partition per entity keeps that, and the tables above are what it costs.
+The line was flat before 2.4 too, and higher. On these machines 2.3.0 read a p99 of 42 to 76 ms at
+3,000,000 msg/s from 10 to ten million partitions; 2.4 writes 147 bytes a message where 2.3.0
+wrote 248, its log's fsync takes about 0.5 ms instead of 3, and the p99 fell to 15 to 25 ms. 2.3.0
+had removed the costs that showed at high counts: the leader's scan for idle consumer state, which
+held 625,000 partitions under one lock; a table of partition names that hashed every name again
+each time it doubled; and the merge of the queue log's directory, synced in one go.
 
 ## What this page does not show
 
-Traffic on every partition at once. Each push carried 100 messages for one partition, so 20,000
-pushes a second reached at most 1,200,000 partitions in a minute: all ten million were created,
-written and drained in the prefill, and the timed load touched a part of them. Traffic on all of
-them within a minute means pushes of a message or two per partition, the shape described on
-[throughput and latency](/benchmarks/throughput/#when-a-request-carries-one-message).
+- Traffic on every partition at once. Each push carried 100 messages for one partition, so 30,000
+  pushes a second reached at most 1,800,000 partitions in a minute: all ten million were created,
+  written and drained in the prefill, and the timed load touched a part of them. Traffic on all of
+  them within a minute means pushes of a message or two per partition, which costs more per message
+  and was not run on 2.4.
+- Other rates. Every count ran at 3,000,000 msg/s with 256-byte messages and at 1,000,000 with 1 KB;
+  the ceiling of one queue was measured on 1,000 partitions only
+  ([5,000,000 msg/s](/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions)).
+- Deduplication and retention on, many queues instead of one, and keys hashed onto a fixed set of
+  partitions: measured on 2.3.0 and 2.0.0 betas, not on 2.4; those tables are in the git history of
+  this page.
+- Long runs. Each point ran 70 or 90 seconds; the long runs are on
+  [soak and failover](/benchmarks/soak/), on an older build.
+- Kafka, Pulsar and Redpanda past 100,000 partitions, Redpanda at 100,000, and Pulsar at 100,000
+  with enough load generators to rule its client out.
 
-Each point ran 90 seconds, and 2,000,000 msg/s is not level over six minutes (the long runs are on
-[soak and failover](/benchmarks/soak/), on an older build). The matrix ran on the builds of the two
-days before the release, not on the released binary. Kafka was not run at 1,000,000 msg/s by
-partition count on these machines, nor above 100,000 partitions, and Redpanda and Pulsar were not
-run against 2.3.0 at all.
+Runs: Queen 2.4 in
+[`benchmark-queen/2026-10-15-bytes-per-msg/runs/gcp/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-10-15-bytes-per-msg)
+(`fm3-*` at 3,000,000 msg/s, `f1k-*` with 1 KB messages, `grid-fix-m3.jsonl` and
+`grid-fix-1m1k.jsonl` for every node's cores, memory and disk) and the `a24-*` folders of
+[`benchmark-queen/2026-10-12-three-node-new-forms/runs/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-10-12-three-node-new-forms)
+(1,000 and 50,000 partitions); Kafka, Pulsar and Redpanda in
+[`benchmark-queen/2026-09-30-kafka-pulsar/runs/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-09-30-kafka-pulsar/runs),
+listed on [the comparison](/benchmarks/queen-vs-kafka/#the-runs).

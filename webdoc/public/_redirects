@@ -16,8 +16,8 @@
 # 1.x-era tree points at the page that now answers its question.
 /benchmarks/cardinality-1m                   /benchmarks/partitions/        301
 /benchmarks/cardinality-1m/                  /benchmarks/partitions/        301
-/benchmarks/comparison                       /benchmarks/throughput/        301
-/benchmarks/comparison/                      /benchmarks/throughput/        301
+/benchmarks/comparison                       /benchmarks/queen-vs-kafka/    301
+/benchmarks/comparison/                      /benchmarks/queen-vs-kafka/    301
 /benchmarks/conformance                      /benchmarks/jepsen/            301
 /benchmarks/conformance/                     /benchmarks/jepsen/            301
 /benchmarks/laravel-supervisors              /benchmarks/laravel/           301
@@ -330,8 +330,8 @@
 /use-case-aggregations.html                  /guides/streams/               301
 /use-case-rate-limiter                       /guides/streams/               301
 /use-case-rate-limiter.html                  /guides/streams/               301
-/benchmarks/peak                             /benchmarks/throughput/        301
-/benchmarks/peak/                            /benchmarks/throughput/        301
+/benchmarks/peak                             /benchmarks/queen-vs-kafka/    301
+/benchmarks/peak/                            /benchmarks/queen-vs-kafka/    301
 /start/why                                   /start/                        301
 /start/why/                                  /start/                        301
 /start/limits                                /reference/limits/             301
@@ -477,3 +477,8 @@
 /internals/schema/                           /internals/                    301
 /internals/legacy                            /internals/                    301
 /internals/legacy/                           /internals/                    301
+
+# 2026-10-16: the throughput page (the 2.3.0 pre-release rate ladder on 16-vCPU nodes and September's four
+# systems) was replaced by the four-system comparison on the GCP nodes.
+/benchmarks/throughput                       /benchmarks/queen-vs-kafka/    301
+/benchmarks/throughput/                      /benchmarks/queen-vs-kafka/    301

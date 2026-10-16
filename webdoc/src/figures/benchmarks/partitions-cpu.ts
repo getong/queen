@@ -1,17 +1,18 @@
 import { line } from "@/lib/figure-spec";
 
-// benchmarks/partitions.mdx, "CPU": cores used at 1,000,000 msg/s offered,
-// summed over the three brokers. Hollow: behind. Queen's 2,000 point not run.
+// benchmarks/partitions.mdx, "The other systems": the three brokers' cores summed (of 72 vCPU) at 3,000,000 msg/s,
+// the runs of partitions-p99.ts. Redpanda: its shards' busy time (its reactors poll; the OS counts 66 to 71 cores).
+// Hollow = not carried.
 export default line({
-  alt: "September 2026, Queen at 2.0.0-beta.2: cores used at 1,000,000 msg/s offered against the partition count, log scale, summed over three brokers. Queen stays between 17.2 and 18.4 cores from 200 to 10,000,000 partitions. Kafka goes from 9.7 cores at 200 partitions to 28.3 at 10,000 and 32.4 at 100,000, where it had fallen behind. Redpanda goes from 14.2 to 32.5 at 10,000 and 38.7 at 100,000. Pulsar goes from 7.1 to 10.1 at 10,000 and 38.2 at 100,000.",
-  caption: "September 2026, with Queen at 2.0.0-beta.2. Queen's cost does not move with the partition count: a partition is a few rows in memory. The others keep machinery per partition, which is cheap at 200 and grows with every one added. Hollow marks: the system had fallen behind.",
-  source: "benchmark-queen/2026-09-30-stage03-3node, benchmark-queen/2026-09-30-kafka-pulsar",
-  x: { label: "partitions in the queue", log: true, ticks: [100, 1000, 10000, 100000, 1000000, 10000000], min: 150, max: 13000000 },
-  y: { label: "cores, three brokers", ticks: [0, 10, 20, 30, 40], min: 0, max: 40, format: "int" },
+  alt: "Cores used by the three brokers together at 3,000,000 msg/s against the partition count (log scale). Queen 2.4 uses 21 to 28 cores from 10 to 10,000,000 partitions. Kafka uses 15 to 21 up to 1,000, 53 at 10,000 and 57 at 25,000, and 50 and 61 at 50,000 and 100,000, where it did not carry the rate. Pulsar uses 5 to 22 up to 50,000 and 23 at 100,000, where it did not carry the rate. Redpanda's shards are busy 9 to 31 cores up to 10,000 and 34 at 50,000, where it did not carry the rate.",
+  caption: "Queen's CPU does not follow the partition count. Kafka's more than doubles from 1,000 partitions to 10,000; Redpanda's grows from 9 to 31 busy cores; Pulsar uses the fewest wherever it carried the rate. Hollow: not carried.",
+  source: "the grid rows of the Queen runs; report/report.py over the Kafka, Pulsar and Redpanda runs, Redpanda's busy.txt",
+  x: { label: "partitions in the queue or topic", log: true, ticks: [10, 100, 1000, 10000, 100000, 1000000, 10000000], min: 7, max: 14000000 },
+  y: { label: "cores, three brokers together (of 72)", ticks: [0, 20, 40, 60], min: 0, max: 64 },
   series: [
-    { label: "Queen 2.0.0-beta.2", points: [[200, 17.2], [10000, 18.4], [50000, 18.0], [100000, 18.3], [1000000, 18.3], [10000000, 17.3]] },
-    { label: "Kafka", points: [[200, 9.7], [2000, 15.3], [10000, 28.3], [50000, 29.2], { x: 100000, y: 32.4, hollow: true }] },
-    { label: "Redpanda", points: [[200, 14.2], [2000, 16.2], [10000, 32.5], { x: 50000, y: 35.1, hollow: true }, { x: 100000, y: 38.7, hollow: true }] },
-    { label: "Pulsar", points: [[200, 7.1], [2000, 7.8], [10000, 10.1], { x: 50000, y: 37.4, hollow: true }, { x: 100000, y: 38.2, hollow: true }] },
+    { label: "Queen 2.4", tone: "s1", points: [[10, 21.0], [100, 27.7], [1000, 24.6], [10000, 24.8], [50000, 24.8], [100000, 25.0], [1000000, 24.9], [10000000, 25.4]] },
+    { label: "Kafka 4.3.1", tone: "s2", points: [[10, 14.9], [100, 18.5], [1000, 21.0], [10000, 52.8], [25000, 57.0], { x: 50000, y: 50.2, hollow: true }, { x: 100000, y: 60.5, hollow: true }] },
+    { label: "Pulsar 4.2.4", tone: "s3", points: [[10, 5.4], [100, 11.4], [1000, 15.1], [10000, 17.2], [50000, 21.7], { x: 100000, y: 22.8, hollow: true }] },
+    { label: "Redpanda 26.2.3 (busy shards)", tone: "s4", points: [[10, 8.8], [100, 19.9], [1000, 22.4], [10000, 30.7], { x: 50000, y: 33.8, hollow: true }] },
   ],
 });

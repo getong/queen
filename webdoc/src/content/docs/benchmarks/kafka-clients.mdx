@@ -40,7 +40,7 @@ that was merged as `b51e4419` (2.0.0-beta.5): `qk3` on 2026-10-01, and the final
 ## 2.3.0: five points
 
 Five points of the tables below ran again on 2026-10-13, on 2.3.0-beta.1 and on the machines of
-the [2.3.0 throughput runs](/benchmarks/throughput/), to see that the release had broken nothing:
+the [2.3.0 pre-release runs](/benchmarks/methodology/#the-230-runs-on-digitalocean), to see that the release had broken nothing:
 the same load generator and client settings, a fresh cluster per point. End-to-end p50 / p99 in
 milliseconds, the worst load process. The machines are others of the same size, so the columns
 show a direction and not an exact gain. Runs: the `b1-*` folders of the archive above.
@@ -75,7 +75,7 @@ consumption under 97% of the offered rate, or a p99 over 5 seconds.
 | 1,500,000 | 185 / 3,785, all in and out | behind: 1.34M out | 8 / 35 |
 | 2,000,000 | behind: 1.91M in, 105k out | behind: 1.50M in, 1.23M out | 9 / 59 |
 
-Queen's own clients are the 2.0.0-beta.2 runs of [throughput and latency](/benchmarks/throughput/),
+Queen's own clients are the 2.0.0-beta.2 runs of September (in the git history of these pages),
 driven from four load machines. On the facade build with the same three load machines as the
 Kafka clients, they measured 89 / 212 ms at a million (recorded in `b51e4419`'s message): our HTTP
 load generator needs more CPU per message than franz-go, and on three machines it adds latency of

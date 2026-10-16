@@ -43,13 +43,12 @@ writing it to changelog topics. State in your database stays outside it (KIP-939
 Kafka join an external two-phase commit, is accepted but not released), and Kafka has no delayed
 delivery.
 
-Kafka is better at latency and throughput up to about ten thousand partitions, and at the cost of
-getting them. In our runs (below) its median was three to six times lower than Queen's and its p99
-lower too up to 10,000 partitions, it used less CPU up to 1,000, and one topic of 1,000 partitions
-carried about 8,000,000 messages a second where one Queen queue carried 3,500,000; on 16-vCPU
-nodes it kept up with 4,000,000 messages a second on 100 partitions, where Queen carried 2,000,000
-and not 2,500,000. Kafka acknowledges a write once its replicas hold it in
-memory, without waiting for an fsync, which is part of that difference. Then there is the ecosystem (Connect and its connectors, Streams, schema
+Kafka is better at latency and throughput up to about a thousand partitions, and at the cost of
+getting them. In our runs (below) its median was near 6 ms and its p99 7.5 to 11 ms up to 1,000
+partitions, under Queen's 16.5 to 24, it used less CPU up to 1,000, and one topic of 1,000
+partitions carried about 8,000,000 messages a second where one Queen queue carried 5,000,000. Kafka
+acknowledges a write once its replicas hold it in memory, without waiting for an fsync, which is
+most of that difference: with an fsync on every append its p99 was 198 ms at 1,000 partitions. Then there is the ecosystem (Connect and its connectors, Streams, schema
 registries) and log compaction. Queen's [Kafka facade](/guides/kafka/) lets existing producers and
 consumers connect, and accepts the topic settings Streams and Connect create, but a compacted topic
 keeps every record, because Queen does not compact.
@@ -148,49 +147,47 @@ shape described here.
 
 ## Measured side by side
 
-We ran Queen 2.3.0 and Kafka 4.3.1 on the same three GCP nodes (`c4-standard-24-lssd`: 24 vCPU,
-88 GB and local NVMe disks each, one VPC), with the same loaders: 256-byte JSON messages in batches
-of 100, one topic or queue, 3,000,000 messages a second offered, CPU summed over the three nodes.
-A latency is the median of the three 10-second windows in seconds 30 to 60 of the load, the worst
-window's p99 in brackets (2026-10-14; the released image, with the binary wire forms its clients
-turn on; Kafka on XFS with thread pools for 24 vCPU; the runs are listed on
-[Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/#the-runs)). Queen acknowledges after two of
-three fsyncs; Kafka acknowledges once its in-sync replicas hold the write in memory.
+We ran Queen 2.4, Kafka 4.3.1, Pulsar 4.2.4 and Redpanda 26.2.3 on the same three GCP nodes
+(`c4-standard-24-lssd`: 24 vCPU, 88 GB and local NVMe disks each, one VPC), with the same loaders:
+256-byte JSON messages in batches of 100, one topic or queue, 3,000,000 messages a second offered,
+CPU summed over the three nodes. A latency is the median of the three 10-second windows in seconds
+30 to 60 of the load, the worst window's p99 in brackets (2026-10-14 to 16; Queen 2.4.0-beta.1 with
+the binary wire forms its clients turn on; every system on XFS; the runs are listed on
+[Queen vs Kafka, Pulsar and Redpanda on NVMe](/benchmarks/queen-vs-kafka/#the-runs)). Queen,
+Pulsar and Redpanda acknowledge after two of three fsyncs; Kafka acknowledges once its in-sync
+replicas hold the write in memory.
 
-| Partitions | Kafka: e2e p50 / p99, cores | Queen: e2e p50 / p99, cores |
-|---|---|---|
-| 10 | 6.4 / 11 ms (45), 14.9 | 37 / 76 ms (78), 18.6 |
-| 100 | 6.0 / 7.5 ms (8), 18.5 | 21 / 54 ms (65), 23.0 |
-| 1,000 | 6.0 / 8.1 ms (8), 21.0 | 21 / 47 ms (56), 22.4 |
-| 10,000 | 8.4 / 21 ms (78), 52.8 | 24 / 61 ms (66), 23.3 |
-| 25,000 | 58 / 105 ms (146), 57.0 | not run |
-| 50,000 | not carried (601,000 of 3,000,000 msg/s pushed, p99 32 s) | not run |
-| 100,000 | not carried (174,000 of 3,000,000 msg/s pushed, p99 38 s) | 23 / 53 ms (71), 23.4 |
-| 1,000,000 | not run | 23 / 42 ms (47), 23.0 |
-| 10,000,000 | not run | 23 / 46 ms (54), 23.4 |
+| Partitions | Queen: e2e p50 / p99, cores | Kafka | Pulsar | Redpanda |
+|---|---|---|---|---|
+| 10 | 10 / 24 ms (27), 21.0 | 6.4 / 11 ms (45), 14.9 | 13 / 25 ms (26), 5.4 | 14 / 44 ms (45), 8.8 |
+| 100 | 7.5 / 17 ms (17), 27.7 | 6.0 / 7.5 ms (8), 18.5 | 13 / 25 ms (26), 11.4 | 6.9 / 14 ms (14), 19.9 |
+| 1,000 | 6.9 / 16.5 ms (19), 24.6 | 6.0 / 8.1 ms (8), 21.0 | 6.2 / 20 ms (21), 15.1 | 6.8 / 14 ms (20), 22.4 |
+| 10,000 | 7.1 / 20 ms (26), 24.8 | 8.4 / 21 ms (78), 52.8 | 6.7 / 20 ms (21), 17.2 | 68 / 782 ms (815), 30.7 |
+| 25,000 | not run | 58 / 105 ms (146), 57.0 | not run | not run |
+| 50,000 | 7.7 / 20 ms (23), 24.8 | not carried (601,000 of 3,000,000 msg/s pushed) | 6.7 / 21 ms (21), 21.7 | not carried (2,820,000 pushed, p99 8.8 s) |
+| 100,000 | 7.1 / 15 ms (17), 25.0 | not carried (174,000 pushed) | not carried (2,520,000 pushed, p99 28 s) | not run |
+| 1,000,000 | 7.5 / 20 ms (21), 24.9 | not run | not run | not run |
+| 10,000,000 | 8.9 / 25 ms (29), 25.4 | not run | not run | not run |
 
-Up to 10,000 partitions Kafka is the faster of the two: a median three to six times lower and a
-p99 of 7.5 to 21 ms against Queen's 47 to 76. Queen's cost stays flat as partitions grow, because
-a partition is a few rows of state; Kafka pays per partition, with about twice Queen's CPU at
-10,000, 57 cores at 25,000, and 50,000 not carried. With 1 KB messages at 1,000,000 a second the
-medians come close (Kafka 7.4 to 8.8 ms, Queen 9.4 to 11) and Kafka's p99 is still the lower one up
-to 10,000 partitions (9.4 to 19 ms, Queen 26 to 47). On one topic of 1,000 partitions Kafka
+Up to 1,000 partitions Kafka is the fastest: a median near 6 ms and a p99 of 7.5 to 11 ms, against
+Queen's 16.5 to 24. Queen's cost stays flat as partitions grow, because a partition is a few rows
+of state: 15 to 25 ms on 21 to 28 cores from 10 partitions to ten million. Kafka pays per
+partition, with twice Queen's CPU at 10,000, 57 cores at 25,000, and 50,000 not carried; Redpanda,
+a raft group per partition, read 782 ms at 10,000; Pulsar, on the fewest cores, held 20 to 25 ms up
+to 50,000 and did not carry 100,000. With 1 KB messages at 1,000,000 a second Queen's median is the
+lower one from 100 partitions up (6.7 to 7.4 ms against Kafka's 7.4 to 8.8), and Kafka's p99 is
+lower up to 1,000 partitions (9.4 ms against 16 to 20). On one topic of 1,000 partitions Kafka
 carried about 8,000,000 messages a second at a p99 near 12 ms; one Queen queue of 1,000 partitions
-carried 3,500,000 and not 4,000,000. With an fsync on every append, the durability Queen
-gives, Kafka read 7.5 / 12 ms at 100 partitions and 8.1 / 11 ms with 1 KB messages at 1,000, but
-95 / 281 ms at 10,000 partitions, where Queen read 24 / 61
-([fsync runs](/benchmarks/queen-vs-kafka/#kafka-with-an-fsync-on-every-append)). On 16-vCPU nodes two days earlier, Kafka
-kept up with 4,000,000 messages a second on 100 partitions, where Queen carried 2,000,000 and not
-2,500,000 ([throughput](/benchmarks/throughput/)).
+carried 5,000,000 and not 5,500,000. With an fsync on every append, the durability Queen gives,
+Kafka read 7.5 / 12 ms at 100 partitions but 198 ms at 1,000 and 95 / 281 ms at 10,000, where
+Queen read 7.1 / 20 ([fsync runs](/benchmarks/queen-vs-kafka/#an-fsync-before-the-answer)).
 
-Pulsar was last run in September, on 16-vCPU machines and beside Queen
-2.0.0-beta.2: at 1,000,000 messages a second it read a p99 of 21 ms on 200 partitions and 32 ms on
-10,000, on 7 to 10 cores, and fell behind from 50,000 partitions. In those runs, with 10 messages
+In September's transaction runs, on 16-vCPU machines beside Queen 2.0.0-beta.2, with 10 messages
 per transaction on 200 partitions at 9,000 messages a second, a Queen commit took 3 ms at p50 and
 4 ms at p99, Kafka's 12 and 34 ms, Pulsar's 22 and 32 ms. These runs measure the brokers; your shape
-decides which of them matters. The full set, Redpanda included, is on [benchmarks](/benchmarks/):
-[Queen vs Kafka on NVMe](/benchmarks/queen-vs-kafka/), [partition count](/benchmarks/partitions/),
-[throughput](/benchmarks/throughput/) and [transactions](/benchmarks/transactions/).
+decides which of them matters. The full set is on [benchmarks](/benchmarks/):
+[Queen vs Kafka, Pulsar and Redpanda on NVMe](/benchmarks/queen-vs-kafka/), [partition count](/benchmarks/partitions/)
+and [transactions](/benchmarks/transactions/).
 
 ## Summary
 

@@ -99,7 +99,7 @@ export const partitionSection = {
     "Most brokers hash your keys onto a partition count you chose up front, so one slow customer " +
     "holds up everyone who hashed next to it. In Queen the partition is the entity. Name it on " +
     "push and it exists, created in the same log entry as its first message. Order holds inside " +
-    "it, a slow entity delays only itself, and a partition costs about 2 KB of the leader's memory.",
+    "it, a slow entity delays only itself, and a partition costs about 1 KB of each node's memory.",
   after:
     "A busy partition stays sequential by design. Parallelism comes from the number of entities " +
     "with work to do, which is why a queue can hold millions of them.",
@@ -219,9 +219,9 @@ export const proofSection = {
   eyebrow: "Benchmarks",
   title: "Measured, with the conditions attached",
   lead:
-    "Queen 2.3 on three GCP nodes with local NVMe, every write fsynced on two of them, beside Kafka " +
-    "on the same machines, and September's runs of Redpanda and Pulsar. Every number names its run, including the " +
-    "places where another system does better.",
+    "Queen 2.4 on three GCP nodes with local NVMe, every write fsynced on two of them, beside Kafka, Pulsar and " +
+    "Redpanda on the same machines. Every number names its run, including the places where another system does " +
+    "better.",
   link: { label: "All the benchmarks", href: "/benchmarks/" },
 };
 
@@ -230,13 +230,13 @@ export const proof: { figure: string; unit: string; body: string; href: string }
   {
     figure: "3,000,000",
     unit: "msg/s pushed and consumed",
-    body: "One queue on three nodes at every partition count from 10 to 10,000,000, e2e p99 47 to 78 ms on 19 to 23 cores, with 256-byte messages; 1 KB messages at 1,000,000 msg/s read 27 to 34 ms. Deduplication off (the released 2.3.0, 70 s runs).",
+    body: "One queue on three nodes at every partition count from 10 to 10,000,000, e2e p99 15 to 25 ms on 21 to 28 cores, with 256-byte messages; 1 KB messages at 1,000,000 msg/s read 16 to 22 ms. Deduplication off (Queen 2.4.0-beta.1, 70 s runs, the median window).",
     href: "/benchmarks/queen-vs-kafka/",
   },
   {
     figure: "10,000,000",
     unit: "partitions in one queue",
-    body: "Each one created by a push, none declared. 3,000,000 msg/s in and out on the same three nodes at an e2e p99 of 54 ms; Kafka did not carry 50,000.",
+    body: "Each one created by a push, none declared. 3,000,000 msg/s in and out on the same three nodes at an e2e p99 of 25 ms; Kafka and Redpanda did not carry 50,000 partitions, Pulsar not 100,000.",
     href: "/benchmarks/queen-vs-kafka/",
   },
   {

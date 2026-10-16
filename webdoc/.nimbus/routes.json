@@ -12,7 +12,6 @@
     "/benchmarks/partitions",
     "/benchmarks/queen-vs-kafka",
     "/benchmarks/soak",
-    "/benchmarks/throughput",
     "/benchmarks/transactions",
     "/concepts",
     "/concepts/consuming",
