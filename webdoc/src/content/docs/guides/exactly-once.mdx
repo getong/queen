@@ -40,6 +40,10 @@ sidebar:
 # and a binary transaction body on the routes of the JSON ones, answer an ack with counts when its
 # body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
 # forms is planned, committed and answered as before. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/txn.rs writes a transaction's pushes' outcomes
+# as runs at cluster version 7; facade/real.rs keeps the framed forms on for the queues that do not
+# encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes. Nothing this
+# page states changes.
 ---
 
 A consumer that charges cards will see some orders twice: a lease runs out while the card network

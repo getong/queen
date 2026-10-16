@@ -42,6 +42,10 @@ digest: >-
 # body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
 # forms is planned, committed and answered as before. facade/groups.rs answers the cluster link's
 # routes for every group of a standby. The model on this page is unchanged.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/push.rs and planner/txn.rs write a push's
+# outcome as runs (catalogue version 7) where the cluster reads 7; facade/real.rs keeps the framed
+# forms on for the queues that do not encrypt (c42ea1992) and tells the store whether the queue logs
+# hold the txns hashes. Nothing this page states changes.
 ---
 
 Queen has one idea, and every concept page zooms into a part of it. Every entity gets an ordered

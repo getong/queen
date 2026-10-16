@@ -59,6 +59,9 @@ sourceOfTruth:
 # rate or the byte rate; a binary body whose headers do not say what it weighs answers 400
 # `invalid_request`. The proxy table says so. facade/real.rs refuses a binary push with flags 1 and 8
 # together as `bad_body`, a code this page already lists.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): facade/real.rs keeps the framed forms on for the queues
+# that do not encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes.
+# No error code changes. Nothing this page states changes.
 ---
 
 When Queen refuses a call it answers a status code and a JSON body with a stable code, and the code

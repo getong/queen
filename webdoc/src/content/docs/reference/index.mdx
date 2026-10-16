@@ -48,6 +48,9 @@ digest: >-
 # body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
 # forms is planned, committed and answered as before. facade/mod.rs carries the fetch ceiling and
 # the framed pop flag through a request. The digest's routes, verdicts and codes are unchanged.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): facade/real.rs keeps the framed forms on for the queues
+# that do not encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes.
+# Nothing this page states changes.
 ---
 
 This section is the contract written down: what every route takes and answers, what each status

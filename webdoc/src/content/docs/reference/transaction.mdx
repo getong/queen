@@ -40,6 +40,10 @@ sourceOfTruth:
 # transaction body (QTB1) beside the JSON one, which the Response section now names;
 # planner/timers.rs only converts a frame's type; facade/intake.rs wakes the checkpoint ticker when
 # an answer waits. Every field, result and rollback reason of the JSON body is as the page says.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/txn.rs mints a transaction's placeholder at
+# catalogue version 7 when one of its pushes carries runs; the answer reads the same verdicts.
+# facade/real.rs keeps the framed forms on for the queues that do not encrypt (c42ea1992) and tells
+# the store whether the queue logs hold the txns hashes. Nothing this page states changes.
 ---
 
 `POST /api/v1/transaction` is the call Queen was built around. It writes a worker's whole step

@@ -25,6 +25,9 @@ sourceOfTruth:
 # sourceOfTruth re-read 2026-10-10 (the runner reads the node logs): run-campaign.sh marks a test
 # REFUSED when a node's log holds FATAL or a panic, corruption tests excepted; "How a test runs"
 # says so.
+# sourceOfTruth re-read 2026-10-16 (2.4.0: --batch-sends): core.clj, log.clj and dedup.clj gain
+# pushes of several messages of one partition, so a test writes push outcomes as runs; the workload
+# table says so. The campaigns on this page ran without it.
 ---
 
 A million messages a second is worth nothing if one of them can go missing. We check that with
@@ -70,12 +73,12 @@ lein run test --nodes n1,n2,n3,n4,n5 --username root --bin /root/bin/queen \
 
 | Workload | What the clients do | What the checker rejects |
 |---|---|---|
-| W1 `log` | push, and read partitions by offset; with `--txn`, pushes to several partitions in one transaction | an acknowledged record lost or duplicated, two orders of one partition, a gap in the offsets, a transaction partly visible |
+| W1 `log` | push, and read partitions by offset; with `--txn`, pushes to several partitions in one transaction; with `--batch-sends N`, pushes of up to N messages of one partition | an acknowledged record lost or duplicated, two orders of one partition, a gap in the offsets, a transaction partly visible |
 | W2 `queue` | push, leased pop, one batch ack carrying the lease | an acknowledged message lost, a message acked twice, a redelivery after a successful ack, two unexpired leases on one message, order skipped within a partition |
 | W3 `register`, W3b `counter`, W3c `claim` | KV get, put and compare-and-set; increments; `putIfAbsent` | a history that is not linearizable; an increment lost or doubled; two winners of one claim |
 | W4 `elle` | KV calls that write and read several keys | any history that is not strict serializable, as Elle finds it: G0, G1, G-single, G2 and their real-time forms |
 | W5 `pipeline` | pop one message, then one `/api/v1/transaction` that acks it with its lease, pushes its output and increments a KV counter | an input lost, an input committed twice, output from a transaction that rolled back |
-| W6 `dedup` | pushes that reuse `transactionId`s, an unanswered one re-sent once to another node | two records for one id, an answer naming an offset that does not hold its record |
+| W6 `dedup` | pushes that reuse `transactionId`s, an unanswered one re-sent once to another node; with `--batch-sends N`, pushes of 2 to N ids of one partition | two records for one id, an answer naming an offset that does not hold its record |
 | W7 `dlq` | acks that fail messages under a retry budget, or send them to the DLQ at once | a message neither completed nor dead-lettered, a dead letter that was never failed, a dead letter without its payload |
 | W8 `retention` | W2 with completed messages deleted 2 s after their push | a message deleted before its ack |
 | W9 `streams` | stream cycles: pop a batch, read the partition's state, one cycle that acks it, writes output and updates the state | a batch counted twice or never, state that disagrees with the output |

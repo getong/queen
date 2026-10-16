@@ -13,6 +13,9 @@ sourceOfTruth:
 # tables once it has 4,096 of them and frees dropped lookups off the planner thread; pushes are
 # still planned on the lanes and a transaction that acks on the one control step, as "The ceiling"
 # says. The page gains the 2.3.0 measurement of 2026-10-12.
+# sourceOfTruth re-read 2026-10-16 (2.4.0, cluster version 7): batcher_lanes.rs reads the cluster
+# version once per planning cycle, so the lanes write push outcomes as runs only where the cluster
+# reads 7. Nothing this page states changes.
 ---
 
 A [transaction](/concepts/transactions/) is the step Queen is built around: take a message, do the work, then ack it and

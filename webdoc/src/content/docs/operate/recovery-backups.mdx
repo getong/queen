@@ -22,6 +22,8 @@ verifiedBy:
 # test/recovery/README.md gains a paragraph on health-quorum.py, a rehearsal of /health on three
 # local processes. The restore rehearsals this page describes are as they were.
 # sourceOfTruth re-read 2026-10-13 (a standby of several raft groups): raft/mod.rs tells each group's link routes which group of the cluster they serve, and a group's leader hands leadership to its preferred member only once that member is a voter. Nothing this page states of snapshots, backups or what a standby is for changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): raft/mod.rs and local.rs refill the txns rows from the
+# queue logs at boot, so a copied node starts as before. Nothing this page states changes.
 ---
 
 Three replicas protect you from losing a machine. They do not protect you from a mistake: a

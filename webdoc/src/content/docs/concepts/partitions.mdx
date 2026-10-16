@@ -49,6 +49,10 @@ verifiedBy:
 # forms is planned, committed and answered as before. phase2.rs carries a ceiling for a whole fetch
 # call; planner/timers.rs only converts a frame's type. The page's memory figure and its ten-
 # million-partition sentence follow the 2.3.0 measurement.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/push.rs and planner/txn.rs write a push's
+# outcome as runs (catalogue version 7) where the cluster reads 7; facade/real.rs keeps the framed
+# forms on for the queues that do not encrypt (c42ea1992) and tells the store whether the queue logs
+# hold the txns hashes. A push still answers one verdict per item. Nothing this page states changes.
 ---
 
 A queue is a named set of partitions, and a partition is the ordered stream of one entity: a

@@ -48,6 +48,10 @@ verifiedBy:
 # forms is planned, committed and answered as before. facade/groups.rs answers the cluster link's
 # routes for every group of a standby; a tenant still lives in one raft group. The throughput bullet
 # follows the 2.3.0 measurement.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/txn.rs mints a transaction's placeholder at
+# catalogue version 7 when one of its pushes carries runs; its outcome reads the same verdicts.
+# facade/real.rs keeps the framed forms on for the queues that do not encrypt (c42ea1992) and tells
+# the store whether the queue logs hold the txns hashes. Nothing this page states changes.
 ---
 
 A transaction is one call that writes one step. It acks what the worker took, pushes the next

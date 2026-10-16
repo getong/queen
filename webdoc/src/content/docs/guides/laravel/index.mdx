@@ -102,6 +102,10 @@ sourceOfTruth:
 # facade/real.rs reads the binary bodies and renders framed pops only for a client that asks,
 # planner/timers.rs only converts a frame's type, and phase2.rs and phase2/reads.rs give a fetch
 # call a ceiling for the whole call. Nothing else this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/push.rs and planner/txn.rs write a push's
+# outcome as runs (catalogue version 7) where the cluster reads 7; facade/real.rs keeps the framed
+# forms on for the queues that do not encrypt (c42ea1992) and tells the store whether the queue logs
+# hold the txns hashes. Nothing this page states changes.
 ---
 
 Queen can take over two jobs in a Horizon setup: holding the jobs, which Redis does today, and

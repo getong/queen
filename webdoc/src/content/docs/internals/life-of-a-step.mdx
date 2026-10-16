@@ -59,6 +59,9 @@ sourceOfTruth:
 # batcher.rs retires a recorded outcome when QUEEN_RAFT_REQUEST_ID_WINDOW_S ends, still 60 s;
 # dedup.rs sizes a busy partition's filter at 32 bits a hash, and a maybe is still checked exactly;
 # qlog/mod.rs reads ahead for a fetch. Nothing else this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0, cluster version 7): steps 3 and 5 now say that a push's
+# outcome is recorded as runs and that an entry record leaves out the hashes its message records
+# hold; dedup.rs, qlog/mod.rs and facade/real.rs are otherwise as described.
 ---
 
 A worker's step in Queen is three calls at most: it pops a batch, does its work, and commits a
@@ -89,7 +92,9 @@ curl -X POST localhost:6632/api/v1/push -H 'content-type: application/json' -d '
    command crosses to the leader, over one of `QUEEN_RAFT_FWD_STREAMS` (4) long-lived streams, and
    it takes its own fair share of the leader's admission budget there.
 3. In the planner, a retry under a request id the leader has already answered gets the recorded
-   outcome, for `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s). The first push that names a queue or a
+   outcome, for `QUEEN_RAFT_REQUEST_ID_WINDOW_S` (60 s). From cluster version 7 a push's outcome
+   is recorded as runs, one for the messages it created in a partition, 29 bytes however many there
+   are, where it was 25 bytes a message; it reads back as the same verdicts. The first push that names a queue or a
    partition creates it in the same entry as its first message, which is why there is no partition
    count to plan and no topic to create first.
 4. For dedup, on a partition the planner knows, a ring of bloom filters answers "certainly new"
@@ -98,8 +103,9 @@ curl -X POST localhost:6632/api/v1/push -H 'content-type: application/json' -d '
    but never decide a duplicate. A duplicate gets its original offset and adds nothing; the
    survivors get one gapless run of offsets.
 5. The log writer puts the payloads into their queue's log file and an entry record into every
-   log the entry touches, then fsyncs each touched log once. Each follower does the same before it
-   acknowledges the append.
+   log the entry touches (from cluster version 7 without the hashes the message records beside it
+   already hold, see [storage](/internals/storage/#the-queue-logs-are-the-write-ahead-log)), then
+   fsyncs each touched log once. Each follower does the same before it acknowledges the append.
 6. The answer is `201` when the entry commits (`QUEEN_RAFT_ANSWER_AT_COMMIT`, on by default): on one
    node once the fsync returns, in a cluster once a majority has fsynced it. A push with a duplicate
    item waits for the local apply, because its answer carries the original message id, read from the

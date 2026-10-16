@@ -81,6 +81,9 @@ verifiedBy:
 # go/consumer_manager.go and clients/client-cpp/queen_client.hpp ask for frames=true when the
 # client's framed pop option is on and hand the same messages to the handler. Groups, cursors,
 # leases, acks and the pop options are as the page says.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): facade/real.rs keeps the framed forms on for the queues
+# that do not encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes.
+# Nothing this page states changes.
 ---
 
 A consumer group reads a queue at its own pace, with one cursor in each partition. Its workers

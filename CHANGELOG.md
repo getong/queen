@@ -3,7 +3,48 @@
 Release history for the Queen MQ server and client SDKs. Full release notes live on
 [GitHub Releases](https://github.com/queen-mq/queen/releases).
 
-## Unreleased
+## 2.4.0
+
+**41% fewer bytes written a message, and end to end about three times faster at 3M msg/s.**
+Measured on 2026-10-15 on three GCP brokers (c4-standard-24-lssd, four local NVMe disks in a RAID 0
+with XFS) at 3,000,000 msg/s on 1,000 partitions, with 256-byte payloads, the 2.3.0 wire forms and
+deduplication off, the settings of the benchmark pages: every broker wrote 146 to 148 bytes a
+message against 248 for 2.3.0 (440 MB/s a broker, what Kafka 4.3.1 writes at that load). End to end
+p50 / p99 was 6.6-6.7 / 14-17 ms against 19-21 / 46-61, push 3.2 / 6.7-7.0 against 8.3-9.2 / 22-24,
+for 4.7 GB less memory a broker and 2.2 cores more in all; the queue log's `fdatasync` went from
+about 3 ms to 0.5. On 1,000 partitions the highest rate carried went from 3,500,000 to 5,000,000
+msg/s (39 / 87 ms there). At 3,000,000 msg/s on 10 to 10 million partitions the p99 is 15 to 25 ms
+where 2.3.0 read 42 to 76 (one run on 1,000 partitions read 65, four more of that point 15 to 20).
+The runs, their method and what is not explained are in
+`benchmark-queen/2026-10-15-bytes-per-msg/README.md`.
+
+**The upgrade is one way: cluster version 7.** Once every node runs 2.4.0 the cluster moves from
+version 6 to 7 by itself, and from then on 2.3.0 and older refuse to start on its data. While one
+node still runs 2.3.0 the version stays at 6, every node writes what 2.3.0 reads, and a node can go
+back; `QUEEN_RAFT_CLUSTER_VERSION_MS=0` on every node keeps the version where it is. Rehearsed on
+three droplets from 2.3.0 under load, with deduplication on (`benchmark-queen/2026-10-15-jepsen-24`).
+A 2.3.0 client talks to a 2.4.0 broker as to 2.3.0.
+
+**Server: a push's outcome is written as runs.** A push's recorded outcome, in its raft entry, in the
+queue log's entry record and in its `request_ids` row, held one 25-byte verdict a message. From
+cluster version 7 it is runs: the messages a push created in a partition are one 29-byte run (the
+partition, the first offset, the timestamp, the count), consecutive duplicates another, a refusal
+one each. The answer, a retry's answer and a transaction's outcome read the same verdicts as
+before. A one-message push keeps the old form, which is smaller for it.
+
+**Server: the store checkpoint keeps a push's index row without its hashes.** A push's index row
+holds the 16-byte hash of each `transactionId`, and the checkpoint wrote them every time it wrote
+the row: a 100-message row, about 1.6 KB, took a 4 KiB page of its own. From cluster version 7 the
+checkpoint writes the row without them, and a boot puts them back from the queue log, which keeps
+the push's message record for as long as the row exists; the boot logs `txns rows refilled from
+the queue logs` with the count. On one node at 300,000 msg/s the checkpoint's index table went from
+616 to 11 MB. `QUEEN_RAFT_CHECKPOINT_TXNS=whole` writes them as before.
+
+**Server: an entry record leaves out the hashes its message records hold.** The queue log's entry
+record repeated the hash list of every append whose message record it is written with, 16 bytes a
+message. From cluster version 7 it leaves them out, and a read puts them back from those records and
+checks the result against the entry record's checksum. `QUEEN_QLOG_ENTRY_HASHES=keep` writes them as
+before.
 
 **Server: an encryption key no longer turns off the framed forms on every queue.** A broker that
 ran with `QUEEN_ENCRYPTION_KEY` answered every `frames=true` pop in JSON, and compressed every
@@ -13,6 +54,8 @@ when a record it would send holds an encrypted message. A queue whose encryption
 keeps its older messages encrypted, so its answers stay JSON, decrypted, until those are consumed.
 With a key, a framed pop reads the flags of each record's messages, one decompression per record;
 without one nothing changes.
+
+## Unreleased
 
 **Laravel: a job whose timeout its lease cannot cover fails alone.** Without lease renewal, a job
 whose own `$timeout` is 0 or at least `retry_after` was refused at every delivery: it never ran,

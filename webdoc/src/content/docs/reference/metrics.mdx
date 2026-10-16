@@ -44,6 +44,9 @@ sourceOfTruth:
 # samples carry a group label). The metric families and their labels are the generated table's; the
 # dashboard's retention history is now written to its file by the metrics collector every
 # METRICS_FLUSH_MS, the interval this page already names for the metrics bucket.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): facade/real.rs keeps the framed forms on for the queues
+# that do not encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes.
+# No series changes. Nothing this page states changes.
 ---
 
 Every node serves Prometheus metrics in the text format on `GET /metrics/prometheus`. Each node

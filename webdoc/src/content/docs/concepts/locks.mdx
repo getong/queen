@@ -23,6 +23,9 @@ verifiedBy:
 # sourceOfTruth re-read 2026-10-09 (rows leave the store at the dedup window): effect.rs adds
 # catalogue version 6 (a watermark may carry where a partition's rows begin). The KV check this page
 # describes stays at version 5.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): effect.rs adds catalogue version 7, push outcomes
+# written as runs; a lock's guard and the KV check are as described. Nothing this page states
+# changes.
 ---
 
 A lock in Queen is a lease: one holder at a time, for a lifetime the holder declares and keeps

@@ -53,6 +53,9 @@ sourceOfTruth:
 # an ack with counts and a pop with the stored records, only for a client that asks; a JSON request
 # is served as before. proxy/src/config.rs no longer reads QUEEN_PROXY_MAX_BATCH_ITEMS, which this
 # page never set. The manifests, probes and the shutdown sequence are unchanged.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): facade/real.rs keeps the framed forms on for the queues
+# that do not encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes;
+# raft/mod.rs refills the txns rows at boot. Nothing this page states changes.
 ---
 
 On Kubernetes a Queen cluster is a StatefulSet of three (or five) pods. Each pod gets its own

@@ -54,6 +54,11 @@ sourceOfTruth:
 # paragraphs say the first two; the opening now says the store is checkpointed four times a second
 # (QUEEN_RAFT_DURABLE_EVERY_MS is 250). The files, their layout and what makes a write durable are
 # unchanged.
+# sourceOfTruth re-read 2026-10-16 (2.4.0, cluster version 7): the queue-log, durable-point and
+# crash-recovery sections now say that an entry record leaves out the hashes its message records
+# hold (qlog/mod.rs, qlog/record.rs REC_ENTRY_ELIDED), that the checkpoint keeps txns rows without
+# them (store/mod.rs, store/heed_store.rs), and that a boot refills them before the replay
+# (raft/mod.rs, txns_refill.rs). Reclaim and the refusals at boot are unchanged.
 ---
 
 A node keeps three things on its own disk. The queue log files hold every message, and they are
@@ -112,6 +117,12 @@ bytes of queue log per message, and the stubs brought it to 236
 (`benchmark-queen/2026-09-25-qlog-entry-stubs`, runs `q1000-r5k-copies-np-1` and
 `q1000-r5k-stub-np-1`, no preallocation).
 
+From cluster version 7 (2.4.0) an entry record also leaves out the `transactionId` hashes of the
+appends whose message records are written with it, in the same log and the same write: those
+records already hold them, 16 bytes a message. A read puts them back from the message records and
+checks the rebuilt record against its own checksum, so a reader gets the entry that was written,
+byte for byte. `QUEEN_QLOG_ENTRY_HASHES=keep` writes them whole, as before.
+
 A payload of at least 512 bytes is stored zstd-compressed at `QUEEN_RAFT_QLOG_ZSTD_LEVEL`
 (default 1; `0` turns it off), unless that saves less than a tenth. Compression is node-local: the
 replicated entry stays raw, two nodes may store the same record differently, and each payload read
@@ -161,15 +172,28 @@ writes the rows that changed into `store/data.mdb`, commits and syncs it, and re
 index in the same transaction. That checkpoint bounds what a restart replays. No answer ever waits
 for it, which is why a store write costs a push nothing.
 
+From cluster version 7 a push's index row goes into the checkpoint without the hashes of its
+`transactionId`s. The queue log keeps the push's message record, which holds them, for as long as
+the row exists (a record is reclaimed only below `txns_start`, and rows start at or above it), so
+a boot puts them back from the queue logs before it replays anything, and logs `txns rows
+refilled from the queue logs` with the count. A row of a 100-message push is then 28 bytes instead
+of about 1.6 KB: on one node at 300,000 messages a second, the checkpoint's index table went from
+616 to 11 MB (`benchmark-queen/2026-10-15-bytes-per-msg`). `QUEEN_RAFT_CHECKPOINT_TXNS=whole`
+keeps the hashes in the checkpoint.
+
 ## Crash recovery
 
 1. The store reopens exactly at its last checkpoint.
 2. Each queue log cuts a torn tail from its active file.
-3. Recovery merges the entry records of every log by index and replays, from the entry after the
+3. From cluster version 7, the index rows take back from the queue logs the hashes the checkpoint
+   left out, before anything is replayed or read. A row whose record reclaim removed after that
+   checkpoint keeps none: the watermark that removed it is above the checkpoint, so the replay
+   removes the row again.
+4. Recovery merges the entry records of every log by index and replays, from the entry after the
    checkpoint's index, the gapless run of complete entries. The first missing or incomplete entry and everything
    after it is cut from every log: that group's fsyncs did not all land, so it was never
    acknowledged.
-4. Apply skips any entry at or below the store's applied index, so replaying twice changes nothing.
+5. Apply skips any entry at or below the store's applied index, so replaying twice changes nothing.
 
 <Partition
   alt="Recovery on one node. The store reopens at its checkpoint, with entries up to 102 applied. The queue logs hold entries 103 and 104 complete, entry 105 with one of its copies missing, and entry 106 after it. Recovery replays 103 and 104 and cuts 105 and 106 from every log: the fsyncs of that group did not all land, so it was never acknowledged."

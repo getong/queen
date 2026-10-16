@@ -60,6 +60,9 @@ verifiedBy:
 # carries a fetch call's ceiling; consume/mod.rs takes a checkpoint at once when an answer waits.
 # The upgrade section says 2.3.0 leaves the cluster version at 6. Nothing else this page states
 # changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): the upgrade paragraphs name 2.4.0, which moves the
+# cluster from 6 to 7 (effect.rs), and its rehearsal; the /health example shows cluster version 7.
+# raft/mod.rs and facade/real.rs are otherwise as described.
 ---
 
 Three copies of the same binary, each told where the other two are, make a Queen cluster. They
@@ -140,7 +143,7 @@ curl -s localhost:36632/health | jq -c .raft
 ```
 
 ```json
-{"role":"follower","leader":true,"term":3,"applied":13,"commit":13,"lag":0,"quorumAckMs":109,"storageReady":true,"clusterVersion":6,"kinds":6,"apply":{"failure":null,"skipped":[]}}
+{"role":"follower","leader":true,"term":3,"applied":13,"commit":13,"lag":0,"quorumAckMs":109,"storageReady":true,"clusterVersion":7,"kinds":7,"apply":{"failure":null,"skipped":[]}}
 ```
 
 `applied` equal to `commit`, the same 13 the leader reports, means node 3 has applied everything
@@ -370,6 +373,18 @@ their messages, as in 2.1.0.
 rolls from 2.2.0 to 2.3.0 and back one node at a time. During the roll, turn a client's
 [binary push and push compression](/start/clients/#binary-push-push-compression-and-framed-pop)
 on only after the last node runs 2.3.0, because a 2.2.0 node answers those bodies with 400.
+
+2.4.0 moves the cluster from 6 to 7. From then on a push's recorded outcome is written as runs, a
+push's index row goes into the store checkpoint without its `transactionId` hashes, and an entry
+record leaves out the hashes its message records hold ([storage](/internals/storage/)): about 40%
+fewer bytes written a message. 2.3.0 and older refuse to start on that data, with `this build
+reads effect catalogue version 6, and the cluster this store belongs to writes version 7`, and a
+2.3.0 node with an empty directory takes no entry from such a cluster. While the version stays at
+6, every node writes what 2.3.0 reads, and a node can go back to 2.3.0. We rolled three droplets
+from 2.3.0 to 2.4.0 under 4,500 messages a second with deduplication on: the version stayed at 6
+while one node still ran 2.3.0, rose to 7 three seconds after the last one moved, and every
+`transactionId` pushed before, during and after the roll was answered as a duplicate when pushed
+again, also after a full restart (`benchmark-queen/2026-10-15-jepsen-24`).
 
 ## Ephemeral queues in a cluster
 

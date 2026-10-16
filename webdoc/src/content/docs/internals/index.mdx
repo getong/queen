@@ -51,6 +51,10 @@ digest: >-
 # after the forwarded request; facade/groups.rs and replicator/raft/mod.rs let a standby follow a
 # source of several raft groups and hand leadership only to a voter. One planner, one entry per
 # cycle, one leader per group and a tenant in one group are as the page says.
+# sourceOfTruth re-read 2026-10-16 (2.4.0, cluster version 7): rsm/mod.rs and raft/mod.rs refill the
+# txns rows from the queue logs at boot (txns_refill.rs) and have the log writer leave entry-record
+# hashes out; the batchers read the cluster version once per planning cycle. The components and the
+# path of a command are as described.
 ---
 
 Queen is one process per node, built around one idea: decide every write once, on the leader, and

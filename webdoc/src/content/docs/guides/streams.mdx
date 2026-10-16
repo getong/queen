@@ -27,6 +27,9 @@ sidebar:
   order: 5
 # sourceOfTruth re-read 2026-10-13 (2.3.0): phase2/streams.rs only converts a frame's type when a
 # cycle emits. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/txn.rs writes a transaction's pushes' outcomes
+# as runs at cluster version 7; the answer reads the same verdicts. Nothing this page states
+# changes.
 ---
 
 A stream is a chain of operators (filter, map, a window, an aggregate, a sink) that runs inside your

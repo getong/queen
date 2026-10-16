@@ -76,6 +76,8 @@ digest: >-
 # not during a membership change. facade/real.rs, facade/mod.rs and handlers/raft.rs read a binary
 # push and transaction body, answer an ack with counts and a pop with the stored records, only for a
 # client that asks; a JSON request is served as before. Nothing else this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): server/Cargo.toml says 2.4.0; the /health example is a
+# fresh 2.4.0 node's (cluster version 7). raft/mod.rs and facade/real.rs are otherwise as described.
 ---
 
 A Queen node is one process and one directory. It serves the HTTP API, the dashboard and its
@@ -128,7 +130,7 @@ curl -s localhost:6632/health
 ```
 
 ```json
-{"status":"healthy","engine":"raft","version":"2.3.0","raft":{"role":"leader","leader":true,"term":1,"applied":1,"commit":1,"lag":0,"quorumAckMs":0,"storageReady":true,"clusterVersion":6,"kinds":6}}
+{"status":"healthy","engine":"raft","version":"2.4.0","raft":{"role":"leader","leader":true,"term":1,"applied":1,"commit":1,"lag":0,"quorumAckMs":0,"storageReady":true,"clusterVersion":7,"kinds":7}}
 ```
 
 The dashboard is at `http://localhost:6632/`, and the image carries the CLI, so

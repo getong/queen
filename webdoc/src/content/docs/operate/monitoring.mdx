@@ -78,6 +78,9 @@ sourceOfTruth:
 # facade/real.rs, facade/mod.rs and handlers/raft.rs read a binary push and transaction body, answer
 # an ack with counts and a pop with the stored records, only for a client that asks; a JSON request
 # is served as before. Nothing else this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): the /health examples show 2.4.0 and cluster version 7,
+# and the log table names the boot's warning about txns rows whose record is gone (raft/mod.rs,
+# txns_refill.rs). log_store.rs and facade/real.rs are otherwise as described.
 ---
 
 Every node serves its own dashboard at `/`, its health at `/health` and its metrics at
@@ -172,7 +175,7 @@ curl -s http://queen-1:6632/health
 ```
 
 ```json
-{"status":"healthy","engine":"raft","version":"2.3.0","raft":{"role":"follower","leader":true,"term":2,"applied":43,"commit":43,"lag":0,"quorumAckMs":270,"storageReady":true,"clusterVersion":6,"kinds":6,"apply":{"failure":null,"skipped":[]}}}
+{"status":"healthy","engine":"raft","version":"2.4.0","raft":{"role":"follower","leader":true,"term":2,"applied":43,"commit":43,"lag":0,"quorumAckMs":270,"storageReady":true,"clusterVersion":7,"kinds":7,"apply":{"failure":null,"skipped":[]}}}
 ```
 
 It answers `200 healthy` when three things hold, and `503 settling` otherwise: the node knows a
@@ -221,7 +224,7 @@ curl -s http://queen-1:6632/health
 ```
 
 ```json
-{"status":"healthy","engine":"raft","version":"2.3.0","raft":{"role":"leader","leader":true,"term":2,"applied":43,"commit":43,"lag":0,"quorumAckMs":3058,"storageReady":true,"clusterVersion":6,"kinds":6,"apply":{"failure":null,"skipped":[]}}}
+{"status":"healthy","engine":"raft","version":"2.4.0","raft":{"role":"leader","leader":true,"term":2,"applied":43,"commit":43,"lag":0,"quorumAckMs":3058,"storageReady":true,"clusterVersion":7,"kinds":7,"apply":{"failure":null,"skipped":[]}}}
 ```
 
 ```bash
@@ -238,7 +241,7 @@ Five seconds after the loss the same node answers `503`, and goes on answering i
 is back, which took one to two seconds after one of the two nodes was started again:
 
 ```json
-{"status":"settling","engine":"raft","version":"2.3.0","raft":{"role":"leader","leader":true,"term":2,"applied":43,"commit":43,"lag":0,"quorumAckMs":8423,"storageReady":true,"clusterVersion":6,"kinds":6,"apply":{"failure":null,"skipped":[]}}}
+{"status":"settling","engine":"raft","version":"2.4.0","raft":{"role":"leader","leader":true,"term":2,"applied":43,"commit":43,"lag":0,"quorumAckMs":8423,"storageReady":true,"clusterVersion":7,"kinds":7,"apply":{"failure":null,"skipped":[]}}}
 ```
 
 So alongside `/health`, run a write probe against every node every minute and alert when it fails
@@ -302,6 +305,7 @@ with `QUEEN_LOG_JSON=true`. `LOG_LEVEL` and `RUST_LOG` take the full filter synt
 | `rsm link: the standby stopped following its source` (ERROR, `rsm`) | A [standby](/operate/standby/) can no longer replay (`why=` says which way) and needs a new seed |
 | `rsm link: the driver does not plan the link's entries` (WARN, `rsm`) | A standby's leader is not replaying, or cannot take a promotion. `what=` and the fields say what its planner waits for |
 | `rsm link: this node's data volume is too full to keep its log for a standby` (ERROR, `rsm`) | A source node purges without regard for its standby, which may then need a new seed |
+| `txns rows whose record the queue log no longer holds` (WARN, `rsm`, at a boot) | From cluster version 7: index rows whose message record reclaim removed after the last checkpoint. The replay removes them again before the node serves. Harmless |
 | `QUEEN_ENCRYPTION_KEY must be 64 hex chars; encryption DISABLED` (WARN, `encryption`) | Queues flagged for encryption are being stored in plaintext |
 
 ## Limits

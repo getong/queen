@@ -32,6 +32,8 @@ sourceOfTruth:
 # with the log's lock released and asks the kernel to read ahead once a record waits for the disk
 # (QUEEN_QLOG_READ_AHEAD_MB); the write path and the durability these runs measure are as they
 # were. The page gains the machines, settings and commands of the 2.3.0 runs of 2026-10-12 and 13.
+# sourceOfTruth re-read 2026-10-16 (2.4.0, cluster version 7): raft/log_store.rs reads entry records
+# back with the hashes an elided record leaves out. Nothing this page states changes.
 ---
 
 Every number in this section comes from a folder of logs, and most can be produced again with one

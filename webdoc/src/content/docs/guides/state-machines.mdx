@@ -42,6 +42,10 @@ sidebar:
 # body asks and a pop with the stored records for frames=true, all opt-in; a request in the JSON
 # forms is planned, committed and answered as before. planner/timers.rs only converts a frame's
 # type. Nothing this page states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): planner/txn.rs writes a transaction's pushes' outcomes
+# as runs at cluster version 7; facade/real.rs keeps the framed forms on for the queues that do not
+# encrypt (c42ea1992) and tells the store whether the queue logs hold the txns hashes. Nothing this
+# page states changes.
 ---
 
 Give every entity its own partition, keep its state in one KV entry, and commit each transition as

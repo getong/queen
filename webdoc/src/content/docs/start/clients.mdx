@@ -143,6 +143,8 @@ verifiedBy:
 # resolve with the Go 1.24 it declares and this page promises. It requires v1.19.2, the last line
 # that builds with Go 1.24. "Go 1.24 or later" in the Go tab is true again; nothing else this page
 # states changes.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): server/Cargo.toml says 2.4.0 (the broker is at 2.4.0),
+# and a pop falls back to JSON only for encrypted messages (c42ea1992).
 ---
 
 Queen speaks JSON over HTTP, on port `6632`, so every client is a thin layer over the same
@@ -294,7 +296,7 @@ you run Horizon today.
 </Tabs>
 
 The JavaScript, Python, Go, Rust and C++ clients are 2.3.0; the PHP client has its own version
-line and is 2.5.0. All of them talk to any 2.x broker (the broker is at 2.3.0); locks need a 2.1
+line and is 2.5.0. All of them talk to any 2.x broker (the broker is at 2.4.0); locks need a 2.1
 broker, and the [binary forms](#binary-push-push-compression-and-framed-pop) a 2.3 one. The Go
 client's module path ends in `/v2`, as Go requires for a major version above 1.
 
@@ -379,7 +381,8 @@ compressed. Binary push alone needs no zstd.
 
 The client falls back to JSON by itself where a binary form cannot carry the request: a push with
 a trace id, a transaction with no push or with a trace id on one of its pushes, a pop of a
-conflating group, and every pop on a broker that runs with an encryption key. Acks, KV, timers,
+conflating group, and a pop that returns encrypted messages, which the broker answers in JSON (up
+to 2.3.0, every pop on a broker that runs with an encryption key). Acks, KV, timers,
 locks and ephemeral queues do not change. A transaction's results come back in the order the
 operations were added, as with JSON.
 

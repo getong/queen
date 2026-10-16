@@ -37,6 +37,10 @@ sourceOfTruth:
 # checkpoint at once when an answer waits and none is in flight, and the idle scan works in turns.
 # An answer is still released only once the checkpoint holding its change has committed, so every
 # guarantee on this page stands; the Jepsen paragraphs name the campaigns as run.
+# sourceOfTruth re-read 2026-10-16 (2.4.0, cluster version 7): the replicators refill the txns rows
+# at boot and elide entry-record hashes (local.rs, raft/log_store.rs), planner/txn.rs writes push
+# outcomes as runs, and the Jepsen log and dedup workloads gain --batch-sends. The guarantees and
+# the campaigns cited are unchanged.
 ---
 
 We test Queen with Jepsen, on five nodes, under kill -9, network partitions, process pauses, clock

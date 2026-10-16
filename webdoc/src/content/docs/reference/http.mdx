@@ -47,6 +47,8 @@ sourceOfTruth:
 # phase2/reads.rs gives POST /api/v1/fetch a ceiling for the whole call (top-level maxBytes);
 # facade/remote.rs sends a follower's stored forms to the leader after the forwarded request, which
 # no client sees; facade/mod.rs carries those through. "Binary bodies" and the fetch table say so.
+# sourceOfTruth re-read 2026-10-16 (2.4.0): facade/real.rs (c42ea1992) keeps the framed forms on for
+# the queues that do not encrypt: the binary push and framed pop paragraphs say so.
 ---
 
 Every Queen node serves the whole API over plain HTTP with JSON bodies, on port 6632. There is no
@@ -311,10 +313,11 @@ the queue log stores:
 u32 body_len | u8 0 | u8[16] message id (a version-7 UUID) | u16 len, transactionId | payload
 ```
 
-The broker inflates each group and checks every frame. When it has nothing to add to them (no
-producer identity, no payload encryption, no `transactionId` twice in the request), it stores the
-client's compressed bytes as they arrived and ships them to its followers, and compresses nothing
-itself. Flags 1 and 8 together are refused: a framed body is already compressed, and the weight of
+The broker inflates each group and checks every frame. When it has nothing to add to a group (no
+producer identity, a queue that does not encrypt, no `transactionId` twice in the request), it
+stores the client's compressed bytes as they arrived and ships them to its followers, and
+compresses nothing itself. An encryption key on the broker changes this only for the queues that
+encrypt (since 2.4.0; before, for every queue). Flags 1 and 8 together are refused: a framed body is already compressed, and the weight of
 each group has to be readable from its header. A body the broker cannot follow answers 400 with
 the code `bad_body`.
 
@@ -341,8 +344,10 @@ A record's bytes are `count` messages in the stored layout above; message `i` ha
 `base_offset + i` and belongs to the delivery when that offset lies in its claim's `start` to
 `end`, both included. The JSON object is `{"frames":true}` plus what the JSON answer carries
 beside its messages. Recognise the form by its first four bytes, not by the request: the broker
-answers in JSON when it runs with payload encryption, when a claim is conflated, or when a claimed
-record cannot be read as stored. An empty pop is `204`, as ever.
+answers in JSON when a record it would send holds an encrypted message (a queue that encrypts, or
+one whose encryption was switched off while older messages are still encrypted; before 2.4.0,
+whenever the broker had an encryption key), when a claim is conflated, or when a claimed record
+cannot be read as stored. An empty pop is `204`, as ever.
 
 ### A binary transaction
 
