@@ -187,6 +187,8 @@
        (when (some #{:kill :pause :clock} (:nemesis opts))
          (str "_t=" (->> (:db-targets opts) (map name) (str/join ","))))
        (when (:txn-sends? opts) "_txn")
+       (when (pos? (long (:batch-sends opts 0)))
+         (str "_batch=" (:batch-sends opts)))
        (when (pos? (long (:standby-nodes opts 0)))
          (str "_standby=" (:standby-nodes opts) "_" (name (:failover opts))))
        (when (= :leader (:kv-route opts)) "_kv-leader")
@@ -218,6 +220,12 @@
                    (throw (ex-info (str "--workload failover needs --standby-nodes between 1 and "
                                         (dec (count (:nodes opts))))
                                    {:standby-nodes standby, :nodes (:nodes opts)})))
+        _        (when (pos? (long (:batch-sends opts 0)))
+                   (when-not (#{:log :dedup} (:workload opts))
+                     (throw (ex-info "--batch-sends is for the log and dedup workloads"
+                                     {:workload (:workload opts)})))
+                   (when (:txn-sends? opts)
+                     (throw (ex-info "--batch-sends and --txn exclude each other" {}))))
         workload ((workloads (:workload opts))
                   (assoc opts :sub-via #{:assign}))
         db       (db/db)
@@ -320,6 +328,11 @@
 (def cli-opts
   [[nil "--bin PATH" "Path (on the control node) of the queen binary to upload."
     :missing "--bin is required"]
+
+   [nil "--batch-sends N" "log and dedup workloads: pushes of up to N messages, all to ONE partition (log: an op's sends to its most used key; dedup: 2 to N distinct ids of one partition), so the broker writes their outcomes as runs (catalogue version 7). 0: one message a push."
+    :default 0
+    :parse-fn parse-long
+    :validate [#(or (zero? %) (<= 2 % 64)) "0, or 2 to 64"]]
 
    [nil "--db-targets TARGETS" "Comma-separated node specs for kill/pause/clock: one,primaries,minority,majority,all."
     :default [:one :primaries :majority :all]
