@@ -97,6 +97,8 @@ within a test, the shared-log layout) and 31 failovers of a standby cluster. All
 one of them at its second run, after the harness had crashed in the first. The campaign of
 2026-10-13 and 14 ran the same 244 tests on `1c7136d4a`, the code of 2.3.0: all were valid, three
 of them once their histories were checked again with more memory, one at its second run. The
+campaign of 2026-10-15 and 16 ran them again on `ed73dc1cb`, the code of 2.4.0, with 13 more that
+push several messages of a partition at once: all 257 were valid at their first run. The
 campaigns before
 them found real bugs,
 which is what they are for: a KV write that was acknowledged and never committed (a stale leader

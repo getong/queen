@@ -34,9 +34,9 @@ A million messages a second is worth nothing if one of them can go missing. We c
 Jepsen: five nodes, clients driving the native API as hard as they can, a nemesis that kills,
 pauses, partitions, skews clocks and cuts power, and checkers that read the whole history
 afterwards looking for a message lost, delivered twice, acked twice or seen out of order. The
-latest full campaign ran 244 tests on the code of 2.3.0, on 2026-10-13 and 14, a standby cluster's
-failover among them: all 244 came back valid, three of them once their histories were checked
-again with more memory, one at its second run, after the harness had crashed in the first. That is
+latest full campaign ran 257 tests on the code of 2.4.0, on 2026-10-15 and 16, a standby cluster's
+failover and pushes of several messages at once among them: all 257 came back valid at their first
+run. That is
 evidence, not proof. Jepsen finds bugs and cannot show there are
 none, and further down is every bug it found in Queen 2.
 
@@ -117,6 +117,7 @@ lein run test --nodes n1,n2,n3,n4,n5 --username root --bin /root/bin/queen \
 | Rows window, first pass | 2026-10-09 | `e8efda8cb`, the first build of 2.2.0's rows window | 41: the queue, the pipeline, retention, the log, dead letters, dedup, the KV register and Elle with rows that live two seconds, on 256 KiB log files sealed after 10 s, so that consumers read messages that have no row; under kills, power loss, pauses, partitions, clock faults, restarts, membership changes, bridges and a deaf leader | 37 valid; the other 4 were the two refusals to start below |
 | 2.2.0 | 2026-10-09 and 10 | `3b1a6d9bb`, the code of 2.2.0 without its last three commits | 244: the 153 of the 2.1.0 campaign, 40 of the first pass, 12 on the same small log files with rows that stay, 8 on shared logs, and 31 failovers, 4 of them with rows that live two seconds | 244 valid, one at its second run: the harness crashed in the first |
 | 2.3.0 | 2026-10-13 and 14 | `1c7136d4a`, the server code of 2.3.0, as the binary of the 2.3.0-beta.2 image | 244: the tests of the 2.2.0 campaign | 244 valid: three once their histories were checked again with more memory, one at its second run, after the harness crashed in the first |
+| 2.4.0 | 2026-10-15 and 16 | `ed73dc1cb`, the server code of 2.4.0 without its version line and the encryption fix of `c42ea1992` | 257: the 244 of the 2.3.0 campaign and 13 that push several messages of one partition at once | 257 valid, all at their first run |
 
 The unknown of 2026-10-02 is W9 under bridge partitions. After the last heal, a follower's pops
 kept timing out for about 90 seconds although it had caught up, so the final reads did not finish
@@ -190,6 +191,19 @@ other checkers had found nothing. Their stored histories were checked again with
 three are valid, with no anomaly, no duplicate and no torn read. One failover test crashed in the
 harness before any load ran, for the reason the 2.2.0 campaign met on its sixth node, and it ran
 again valid. The binary wire forms that 2.3.0 adds were not part of it, as its clients speak JSON.
+
+The 2.4.0 campaign ran the same 244 tests on what that release changes, the bytes a message costs
+on disk: a push's outcome written as runs, the checkpoint's index rows without their hashes and the
+boot that puts them back, and entry records without the hashes their message records hold, all
+from cluster version 7. Every test of those 244 pushes one message at a time, and a one-message push
+keeps the older outcome, so 13 more tests push up to eight messages of one partition at once
+(`--batch-sends`): the log workload under kills, partitions, pauses, power loss, a deaf leader,
+graceful restarts, forced snapshots, clock jumps and rows that live two seconds, and the dedup
+workload under kills, partitions, restarts and power loss. It ran on one set of six nodes from
+2026-10-15 13:20 to 2026-10-16 13:33 UTC, after a rolling upgrade from 2.3.0 on three of them, and
+every test was valid at its first run; lazyfs was built on every node before the first power
+loss. The encryption fix that 2.4.0 also carries was not part of it, as no test runs with an
+encryption key. The verdicts and the upgrade are in `benchmark-queen/2026-10-15-jepsen-24/`.
 The verdicts are in `benchmark-queen/2026-10-13-jepsen-230/`.
 
 ## What the tests found
@@ -248,8 +262,8 @@ part of any.
 Lease exclusivity across a leader change needs the nodes' clocks within
 `QUEEN_RAFT_MAX_CLOCK_SKEW_MS` (500 ms) of each other. Losing a majority of the disks for good can
 lose acknowledged writes, since raft survives the loss of a minority. The full campaign last ran
-on `1c7136d4a`, with the binary of the 2.3.0-beta.2 image; the server code of 2.3.0 differs from it
-in its version line only. No test sets a completed retention above its queue's dedup window, so
+on `ed73dc1cb`; the server code of 2.4.0 adds the encryption fix of `c42ea1992` and its version
+line. No test sets a completed retention above its queue's dedup window, so
 none of them checks the rule of 2.2.0 by which a queue's completed retention no longer extends how
 long a push keeps its row. A standby's failover
 has its own workload since 2026-10-08, on a standby that starts empty beside its source: a seeded

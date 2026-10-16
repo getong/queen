@@ -91,7 +91,7 @@ run and its conditions.
 | [Transactions](https://queenmq.com/benchmarks/transactions/) | 10 messages per transaction on three 16-vCPU nodes: commit p99 **4 ms** at 6,000 transactions a second, a ceiling near 12,900 a second. In September's comparison: commit p99 4 ms against Kafka's 34 and Pulsar's 32. |
 | [Kafka clients](https://queenmq.com/benchmarks/kafka-clients/) | franz-go at 1,000,000 msg/s through Queen's Kafka port on three 16-vCPU nodes, e2e p99 48 ms. |
 | [Soak](https://queenmq.com/benchmarks/soak/) | 500,000 msg/s for 3 h 23 min over 1,000,000 partitions on 2.0.0-beta.1, through a kill -9 of the leader and of a follower: e2e p99 86 ms in the median window. |
-| [Jepsen](https://queenmq.com/benchmarks/jepsen/) | **244 tests** on the code of 2.3.0: all valid, three of them once their histories were checked again with more memory, one at its second run, after the test harness had crashed in the first. No acknowledged message lost, no lease held twice, transactions atomic. |
+| [Jepsen](https://queenmq.com/benchmarks/jepsen/) | **257 tests** on the code of 2.4: all valid at their first run, 13 of them pushing several messages of a partition at once. No acknowledged message lost, no lease held twice, transactions atomic. |
 | [Laravel](https://queenmq.com/benchmarks/laravel/) | 2,753 jobs/s with 32 workers on one node, against 1,124 for Horizon on Redis. |
 
 Where Queen is behind: up to 1,000 partitions Kafka answers sooner and goes further. At 3,000,000
