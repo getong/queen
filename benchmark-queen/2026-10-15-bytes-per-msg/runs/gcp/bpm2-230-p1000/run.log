@@ -1,0 +1,7 @@
+[10:55:31] run bpm2-230-p1000: binary 230, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[10:55:52] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+{"configured":true,"namespace":"","options":{"completedRetentionSeconds":1800,"deadLetterQueue":true
+
+[create] done: bench x 1000 partitions
+[10:57:35] 3,000,000: offered 2,999,982 pushed 2,999,917 consumed 2,999,922 shed 0 errors 0 lag 0 | push p50 8.8 p99 28.4 | e2e p50 20.2 p99 53.8 | n1 11.2c apply 72% raft 215%; n2 5.3c apply 54% raft 55%; n3 5.0c apply 53% raft 50% | loaders 18.8c  OK 
+RUN_DONE

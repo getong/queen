@@ -96,6 +96,14 @@ impl TxnOutcome {
     /// `u32 n | n × (u32 len | Outcome::Push bytes) | u32 len | Outcome::Ack bytes`
     /// — the typed codecs reused, inside the placeholder's private body.
     pub fn into_outcome(self) -> Result<Outcome, Refusal> {
+        // A push written as runs is a version-7 outcome, so the placeholder
+        // that carries it is minted at 7: the entry's catalogue version then
+        // covers it (D20, I16), and a build that cannot read it stops.
+        let version = if self.pushes.iter().any(|p| p.compact) {
+            crate::rsm::effect::VERSION_7
+        } else {
+            crate::rsm::effect::VERSION_1
+        };
         let mut body: Vec<u8> = Vec::new();
         body.extend_from_slice(&(self.pushes.len() as u32).to_le_bytes());
         for p in self.pushes {
@@ -112,7 +120,7 @@ impl TxnOutcome {
         let t = serde_json::to_vec(&self.timers).unwrap_or_else(|_| b"[]".to_vec());
         body.extend_from_slice(&(t.len() as u32).to_le_bytes());
         body.extend_from_slice(&t);
-        Placeholder::new(TXN_OUTCOME_TAG, crate::rsm::effect::VERSION_1, body)
+        Placeholder::new(TXN_OUTCOME_TAG, version, body)
             .map(Outcome::Placeholder)
             .map_err(|e| Refusal::retry("internal", format!("txn outcome: {e:?}")))
     }

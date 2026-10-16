@@ -876,6 +876,15 @@ impl TreeRows {
         }
     }
 
+    /// Replace an EXISTING row's stored bytes without marking it dirty (the
+    /// boot's refill of what the checkpoint left out). The old value, or
+    /// `None` when there was no row.
+    fn refill(&mut self, key: &[u8], stored: RamVal) -> Option<RamVal> {
+        self.map
+            .get_mut(key)
+            .map(|cur| std::mem::replace(cur, stored))
+    }
+
     fn put_arc(&mut self, key: &[u8], stored: RamVal) -> (Option<RamVal>, bool) {
         let old = self.map.insert(RamKey::from(key), stored.clone());
         let added = old.is_none();
@@ -1109,6 +1118,20 @@ impl Slot {
                 }
             },
             Slot::Tree(m) => TreeRows::put_in_map(m, sfx, val, trailer),
+        }
+    }
+
+    /// Replace an EXISTING row's value as it is; `None` when there is no row
+    /// (the slot is left unchanged).
+    fn refill(&mut self, sfx: &[u8], v: RamVal) -> Option<RamVal> {
+        match self {
+            Slot::Empty => None,
+            Slot::One(k, cur) => (k.bytes() == sfx).then(|| std::mem::replace(cur, v)),
+            Slot::Many(rows) => {
+                let i = rows.binary_search_by(|(k, _)| k.bytes().cmp(sfx)).ok()?;
+                Some(std::mem::replace(&mut rows[i].1, v))
+            }
+            Slot::Tree(m) => m.get_mut(sfx).map(|cur| std::mem::replace(cur, v)),
         }
     }
 
@@ -1467,6 +1490,19 @@ impl DenseTable {
         }
         drop(g);
         p.replaced
+    }
+
+    /// [`Slot::refill`] for `key`, under its stripe's write lock: no dirty
+    /// mark, no count changes (the row exists).
+    fn refill(&self, key: &[u8], stored: RamVal) -> Option<RamVal> {
+        let Some((pid, sfx)) = self.split(key) else {
+            return wr(&self.overflow).refill(key, stored);
+        };
+        let s = stripe_of(pid);
+        let row = pid >> ROW_SHIFT;
+        let mut g = wr(&self.stripes[s].0);
+        let block = g.blocks.get_mut(&row)?;
+        block.slots[slot_of(pid)].refill(sfx, stored)
     }
 
     fn put_arc(&self, key: &[u8], stored: RamVal) -> Option<RamVal> {
@@ -2785,6 +2821,19 @@ impl RamTable {
             RamTable::Tree(t) => wr(&t.rows).put(key, val, trailer).replaced,
             RamTable::Dense(t) => t.put(key, val, trailer),
             RamTable::Prefixed(t) => t.put(key, val, trailer),
+        }
+    }
+
+    /// Replace the stored bytes of an EXISTING row without marking it dirty:
+    /// the boot's refill of a `txns` row's hashes, which the checkpoint holds
+    /// without them on purpose ([`crate::rsm::dedup::txns_without_hashes`]).
+    /// Returns the old value, or `None` (nothing changed) when there is no
+    /// row. Only the containers a refilled keyspace uses take it.
+    pub(crate) fn refill(&self, key: &[u8], stored: RamVal) -> Option<RamVal> {
+        match self {
+            RamTable::Tree(t) => wr(&t.rows).refill(key, stored),
+            RamTable::Dense(t) => t.refill(key, stored),
+            RamTable::Prefixed(_) => None,
         }
     }
 

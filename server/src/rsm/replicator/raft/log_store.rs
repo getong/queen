@@ -315,6 +315,9 @@ pub(crate) struct OpenCfg {
     pub poison: Poison,
     /// See [`Inner::cache_cap`].
     pub cache_cap: usize,
+    /// The committed cluster version, for the writer's
+    /// [`super::super::local::ElideGate`]; `None` never elides.
+    pub cluster_version: Option<std::sync::Arc<dyn Fn() -> u32 + Send + Sync>>,
 }
 
 /// What [`LogStore::open`] recovered.
@@ -469,6 +472,10 @@ impl LogStore {
                 pid_qid,
                 lookup: cfg.lookup,
                 layout: crate::rsm::qlog::set::EntryLayout::from_env(),
+                elide: match cfg.cluster_version {
+                    Some(v) => super::super::local::ElideGate::from_cluster(move || v()),
+                    None => super::super::local::ElideGate::never(),
+                },
             },
             state_dir: cfg.state_dir,
             committed_file,
@@ -1732,6 +1739,7 @@ mod tests {
             qlog_tail: Box::new(|_| Ok(None)),
             poison: Arc::new(Mutex::new(None)),
             cache_cap: 1 << 30,
+            cluster_version: None,
         })
         .expect("open the log")
     }

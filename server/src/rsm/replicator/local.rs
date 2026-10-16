@@ -346,6 +346,66 @@ pub(crate) struct QlogWrite {
     /// Whole record in every touched log, or in the lowest one plus stubs
     /// (`QUEEN_QLOG_ENTRY_LAYOUT`, [`EntryLayout`]).
     pub(crate) layout: EntryLayout,
+    /// Whether an entry record may leave out the `Append` hash lists the
+    /// message records in front of it hold
+    /// ([`crate::rsm::qlog::record::REC_ENTRY_ELIDED`]).
+    pub(crate) elide: ElideGate,
+}
+
+/// When the log writer may write [`crate::rsm::qlog::record::REC_ENTRY_ELIDED`]
+/// records: once every member reads them, i.e. the cluster version admits 7
+/// (D20; files move between nodes in snapshots). Asked once per group until it
+/// says yes, then latched: the cluster version never goes down.
+/// `QUEEN_QLOG_ENTRY_HASHES=keep` writes every entry record whole, as before.
+pub(crate) struct ElideGate {
+    on: bool,
+    ask: Option<Arc<dyn Fn() -> bool + Send + Sync>>,
+}
+
+impl ElideGate {
+    /// Never elide (tests, a writer with no store to ask).
+    pub(crate) fn never() -> ElideGate {
+        ElideGate {
+            on: false,
+            ask: None,
+        }
+    }
+
+    /// Elide once `cluster_version()` admits 7, unless
+    /// `QUEEN_QLOG_ENTRY_HASHES=keep`.
+    pub(crate) fn from_cluster(
+        cluster_version: impl Fn() -> u32 + Send + Sync + 'static,
+    ) -> ElideGate {
+        let keep = std::env::var("QUEEN_QLOG_ENTRY_HASHES")
+            .is_ok_and(|v| v.trim().eq_ignore_ascii_case("keep"));
+        if keep {
+            return ElideGate::never();
+        }
+        ElideGate {
+            on: false,
+            ask: Some(Arc::new(move || {
+                crate::rsm::effect::cluster_allows(cluster_version(), crate::rsm::effect::VERSION_7)
+            })),
+        }
+    }
+
+    /// Elide from now on, whatever the cluster says (tests).
+    #[cfg(test)]
+    pub(crate) fn always() -> ElideGate {
+        ElideGate {
+            on: true,
+            ask: None,
+        }
+    }
+
+    fn allowed(&mut self) -> bool {
+        if !self.on {
+            if let Some(ask) = &self.ask {
+                self.on = ask();
+            }
+        }
+        self.on
+    }
 }
 
 impl QlogWrite {
@@ -477,6 +537,10 @@ impl QlogWrite {
         {
             let q = &mut *self;
             let lookup = q.lookup.clone();
+            let elide = q.elide.allowed();
+            // The elided entry records' bytes, made after every record of the
+            // group is placed (below), and borrowed by them: declared first.
+            let mut elided: Vec<Vec<u8>> = Vec::new();
             let mut by_log: std::collections::BTreeMap<u64, Vec<WriteRecord<'_>>> =
                 std::collections::BTreeMap::new();
             let mut touched: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
@@ -655,6 +719,49 @@ impl QlogWrite {
                         }),
                     };
                     by_log.entry(*log).or_default().push(rec);
+                }
+            }
+            // The hash lists each entry record need not carry: an `Append`
+            // whose message record this log holds, in front of the entry
+            // record, in this same write. Two passes so that every elided
+            // byte string exists before a record borrows one.
+            if elide {
+                let mut patches: Vec<(u64, usize)> = Vec::new();
+                for (log, records) in &by_log {
+                    let mut held: std::collections::HashSet<(u64, u64)> =
+                        std::collections::HashSet::new();
+                    let mut held_seq = u64::MAX;
+                    for (k, rec) in records.iter().enumerate() {
+                        match rec {
+                            WriteRecord::Msg(r) | WriteRecord::Zstd(r) => {
+                                if r.seq != held_seq {
+                                    held.clear();
+                                    held_seq = r.seq;
+                                }
+                                held.insert((r.pid, r.base_offset));
+                            }
+                            WriteRecord::Entry(e) if e.seq == held_seq && !held.is_empty() => {
+                                if let Some(b) =
+                                    crate::rsm::qlog::entry_hashes::elide(e.entry, |pid, base| {
+                                        held.contains(&(pid, base))
+                                    })?
+                                {
+                                    elided.push(b);
+                                    patches.push((*log, k));
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                for (n, (log, k)) in patches.into_iter().enumerate() {
+                    let rec = &mut by_log.get_mut(&log).expect("a log of the group")[k];
+                    if let WriteRecord::Entry(e) = *rec {
+                        *rec = WriteRecord::EntryElided(EntryInput {
+                            entry: &elided[n],
+                            ..e
+                        });
+                    }
                 }
             }
             // One write per touched log (page cache, no fsync yet), the lanes
@@ -1589,6 +1696,9 @@ impl<S: Store + 'static> LocalReplicator<S> {
                 "rsm qlog recovery reconciled (boot, A3b — tail ≥ store's qlog-durable index)",
             );
             let reader = set.reader();
+            // The `txns` rows' hash lists the checkpoint left in the queue
+            // logs: back before the replay below or any read.
+            crate::rsm::txns_refill::refill(&*store, &reader)?;
             // On-demand `pid -> queue_id` for a map miss: only a partition created
             // before the last restart (its create is gone from the replay window
             // but its row is committed) can miss, so this committed-catalog read
@@ -1825,6 +1935,14 @@ impl<S: Store + 'static> LocalReplicator<S> {
                 pid_qid: seed_pid_qid,
                 lookup,
                 layout,
+                elide: {
+                    let store = store.clone();
+                    ElideGate::from_cluster(move || {
+                        store
+                            .read(|r| r.cluster_version())
+                            .unwrap_or(crate::rsm::effect::BASELINE_KINDS_VERSION)
+                    })
+                },
             }),
             _ => None,
         };

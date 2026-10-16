@@ -1,0 +1,39 @@
+files 4, file bytes 126817537, logical 126627922, message records 7599, messages 750000, entry records 14509, stubs 0
+category                                          bytes        count      B/msg
+msgrec/payload_zstd                            78332888         7499     104.44
+outcome/push                                   18780000         7500      25.04
+append/hashes                                  12000000         7599      16.00
+msgrec/hashes                                  12000000         7599      16.00
+effect_body/cursor_set                          2460472        15098       3.28
+entryrec/header                                  710941        14509       0.95
+cmd/request_id+effect_range                      524976        21874       0.70
+entry/header                                     493238        14507       0.66
+msgrec/header                                    372351         7599       0.50
+append/fixed_fields                              227970         7599       0.30
+file/zero_tail                                   189615            1       0.25
+cmd/outcome_header                               174992        21874       0.23
+entry/frame(len+xxh3)                            174084        14507       0.23
+effect_header/cursor_set                         120784        15098       0.16
+append/frame_len_blob                             60792         7599       0.08
+effect_header/append                              60792         7599       0.08
+entry/effect_count                                58028        14507       0.08
+msgrec/payload_raw                                35100          100       0.05
+append/hashes_len_prefix                          30396         7599       0.04
+effect_body/partition_create                       8790          100       0.01
+effect_header/partition_create                      800          100       0.00
+effect_body/queue_upsert                            147            1       0.00
+file/header                                         128            4       0.00
+effect_body/group_upsert                            114            1       0.00
+entry/garbled                                        63            2       0.00
+effect_header/request_ids_expire                     24            3       0.00
+effect_body/request_ids_expire                       24            3       0.00
+effect_header/cluster_version_set                     8            1       0.00
+effect_header/queue_upsert                            8            1       0.00
+effect_header/group_upsert                            8            1       0.00
+effect_body/cluster_version_set                       4            1       0.00
+outcome/empty                                         0        14374       0.00
+TOTAL                                         126817537                  169.09
+commands by outcome tag: empty=14374 push=7500
+effects by kind: cluster_version_set=1 request_ids_expire=3 queue_upsert=1 partition_create=100 append=7599 cursor_set=15098 group_upsert=1
+push items 750000, verdicts map[0:750000]
+BAD: entry body_len 4294967295 != 46

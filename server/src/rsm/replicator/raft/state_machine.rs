@@ -801,6 +801,7 @@ mod tests {
             qlog_tail: Box::new(|_| Ok(None)),
             poison: Arc::new(Mutex::new(None)),
             cache_cap: 1 << 30,
+            cluster_version: None,
         })
         .expect("open the log");
         // Detached: the writer exits once every clone of the store is gone.

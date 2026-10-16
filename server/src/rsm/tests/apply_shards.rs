@@ -413,6 +413,7 @@ impl Wide {
                             } = &e
                             {
                                 outcome = Outcome::Push(PushOutcome {
+                                    compact: false,
                                     items: (0..*count as u64)
                                         .map(|k| PushVerdict::Created {
                                             pid: *pid,

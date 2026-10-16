@@ -1,0 +1,8 @@
+#!/bin/bash
+# Copy to hosts.sh and fill in from create.sh's table: public addresses for ssh, private ones for the cluster.
+BP=(<broker-1-public> <broker-2-public> <broker-3-public>)
+BV=(<broker-1-private> <broker-2-private> <broker-3-private>)
+LP=(<loader-1-public> <loader-2-public> <loader-3-public>)
+LV=(<loader-1-private> <loader-2-private> <loader-3-private>)
+ALL=("${BP[@]}" "${LP[@]}")
+SSH="ssh -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new"

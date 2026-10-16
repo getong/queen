@@ -468,6 +468,7 @@ impl BatcherConfig {
                 plan_budget_ms: num("QUEEN_RAFT_PLAN_MAX_MS", d.plan.plan_budget_ms),
                 slow_command_ms: num("QUEEN_RAFT_SLOW_COMMAND_MS", d.plan.slow_command_ms),
                 index_mode,
+                cycle_cluster_version: None,
             },
             driver_notify: flag("QUEEN_RAFT_DRIVER_NOTIFY", d.driver_notify),
             push_priority: flag("QUEEN_RAFT_PUSH_PRIORITY", d.push_priority),
@@ -633,7 +634,11 @@ impl MultiPushCommand {
                 }
             }
         }
-        let outcome = Outcome::Push(crate::rsm::entry::PushOutcome { items });
+        // Version 7 writes the verdicts as runs where that is smaller (D20:
+        // once every member reads it), on the gate the lanes' merge asks.
+        let runs =
+            crate::rsm::effect::cluster_allows(p.cluster_version()?, crate::rsm::effect::VERSION_7);
+        let outcome = Outcome::Push(crate::rsm::entry::PushOutcome::planned(items, runs));
         if effects.is_empty() {
             Ok(Plan::Empty(outcome))
         } else {
@@ -1461,6 +1466,12 @@ pub(crate) fn plan_cycle_blocking<S: Store>(
             .map_err(|_| crate::rsm::store::StoreError::Io("clock read".into()))?;
         ov.mark_cycle_start();
         let cycle_folds0 = ov.folds();
+        // D20: every gate of the cycle answers from the version the entry is
+        // checked against below.
+        let cfg = PlanConfig {
+            cycle_cluster_version: Some(cluster_version),
+            ..cfg.clone()
+        };
         let mut planner = Planner::new(committed, now_us, cfg.clone(), front, reader.clone());
         // Phase A2: when the qlog knob is on, the planner reads the committed
         // `DEDUP_INDEX=segment` dedup authority from the per-queue log instead of

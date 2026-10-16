@@ -116,6 +116,7 @@
 
 pub mod codec;
 pub mod dirx;
+pub mod entry_hashes;
 pub mod index;
 pub(crate) mod pool;
 pub mod record;
@@ -380,6 +381,12 @@ pub enum WriteRecord<'a> {
     /// ([`codec::compress_one`]); written with [`record::FLAG_PAYLOAD_ZSTD`].
     Zstd(RecordInput<'a>),
     Entry(EntryInput<'a>),
+    /// A whole entry record whose `entry` bytes are the ELIDED form
+    /// ([`entry_hashes::elide`]): the hash lists of the `Append`s whose
+    /// message records come before it in this log were left out. Written as
+    /// [`record::REC_ENTRY_ELIDED`]; read back as the [`WriteRecord::Entry`] it
+    /// was made from.
+    EntryElided(EntryInput<'a>),
     EntryStub(EntryStubInput),
 }
 
@@ -388,7 +395,7 @@ impl WriteRecord<'_> {
     pub fn seq(&self) -> u64 {
         match self {
             WriteRecord::Msg(r) | WriteRecord::Zstd(r) => r.seq,
-            WriteRecord::Entry(e) => e.seq,
+            WriteRecord::Entry(e) | WriteRecord::EntryElided(e) => e.seq,
             WriteRecord::EntryStub(s) => s.seq,
         }
     }
@@ -1308,7 +1315,9 @@ impl QLog {
                     r.txn.map_or(0, |t| t.participants.len()),
                     r.payload.len(),
                 ),
-                WriteRecord::Entry(e) => record::FIXED_PREFIX + e.entry.len(),
+                WriteRecord::Entry(e) | WriteRecord::EntryElided(e) => {
+                    record::FIXED_PREFIX + e.entry.len()
+                }
                 WriteRecord::EntryStub(_) => record::FIXED_PREFIX + record::STUB_PAYLOAD,
             })
             .sum();
@@ -1351,6 +1360,16 @@ impl QLog {
                 }
                 WriteRecord::Entry(e) => {
                     record::encode_entry_record_into(
+                        &mut buf,
+                        e.seq,
+                        e.now_us,
+                        u64::from(e.copies),
+                        e.term,
+                        e.entry,
+                    );
+                }
+                WriteRecord::EntryElided(e) => {
+                    record::encode_entry_elided_into(
                         &mut buf,
                         e.seq,
                         e.now_us,
@@ -1946,6 +1965,29 @@ impl QLog {
             Some(loc) => Ok(Some(self.read_located(&loc)?.payload)),
             None => Ok(None),
         }
+    }
+
+    /// The hash list of the message record that starts at `(pid,
+    /// base_offset)` with `count` messages, read from its header and hash block
+    /// only (the payload is never read, [`pread_hashes`]): what an elided entry
+    /// record ([`record::REC_ENTRY_ELIDED`]) gets back. An error when this log
+    /// holds no such record.
+    pub fn hashes_of(&self, pid: u64, base_offset: u64, count: u32) -> io::Result<Vec<u8>> {
+        let Some((file_id, rec)) = self.locate_record(pid, base_offset) else {
+            return Err(io::Error::other(format!(
+                "no record of partition {pid} at offset {base_offset} in this log"
+            )));
+        };
+        if rec.base_offset != base_offset || rec.count != count {
+            return Err(io::Error::other(format!(
+                "the record at offset {base_offset} of partition {pid} holds {} messages from {}, \
+                 not {count}",
+                rec.count, rec.base_offset
+            )));
+        }
+        let f = self.cache.file(file_id)?;
+        let mut scratch = Vec::new();
+        Ok(pread_hashes(&f, &self.dir, file_id, &rec, &mut scratch)?.to_vec())
     }
 
     /// The `16 * count`-byte hash list of the record holding `(pid, offset)` —
@@ -2799,13 +2841,24 @@ impl QLog {
                     let rr = record::decode(bytes).map_err(io::Error::from)?;
                     // `pid` carries `copies`; 0 (pre-Phase-C) reads as one.
                     let copies = u32::try_from(h.pid).unwrap_or(u32::MAX).max(1);
-                    if kind == record::REC_ENTRY {
+                    if kind == record::REC_ENTRY || kind == record::REC_ENTRY_ELIDED {
+                        // An elided record gets its hash lists back from the
+                        // message records this log holds, checked against the
+                        // entry's own frame header (`entry_hashes`).
+                        let entry = if kind == record::REC_ENTRY_ELIDED {
+                            entry_hashes::restore(rr.payload, |pid, base, count| {
+                                self.hashes_of(pid, base, count)
+                            })
+                            .map_err(|e| corrupt(&path, &format!("entry {}: {e}", h.seq)))?
+                        } else {
+                            rr.payload.to_vec()
+                        };
                         found.push(EntryPart::Full(EntryRecord {
                             seq: h.seq,
                             now_us: h.created_at_us,
                             copies,
                             term: h.base_offset,
-                            entry: rr.payload.to_vec(),
+                            entry,
                         }));
                     } else {
                         let (digest, len) = record::stub_fields(rr.payload).ok_or_else(|| {

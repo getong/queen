@@ -67,28 +67,34 @@ fn an_outcome_at_an_unknown_version_stops_the_node() {
     // rolling upgrade (D20) that is an old voter answering the retry of a
     // command (D6, I6) from bytes it never understood — a wrong answer to a
     // client, where I16 asks for a node that stops.
-    let bytes = hand_built_entry(1, 0xF001, 7, b"future-kv-shape");
+    // One past what this build reads (7 became a known version: a push, or a
+    // transaction outcome, written as runs).
+    let future = (SUPPORTED_KINDS_VERSION + 1) as u16;
+    let bytes = hand_built_entry(1, 0xF001, future, b"future-kv-shape");
     let err = decode_entry(&bytes).unwrap_err();
     assert_eq!(
         err,
         CodecError::UnknownVersion {
             kind: 0xF001,
-            version: 7
+            version: future
         },
         "a reserved-range outcome at an unknown version was interpreted"
     );
     assert!(err.fatal(), "{err}");
 
-    // A typed tag at an unknown version was already fatal; it stays so.
-    let err = decode_entry(&hand_built_entry(1, TAG_POP, 7, &[])).unwrap_err();
-    assert_eq!(
-        err,
-        CodecError::UnknownVersion {
-            kind: TAG_POP,
-            version: 7
-        }
-    );
-    assert!(err.fatal(), "{err}");
+    // A typed tag at an unknown version was already fatal; it stays so, and
+    // so does 7 on a tag that has no version-7 shape.
+    for version in [future, VERSION_7] {
+        let err = decode_entry(&hand_built_entry(1, TAG_POP, version, &[])).unwrap_err();
+        assert_eq!(
+            err,
+            CodecError::UnknownVersion {
+                kind: TAG_POP,
+                version
+            }
+        );
+        assert!(err.fatal(), "{err}");
+    }
 
     // Version 0 is not a catalogue version at all.
     let err = decode_entry(&hand_built_entry(1, 0xF001, 0, b"x")).unwrap_err();
@@ -304,11 +310,12 @@ fn a_placeholder_cannot_carry_a_typed_tag() {
     assert!(Placeholder::new(u16::MAX, VERSION_1, vec![]).is_ok());
 
     // Nor at a version this build does not know: it could not read it back.
+    let future = (SUPPORTED_KINDS_VERSION + 1) as u16;
     assert_eq!(
-        Placeholder::new(0xF001, 7, vec![]),
+        Placeholder::new(0xF001, future, vec![]),
         Err(CodecError::UnknownVersion {
             kind: 0xF001,
-            version: 7
+            version: future
         })
     );
 }
@@ -608,10 +615,15 @@ fn every_outcome_tag_pins_its_version_and_an_unknown_tag_is_named() {
     // catalogue version 1 by default and walk past D20's gate. Both are
     // matches now; this pins what they answer today.
     for o in outcome_samples() {
+        let want = match &o {
+            // Version 7: a push outcome written as runs.
+            Outcome::Push(p) if p.compact => crate::rsm::effect::VERSION_7,
+            _ => VERSION_1,
+        };
         assert_eq!(
             o.version(),
-            VERSION_1,
-            "every outcome this build mints is at catalogue version 1: {o:?}"
+            want,
+            "every outcome this build mints is at catalogue version 1, a push written as runs at 7: {o:?}"
         );
     }
 

@@ -353,11 +353,52 @@ pub fn all_effect_samples() -> Vec<(Kind, Effect)> {
     Kind::ALL.iter().map(|k| (*k, effect_sample(*k))).collect()
 }
 
+/// A version-7 push outcome ([`PushOutcome::compact`]): two created messages
+/// of partition 7, two duplicates, two identical refusals, a created message of
+/// partition 8, a created message of partition 7 with another stamp. Five runs
+/// for eight verdicts.
+pub fn compact_push_sample() -> PushOutcome {
+    let refused = PushVerdict::Refused {
+        code: "queue_full".into(),
+        message: "max_queue_size reached".into(),
+    };
+    PushOutcome {
+        compact: true,
+        items: vec![
+            PushVerdict::Created {
+                pid: 7,
+                offset: 42,
+                created_at_us: 1_768_000_000_000_001,
+            },
+            PushVerdict::Created {
+                pid: 7,
+                offset: 43,
+                created_at_us: 1_768_000_000_000_001,
+            },
+            PushVerdict::Duplicate { pid: 7, offset: 11 },
+            PushVerdict::Duplicate { pid: 7, offset: 12 },
+            refused.clone(),
+            refused,
+            PushVerdict::Created {
+                pid: 8,
+                offset: 0,
+                created_at_us: 1_768_000_000_000_001,
+            },
+            PushVerdict::Created {
+                pid: 7,
+                offset: 44,
+                created_at_us: 1_768_000_000_000_002,
+            },
+        ],
+    }
+}
+
 /// The canonical outcome of every variant, for the round-trip test.
 pub fn outcome_samples() -> Vec<Outcome> {
     vec![
         Outcome::Empty,
         Outcome::Push(PushOutcome {
+            compact: false,
             items: vec![
                 PushVerdict::Created {
                     pid: 7,
@@ -371,6 +412,9 @@ pub fn outcome_samples() -> Vec<Outcome> {
                 },
             ],
         }),
+        // Version 7: the same kinds of verdict written as runs, each kind
+        // twice in a row and a second partition's run after a refusal.
+        Outcome::Push(compact_push_sample()),
         Outcome::Pop(PopOutcome {
             claims: vec![
                 PopClaim {
@@ -439,6 +483,7 @@ pub fn entry_sample() -> Entry {
     e.add_command(
         uuid(0xc0),
         Outcome::Push(PushOutcome {
+            compact: false,
             items: vec![
                 PushVerdict::Created {
                     pid: 7,

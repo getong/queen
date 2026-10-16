@@ -1,0 +1,3 @@
+sampled records 379, messages 37405 (txn text == id text for 37405)
+raw frames 378.5 B/msg (JSON payload 319.5, txn text 36.0)
+stored (client zstd) 104.47 B/msg | recompressed as is 104.48 | without txn text 91.93 | without txn text and id 76.75

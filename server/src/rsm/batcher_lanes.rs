@@ -1639,6 +1639,12 @@ pub(crate) fn plan_cycle_lanes<S: Store + 'static>(
             Ok((store_applied, base_pid, base_kv, now_us, cluster_version))
         })?
     };
+    // D20: every planner of the cycle, in every lane, answers its gates from
+    // the version the entry is checked against.
+    let cfg = PlanConfig {
+        cycle_cluster_version: Some(cluster_version),
+        ..cfg
+    };
 
     // The retention scanner's proposals: a watermark goes to its partition's
     // lane, which judges it in parallel with the others; a partition delete
@@ -2064,7 +2070,12 @@ pub(crate) fn plan_cycle_lanes<S: Store + 'static>(
             }
             spent.push(push);
         }
-        let outcome = Outcome::Push(crate::rsm::entry::PushOutcome { items });
+        // Version 7 (runs, where smaller) on the gate the single planner's
+        // merge asks.
+        let outcome = Outcome::Push(crate::rsm::entry::PushOutcome::planned(
+            items,
+            crate::rsm::effect::cluster_allows(cluster_version, crate::rsm::effect::VERSION_7),
+        ));
         if effects.is_empty() {
             slots[mr.pos] = Some(Slot::Empty(outcome));
         } else {

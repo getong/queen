@@ -1,0 +1,15 @@
+[11:41:44] trimming
+n1: /root/p3: 1.5 TiB (1610059087872 bytes) trimmed
+n3: /root/p3: 1.5 TiB (1610059087872 bytes) trimmed
+n2: /root/p3: 1.5 TiB (1610059087872 bytes) trimmed
+[11:41:46] run fm3r1-p1000-r3000000: binary fix, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[11:42:05] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[11:43:50] 3,000,000: last 30 s: offered 3,000,001 pushed 2,999,988 consumed 2,999,868 | run: shed 0 errors 0 | push p50 3.6 p99 9.0 | e2e p50 7.7 p99 18.9 worst 20.0 | cores 13.0 / 5.8 / 5.7 | mem GB 5.3 / 4.8 / 4.8 | loaders 18.8c  OK 
+GRID3_DONE
+[11:43:55] run fm3r2-p1000-r3000000: binary fix, groups 1, sync, checkpoint 5 ms, tenants 0, partitions 1000, consumers 33 per process, retention completed 1800s, dedup 0s, steps of 70s at: 3000000 | EXTRA= | QEXTRA=-push-wire bin -push-zstd -ack-counts -pop-frames -tail 30s
+[11:44:02] roles: n1 healthy leader | n2 healthy follower | n3 healthy follower
+[create] done: bench x 1000 partitions
+[11:45:47] 3,000,000: last 30 s: offered 2,999,975 pushed 3,000,092 consumed 2,999,865 | run: shed 0 errors 0 | push p50 3.4 p99 8.2 | e2e p50 7.2 p99 18.2 worst 18.7 | cores 12.8 / 5.8 / 5.9 | mem GB 5.3 / 4.8 / 4.8 | loaders 18.7c  OK 
+GRID3_DONE
+REP1K_DONE

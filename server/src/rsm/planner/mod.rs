@@ -145,6 +145,14 @@ pub struct PlanConfig {
     /// sets the product default (`txns`) and keeps `record` (apply side) in
     /// step via [`dedup::set_record_index_mode`].
     pub index_mode: IndexMode,
+    /// The cluster version the cycle read when it began (D20), set by the
+    /// batcher on its per-cycle copy. Every gate a planner of the cycle asks
+    /// ([`Planner::cluster_version`]) then answers from this one value, the
+    /// one the batcher checks the entry against: a rise that apply lands while
+    /// the cycle plans cannot put a newer shape in an entry that the check
+    /// would refuse. `None` (tests, a planner built outside a cycle) reads the
+    /// committed value.
+    pub cycle_cluster_version: Option<u32>,
 }
 
 impl Default for PlanConfig {
@@ -154,6 +162,7 @@ impl Default for PlanConfig {
             plan_budget_ms: PLAN_BUDGET_MS_DEFAULT,
             slow_command_ms: SLOW_COMMAND_MS_DEFAULT,
             index_mode: IndexMode::Rows,
+            cycle_cluster_version: None,
         }
     }
 }
@@ -1547,6 +1556,9 @@ impl<'a, R: Reads + ?Sized> Planner<'a, R> {
     /// writes may carry ([`crate::rsm::effect::CursorRow::admit`]).
     pub(crate) fn cluster_version(&self) -> Result<u32, Refusal> {
         use crate::rsm::store::TypedReads;
+        if let Some(v) = self.cfg.cycle_cluster_version {
+            return Ok(v);
+        }
         self.reads().cluster_version().map_err(store_err)
     }
 

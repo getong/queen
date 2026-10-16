@@ -242,9 +242,11 @@ fn every_kind_pins_its_catalogue_version() {
         all.push(v6);
     }
     assert_eq!(kinds_version_of(&all), crate::rsm::effect::VERSION_6 as u32);
+    // Version 7 is an outcome shape (a push written as runs), not an effect
+    // kind: the effects stop at 6, the build reads 7.
     assert_eq!(
         SUPPORTED_KINDS_VERSION,
-        crate::rsm::effect::VERSION_6 as u32
+        crate::rsm::effect::VERSION_7 as u32
     );
 }
 
@@ -889,6 +891,7 @@ fn every_field_has_its_own_slot() {
     assert_eq!(decode_entry(&encode_entry(&e).unwrap()).unwrap(), e);
 
     let o = Outcome::Push(PushOutcome {
+        compact: false,
         items: vec![
             PushVerdict::Created {
                 pid: 1,

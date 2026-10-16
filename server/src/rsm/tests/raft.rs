@@ -176,6 +176,7 @@ impl StoreBuilder<TypeConfig, LogStore, TestSm, Guard> for QlogStoreBuilder {
             qlog_tail: Box::new(|_| Ok(None)),
             poison: Arc::new(Mutex::new(None)),
             cache_cap: 1 << 30,
+            cluster_version: None,
         })
         .map_err(|e| StorageError::write(TypeConfig::err_from_error(&e)))?;
         // Detached: the writer exits once the suite drops the store.
