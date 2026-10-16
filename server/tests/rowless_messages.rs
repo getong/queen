@@ -200,8 +200,12 @@ async fn messages_without_rows_are_consumed_and_acked_like_those_with_rows() {
         }
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
+    // Rows leave the store from cluster version 6 on; a 2.4.0 node starts at 7.
     let health = broker.health().await.expect("health");
-    assert_eq!(health["raft"]["clusterVersion"], 6, "{health}");
+    assert!(
+        health["raft"]["clusterVersion"].as_u64() >= Some(6),
+        "{health}"
+    );
 
     let (rowed, rowless) = (unique("rowed"), unique("rowless"));
     let parts = ["a", "b"];
