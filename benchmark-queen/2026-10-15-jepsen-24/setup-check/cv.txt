@@ -1,0 +1,130 @@
+13:17:47 n1 down URLError
+13:17:47 n2 down URLError
+13:17:47 n3 down URLError
+13:17:47 n4 down URLError
+13:17:47 n5 down URLError
+13:17:52 n1 down URLError
+13:17:53 n2 down URLError
+13:17:53 n3 down URLError
+13:17:53 n4 down URLError
+13:17:53 n5 down URLError
+13:17:58 n1 down URLError
+13:17:58 n2 down URLError
+13:17:58 n3 down URLError
+13:17:58 n4 down URLError
+13:17:58 n5 down URLError
+13:18:03 n1 down URLError
+13:18:03 n2 down URLError
+13:18:03 n3 down URLError
+13:18:03 n4 down URLError
+13:18:04 n5 down URLError
+13:18:09 n1 down URLError
+13:18:09 n2 down URLError
+13:18:09 n3 down URLError
+13:18:09 n4 down URLError
+13:18:09 n5 down URLError
+13:18:14 n1 down URLError
+13:18:14 n2 down URLError
+13:18:14 n3 down URLError
+13:18:14 n4 down URLError
+13:18:14 n5 down URLError
+13:18:19 n1 down URLError
+13:18:19 n2 down URLError
+13:18:19 n3 down URLError
+13:18:19 n4 down URLError
+13:18:20 n5 down URLError
+13:18:25 n1 down URLError
+13:18:25 n2 down URLError
+13:18:25 n3 down URLError
+13:18:25 n4 down URLError
+13:18:25 n5 down URLError
+13:18:30 n1 2.3.0 follower cv 3 kinds 7 applied 2 lag 0 healthy
+13:18:30 n2 2.3.0 follower cv 3 kinds 7 applied 2 lag 0 healthy
+13:18:30 n3 2.3.0 follower cv 3 kinds 7 applied 8 lag 0 healthy
+13:18:31 n4 2.3.0 follower cv 3 kinds 7 applied 9 lag 0 healthy
+13:18:31 n5 2.3.0 leader cv 3 kinds 7 applied 14 lag 0 healthy
+13:18:36 n1 2.3.0 follower cv 7 kinds 7 applied 591 lag 0 healthy
+13:18:36 n2 2.3.0 follower cv 7 kinds 7 applied 601 lag 0 healthy
+13:18:36 n3 2.3.0 follower cv 7 kinds 7 applied 606 lag 0 healthy
+13:18:36 n4 2.3.0 follower cv 7 kinds 7 applied 617 lag 0 healthy
+13:18:36 n5 2.3.0 leader cv 7 kinds 7 applied 624 lag 0 healthy
+13:18:41 n1 2.3.0 follower cv 7 kinds 7 applied 1275 lag 0 healthy
+13:18:41 n2 2.3.0 follower cv 7 kinds 7 applied 1287 lag 0 healthy
+13:18:41 n3 2.3.0 follower cv 7 kinds 7 applied 1294 lag 0 healthy
+13:18:41 n4 2.3.0 follower cv 7 kinds 7 applied 1298 lag 0 healthy
+13:18:41 n5 2.3.0 leader cv 7 kinds 7 applied 1307 lag 0 healthy
+13:18:46 n1 2.3.0 follower cv 7 kinds 7 applied 1883 lag 0 healthy
+13:18:47 n2 2.3.0 follower cv 7 kinds 7 applied 1896 lag 0 healthy
+13:18:47 n3 2.3.0 follower cv 7 kinds 7 applied 1911 lag 0 healthy
+13:18:47 n4 2.3.0 follower cv 7 kinds 7 applied 1919 lag 0 healthy
+13:18:47 n5 2.3.0 leader cv 7 kinds 7 applied 1924 lag 0 healthy
+13:18:52 n1 2.3.0 follower cv 7 kinds 7 applied 2553 lag 0 healthy
+13:18:52 n2 2.3.0 follower cv 7 kinds 7 applied 2559 lag 0 healthy
+13:18:52 n3 2.3.0 follower cv 7 kinds 7 applied 2570 lag 0 healthy
+13:18:52 n4 2.3.0 follower cv 7 kinds 7 applied 2578 lag 0 healthy
+13:18:52 n5 2.3.0 leader cv 7 kinds 7 applied 2589 lag 0 healthy
+13:18:57 n1 2.3.0 follower cv 7 kinds 7 applied 3207 lag 0 healthy
+13:18:57 n2 2.3.0 follower cv 7 kinds 7 applied 3212 lag 0 healthy
+13:18:57 n3 2.3.0 follower cv 7 kinds 7 applied 3219 lag 0 healthy
+13:18:57 n4 2.3.0 follower cv 7 kinds 7 applied 3227 lag 0 healthy
+13:18:57 n5 2.3.0 leader cv 7 kinds 7 applied 3244 lag 0 healthy
+13:19:02 n1 2.3.0 follower cv 7 kinds 7 applied 3844 lag 0 healthy
+13:19:03 n2 2.3.0 follower cv 7 kinds 7 applied 3854 lag 0 healthy
+13:19:03 n3 2.3.0 follower cv 7 kinds 7 applied 3863 lag 0 healthy
+13:19:03 n4 2.3.0 follower cv 7 kinds 7 applied 3874 lag 0 healthy
+13:19:03 n5 2.3.0 leader cv 7 kinds 7 applied 3886 lag 0 healthy
+13:19:08 n1 2.3.0 follower cv 7 kinds 7 applied 4419 lag 0 healthy
+13:19:08 n2 2.3.0 follower cv 7 kinds 7 applied 4424 lag 0 healthy
+13:19:08 n3 2.3.0 follower cv 7 kinds 7 applied 4433 lag 0 healthy
+13:19:08 n4 2.3.0 follower cv 7 kinds 7 applied 4445 lag 0 healthy
+13:19:08 n5 2.3.0 leader cv 7 kinds 7 applied 4454 lag 0 healthy
+13:19:13 n1 2.3.0 follower cv 7 kinds 7 applied 5086 lag 0 healthy
+13:19:13 n2 2.3.0 follower cv 7 kinds 7 applied 5097 lag 0 healthy
+13:19:13 n3 2.3.0 follower cv 7 kinds 7 applied 5104 lag 0 healthy
+13:19:13 n4 2.3.0 follower cv 7 kinds 7 applied 5112 lag 0 healthy
+13:19:13 n5 2.3.0 leader cv 7 kinds 7 applied 5115 lag 0 healthy
+13:19:19 n1 2.3.0 follower cv 7 kinds 7 applied 5728 lag 0 healthy
+13:19:19 n2 2.3.0 follower cv 7 kinds 7 applied 5735 lag 0 healthy
+13:19:19 n3 2.3.0 follower cv 7 kinds 7 applied 5745 lag 0 healthy
+13:19:19 n4 2.3.0 follower cv 7 kinds 7 applied 5754 lag 0 healthy
+13:19:19 n5 2.3.0 leader cv 7 kinds 7 applied 5765 lag 0 healthy
+13:19:24 n1 2.3.0 follower cv 7 kinds 7 applied 6349 lag 0 healthy
+13:19:24 n2 2.3.0 follower cv 7 kinds 7 applied 6355 lag 0 healthy
+13:19:24 n3 2.3.0 follower cv 7 kinds 7 applied 6360 lag 0 healthy
+13:19:24 n4 2.3.0 follower cv 7 kinds 7 applied 6368 lag 0 healthy
+13:19:24 n5 2.3.0 leader cv 7 kinds 7 applied 6372 lag 0 healthy
+13:19:29 n1 2.3.0 follower cv 7 kinds 7 applied 6960 lag 0 healthy
+13:19:29 n2 2.3.0 follower cv 7 kinds 7 applied 6969 lag 0 healthy
+13:19:29 n3 2.3.0 follower cv 7 kinds 7 applied 6980 lag 0 healthy
+13:19:29 n4 2.3.0 follower cv 7 kinds 7 applied 6994 lag 0 healthy
+13:19:29 n5 2.3.0 leader cv 7 kinds 7 applied 7002 lag 0 healthy
+13:19:35 n1 2.3.0 follower cv 7 kinds 7 applied 7131 lag 0 healthy
+13:19:35 n2 2.3.0 follower cv 7 kinds 7 applied 7131 lag 0 healthy
+13:19:35 n3 2.3.0 follower cv 7 kinds 7 applied 7131 lag 0 healthy
+13:19:35 n4 2.3.0 follower cv 7 kinds 7 applied 7131 lag 0 healthy
+13:19:35 n5 2.3.0 leader cv 7 kinds 7 applied 7131 lag 0 healthy
+13:19:40 n1 2.3.0 follower cv 7 kinds 7 applied 7136 lag 0 healthy
+13:19:40 n2 2.3.0 follower cv 7 kinds 7 applied 7136 lag 0 healthy
+13:19:40 n3 2.3.0 follower cv 7 kinds 7 applied 7136 lag 0 healthy
+13:19:40 n4 2.3.0 follower cv 7 kinds 7 applied 7136 lag 0 healthy
+13:19:40 n5 2.3.0 leader cv 7 kinds 7 applied 7136 lag 0 healthy
+13:19:45 n1 2.3.0 follower cv 7 kinds 7 applied 7146 lag 0 healthy
+13:19:45 n2 2.3.0 follower cv 7 kinds 7 applied 7146 lag 0 healthy
+13:19:45 n3 2.3.0 follower cv 7 kinds 7 applied 7146 lag 0 healthy
+13:19:45 n4 2.3.0 follower cv 7 kinds 7 applied 7146 lag 0 healthy
+13:19:45 n5 2.3.0 leader cv 7 kinds 7 applied 7146 lag 0 healthy
+13:19:51 n1 2.3.0 follower cv 7 kinds 7 applied 7150 lag 0 healthy
+13:19:51 n2 2.3.0 follower cv 7 kinds 7 applied 7150 lag 0 healthy
+13:19:51 n3 2.3.0 follower cv 7 kinds 7 applied 7150 lag 0 healthy
+13:19:51 n4 2.3.0 follower cv 7 kinds 7 applied 7150 lag 0 healthy
+13:19:51 n5 2.3.0 leader cv 7 kinds 7 applied 7150 lag 0 healthy
+13:19:56 n1 down URLError
+13:19:56 n2 down URLError
+13:19:56 n3 down URLError
+13:19:56 n4 down URLError
+13:19:56 n5 down URLError
+13:20:01 n1 down URLError
+13:20:01 n2 down URLError
+13:20:01 n3 down URLError
+13:20:01 n4 down URLError
+13:20:01 n5 down URLError

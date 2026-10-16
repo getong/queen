@@ -1,0 +1,12 @@
+== bs-w1-none 13:32:05
+files 3, file bytes 1363915, logical 1272277, message records 3639, messages 6063, entry records 3634 (elided 3613), stubs 13
+commands by outcome tag/version: empty/v1=19 push/v1=1945 push/v7=1694
+effects by kind: cluster_version_set=1 request_ids_expire=16 queue_upsert=2 partition_create=188 append=3639
+values txns        <=40B 3639, 41-512B 0, >512B 0, overflow 0
+values request_ids <=40B 14, 41-512B 1918, >512B 0, overflow 0
+== bs-w1-kill 13:34:55
+files 3, file bytes 333355, logical 271684, message records 769, messages 1286, entry records 778 (elided 768), stubs 0
+commands by outcome tag/version: empty/v1=5 push/v1=416 push/v7=353
+effects by kind: queue_upsert=2 partition_create=60 append=769 cluster_version_set=1 request_ids_expire=2
+values txns        <=40B 769, 41-512B 0, >512B 0, overflow 0
+values request_ids <=40B 2, 41-512B 499, >512B 0, overflow 0

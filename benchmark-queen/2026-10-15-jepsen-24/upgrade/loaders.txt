@@ -1,0 +1,32 @@
+== hist-p
+[final] offered=3840 achieved=3840 shed=0 (msgs: offered=192000 achieved=192000 shed=0) pushErr=0 | pushed=192000 popped=0 lag=192000 | popErr=0 empty=0 | overall p50=5.34 p99=21.12 p999=38.14 ms | acked=0 ackErr=0 ackLag=192000 ackAvg=0.00ms | e2e p50=0.00 p99=0.00 p999=0.00 ms
+== hist-c
+[final] offered=0 achieved=0 shed=0 (msgs: offered=0 achieved=0 shed=0) pushErr=0 | pushed=0 popped=192000 lag=-192000 | popErr=0 empty=184 | overall p50=0.00 p99=0.00 p999=0.00 ms | acked=192000 ackErr=0 ackLag=-192000 ackAvg=25.07ms | e2e p50=133693.44 p99=133693.44 p999=133693.44 ms
+== livea-1
+[info] errors produce=1940 first: Post "http://n1:6632/api/v1/push": dial tcp 10.114.0.6:6632: connect: connection refused
+[info] errors consume=238 first: pop live: Get "http://n1:6632/api/v1/pop/queue/live?batch=200&partitions=5&wait=true&timeout=2000&autoAck=false&leaseSeconds=30": dial tcp 10.114.0.6:6632: connect: connection refused
+[info] errors ack=2 first: Post "http://n1:6632/api/v1/ack/batch": dial tcp 10.114.0.6:6632: connect: connection refused
+[final] offered=26924 achieved=26827 shed=0 (msgs: offered=538480 achieved=536540 shed=0) pushErr=97 | pushed=536540 popped=563100 lag=-26560 | popErr=238 empty=22 | overall p50=5.92 p99=40.19 p999=248.83 ms | acked=562780 ackErr=320 ackLag=-26240 ackAvg=7.12ms | e2e p50=10.82 p99=20054.02 p999=29229.06 ms
+== livea-2
+[info] errors produce=2960 first: Post "http://n2:6632/api/v1/push": EOF
+[info] errors consume=493 first: pop live: Get "http://n2:6632/api/v1/pop/queue/live?batch=200&partitions=5&wait=true&timeout=2000&autoAck=false&leaseSeconds=30": dial tcp 10.114.0.5:6632: connect: connection refused
+[info] errors ack=2 first: Post "http://n2:6632/api/v1/ack/batch": dial tcp 10.114.0.5:6632: connect: connection refused
+[final] offered=26924 achieved=26776 shed=0 (msgs: offered=538480 achieved=535520 shed=0) pushErr=148 | pushed=535520 popped=448940 lag=86580 | popErr=493 empty=22 | overall p50=10.82 p99=61.70 p999=362.50 ms | acked=448900 ackErr=40 ackLag=86620 ackAvg=12.01ms | e2e p50=14.40 p99=19267.58 p999=29753.34 ms
+== livea-3
+[info] errors consume=697 first: pop live: Get "http://n3:6632/api/v1/pop/queue/live?batch=200&partitions=5&wait=true&timeout=2000&autoAck=false&leaseSeconds=30": dial tcp 10.114.0.4:6632: connect: connection refused
+[info] errors ack=6 first: Post "http://n3:6632/api/v1/ack/batch": dial tcp 10.114.0.4:6632: connect: connection refused
+[info] errors produce=3180 first: Post "http://n3:6632/api/v1/push": dial tcp 10.114.0.4:6632: connect: connection refused
+[final] offered=26925 achieved=26766 shed=0 (msgs: offered=538500 achieved=535320 shed=0) pushErr=159 | pushed=535320 popped=595840 lag=-60520 | popErr=697 empty=22 | overall p50=4.32 p99=34.56 p999=497.66 ms | acked=595700 ackErr=140 ackLag=-60380 ackAvg=5.57ms | e2e p50=10.05 p99=21626.88 p999=28966.91 ms
+== liveb-1
+[info] errors ack=2 first: HTTP 503: {"error":"the leader changed while this change was being made durable: it may or may not have applied","code":"outcome_unknown"}
+[info] errors consume=2 first: pop live: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[final] offered=6676 achieved=6676 shed=0 (msgs: offered=133520 achieved=133520 shed=0) pushErr=0 | pushed=133520 popped=134160 lag=-640 | popErr=2 empty=22 | overall p50=7.90 p99=2637.82 p999=3424.26 ms | acked=134040 ackErr=120 ackLag=-520 ackAvg=11.19ms | e2e p50=15.17 p99=21364.74 p999=29753.34 ms
+== liveb-2
+[info] errors ack=2 first: Post "http://n2:6632/api/v1/ack/batch": EOF
+[info] errors produce=12220 first: Post "http://n2:6632/api/v1/push": EOF
+[info] errors consume=2400 first: pop live: Get "http://n2:6632/api/v1/pop/queue/live?batch=200&partitions=5&wait=true&timeout=2000&autoAck=false&leaseSeconds=30": dial tcp 10.114.0.5:6632: connect: connection refused
+[final] offered=6675 achieved=6064 shed=0 (msgs: offered=133500 achieved=121280 shed=0) pushErr=611 | pushed=121280 popped=110260 lag=11020 | popErr=2400 empty=22 | overall p50=12.48 p99=78.34 p999=254.98 ms | acked=110220 ackErr=40 ackLag=11060 ackAvg=14.49ms | e2e p50=19.84 p99=13565.95 p999=28442.62 ms
+== liveb-3
+[info] errors ack=3 first: HTTP 503: {"error":"the leader changed while this change was being made durable: it may or may not have applied","code":"outcome_unknown"}
+[info] errors consume=2 first: pop live: HTTP 503: {"error":"the request deadline elapsed","code":"timeout"}
+[final] offered=6675 achieved=6675 shed=0 (msgs: offered=133500 achieved=133500 shed=0) pushErr=0 | pushed=133500 popped=143940 lag=-10440 | popErr=2 empty=22 | overall p50=5.60 p99=2637.82 p999=3424.26 ms | acked=143740 ackErr=200 ackLag=-10240 ackAvg=9.56ms | e2e p50=13.89 p99=23986.18 p999=30015.49 ms

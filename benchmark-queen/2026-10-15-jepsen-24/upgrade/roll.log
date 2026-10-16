@@ -1,0 +1,94 @@
+13:04:57 roll24: OLD= NEW=
+13:05:03 0. a fresh cluster of 2.4
+13:05:06     clusterVersion 7 on all three before any load: OK
+13:05:07     n1: 2.3.0 follower cv 7 kinds 7 applied 3 lag 0 healthy
+13:05:07     n2: 2.3.0 follower cv 7 kinds 7 applied 3 lag 0 healthy
+13:05:07     n3: 2.3.0 leader cv 7 kinds 7 applied 3 lag 0 healthy
+13:05:10 1. three nodes on 2.3.0
+13:05:14     n1: 2.3.0 leader cv 6 kinds 6 applied 3 lag 0 healthy
+13:05:15     n2: 2.3.0 follower cv 6 kinds 6 applied 3 lag 0 healthy
+13:05:15     n3: 2.3.0 follower cv 6 kinds 6 applied 3 lag 0 healthy
+13:05:40     history written by 2.3.0: pushErr=0 | pushed=192000
+13:05:40     dup A new: set A new: 2000 items, answers {'queued': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:05:55 2. n3, then n2, move to 2.4
+13:06:03     n1: 2.3.0 leader cv 6 kinds 6 applied 14788 lag 0 healthy
+13:06:03     n2: 2.3.0 follower cv 6 kinds 7 applied 14822 lag 0 healthy
+13:06:03     n3: 2.3.0 follower cv 6 kinds 7 applied 14862 lag 0 healthy
+13:06:03     cluster version still 6 with n1 on 2.3.0: OK
+13:06:03     dup A dup: set A dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:03     dup B new: set B new: 2000 items, answers {'queued': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:04     n3 queue logs: files 4, file bytes 53823772, logical 53686938, message records 8807, messages 294540, entry records 15440 (elided 0), stubs 0 commands by outcome tag/version: empty/v1=9296 push/v1=8807 BAD: entry body_len 4294967295 != 192 
+13:06:04     n3 checkpoint: values request_ids <=40B 9438, 41-512B 0, >512B 8848, overflow 40 values txns        <=40B 0, 41-512B 5008, >512B 3880, overflow 0 
+13:06:04 3. n3 goes back to 2.3.0 while the version is 6
+13:06:05     2.3.0 started on a directory 2.4 had written: OK
+13:06:06     n1: 2.3.0 leader cv 6 kinds 6 applied 16013 lag 0 healthy
+13:06:06     n2: 2.3.0 follower cv 6 kinds 7 applied 16043 lag 0 healthy
+13:06:06     n3: 2.3.0 follower cv 6 kinds 6 applied 15899 lag 0 healthy
+13:06:06     dup B dup: set B dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:08 4. n1 moves: the last 2.3.0 member (leader before: n1)
+13:06:11     the cluster version rose to 7 by itself: OK
+13:06:11     n1: 2.3.0 follower cv 7 kinds 7 applied 17834 lag 0 healthy
+13:06:11     n2: 2.3.0 follower cv 7 kinds 7 applied 17871 lag 0 healthy
+13:06:11     n3: 2.3.0 leader cv 7 kinds 7 applied 17903 lag 0 healthy
+13:06:11 5. after the rise
+13:06:11     dup C new: set C new: 2000 items, answers {'queued': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:11     dup A dup: set A dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:12     dup B dup: set B dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:12     dup C dup: set C dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:06:33     n1 queue logs: files 5, file bytes 75731603, logical 75544136, message records 15060, messages 421200, entry records 28175 (elided 4936), stubs 2 commands by outcome tag/version: empty/v1=17566 push/v1=10086 push/v7=4974 BAD: entry body_len 4294967295 != 192 
+13:06:33     n1 checkpoint: values txns        <=40B 5223, 41-512B 5998, >512B 3880, overflow 0 values request_ids <=40B 17622, 41-512B 5015, >512B 7407, overflow 40 
+13:06:34     n2 queue logs: files 5, file bytes 77008883, logical 76849736, message records 15449, messages 428980, entry records 29039 (elided 5335), stubs 2 commands by outcome tag/version: empty/v1=18125 push/v1=10086 push/v7=5363 BAD: entry body_len 4294967295 != 192 
+13:06:35     n2 checkpoint: values txns        <=40B 5591, 41-512B 6170, >512B 3880, overflow 0 values request_ids <=40B 18386, 41-512B 5555, >512B 7152, overflow 40 
+13:06:36     n3 queue logs: files 5, file bytes 78118939, logical 77953705, message records 15774, messages 435480, entry records 29764 (elided 5656), stubs 2 commands by outcome tag/version: empty/v1=18619 push/v1=10086 push/v7=5688 BAD: entry body_len 4294967295 != 192 
+13:06:36     n3 checkpoint: values txns        <=40B 5815, 41-512B 6152, >512B 3880, overflow 0 values request_ids <=40B 18724, 41-512B 5761, >512B 6896, overflow 40 
+13:12:00     live traffic over the roll (360 s, 4,500 msg/s offered):
+13:12:00     loader via n1: pushErr=97 | pushed=536540 popped=563100 lag=-26560 | popErr=238 ackErr=320 
+13:12:00     loader via n2: pushErr=148 | pushed=535520 popped=448940 lag=86580 | popErr=493 ackErr=40 
+13:12:00     loader via n3: pushErr=159 | pushed=535320 popped=595840 lag=-60520 | popErr=697 ackErr=140 
+13:12:00 6. a full stop and start of the cluster on 2.4
+13:12:07     n1: 2.3.0 follower cv 7 kinds 7 applied 192846 lag 0 healthy
+13:12:07     n2: 2.3.0 leader cv 7 kinds 7 applied 192846 lag 0 healthy
+13:12:07     n3: 2.3.0 follower cv 7 kinds 7 applied 192846 lag 0 healthy
+13:12:07     n1 boot: 2026-10-15T13:12:04.252850984Z  INFO rsm: txns rows refilled from the queue logs rows=74391 refilled=74391 missing=0 orphaned=0 ms=376 
+13:12:08     n2 boot: 2026-10-15T13:12:05.868815223Z  INFO rsm: txns rows refilled from the queue logs rows=74219 refilled=74219 missing=0 orphaned=0 ms=663 
+13:12:08     n3 boot: 2026-10-15T13:12:06.360839169Z  INFO rsm: txns rows refilled from the queue logs rows=74237 refilled=74237 missing=0 orphaned=0 ms=402 
+13:12:09     dup A dup: set A dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:12:09     dup B dup: set B dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:12:09     dup C dup: set C dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:12:50     history (written by 2.3.0) read back: popped=192000 popErr=0 
+13:12:50 7. kill -9 of the leader under load
+13:13:20     leader n2 killed
+13:13:30     n1: 2.3.0 follower cv 7 kinds 7 applied 203338 lag 0 healthy
+13:13:30     n2: 2.3.0 follower cv 7 kinds 7 applied 203371 lag 0 healthy
+13:13:30     n3: 2.3.0 leader cv 7 kinds 7 applied 203406 lag 0 healthy
+13:13:31     n2 boot: 2026-10-15T13:13:29.799814074Z  INFO rsm: txns rows refilled from the queue logs rows=80922 refilled=80922 missing=0 orphaned=0 ms=1012 
+13:13:32     dup A dup: set A dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:13:32     dup B dup: set B dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:13:32     dup C dup: set C dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:13:32     dup D new: set D new: 2000 items, answers {'queued': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:13:33     dup D dup: set D dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:14:40     loader via n1: pushErr=0 | pushed=133520 popped=134160 lag=-640 | popErr=2 ackErr=120 
+13:14:40     loader via n2: pushErr=611 | pushed=121280 popped=110260 lag=11020 | popErr=2400 ackErr=40 
+13:14:40     loader via n3: pushErr=0 | pushed=133500 popped=143940 lag=-10440 | popErr=2 ackErr=200 
+13:14:40 8. 2.3.0 on version-7 data
+13:14:57     2.3.0 on n3's own directory: not serving
+13:14:57     its log: 2026-10-15T13:14:42.217113264Z ERROR rsm: rsm: this build cannot read the log of the cluster this store belongs to: refusing to start node=3 cluster_version=7 reads=6 2026-10-15T13:14:42.223987558Z ERROR boot: FATAL: raft storage failed to open: open the openraft replicator at /root/roll/data: this build reads effect catalogue version 6, and the cluster this store belongs to writes version 7 (§12.8): run a release that reads it (the one the other nodes run), nev 
+13:14:57     process: no queen
+13:15:29     2.3.0 on an EMPTY directory, joining the version-7 cluster: down HTTPError
+13:15:29     its log: 2026-10-15T13:14:59.68437043Z  INFO openraft::engine::engine_impl: startup begin: state: RaftState { vote: Leased { data: Vote { leader_id: LeaderId { term: 0, voted_for: 3 }, committed: false }, last_update: Some(TokioInstant(Instant { tv_sec: 1460, tv_nsec: 323904083 })), lease: 0ns, lease_enabled 
+13:15:30     process: 6837 /root/roll/queen
+13:15:30     n1: 2.3.0 follower cv 7 kinds 7 applied 228588 lag 0 healthy
+13:15:30     n2: 2.3.0 leader cv 7 kinds 7 applied 228588 lag 0 healthy
+13:15:30     n3: down HTTPError
+13:15:33     n1: 2.3.0 follower cv 7 kinds 7 applied 228588 lag 0 healthy
+13:15:33     n2: 2.3.0 leader cv 7 kinds 7 applied 228588 lag 0 healthy
+13:15:33     n3: 2.3.0 follower cv 7 kinds 7 applied 228435 lag 0 healthy
+13:15:36     dup D dup: set D dup: 2000 items, answers {'duplicate': 2000}, offset mismatches 0, retries 0, pushes lost 0 -> OK
+13:15:36 errors and warnings per node (all starts):
+13:15:37   n1 FATAL/panic/poison/unknown-version lines: 0
+13:15:37   n1:    1493  WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error (Connect), when;   1375  WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client error (Connect), when;   1283  WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client erro;   1005  WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client erro;    168 WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error (Connect), when:;    140 WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client error (Connect), when:;    124 WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error;    106 WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client error;
+13:15:38   n2 FATAL/panic/poison/unknown-version lines: 0
+13:15:39   n2:   11067  WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error (Connect), when;  11032  WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client erro;   1136 WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error (Connect), when:;   1124 WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error;    199  WARN openraft::engine::handler::replication_handler: update progress error: NetworkError: core::io::error::Error: the append stream closed;    195  WARN openraft::replication: ReplicationCore recv RPCError: NetworkError: core::io::error::Error: the append stream closed, when:(stream-replication); sending error to R;    179  WARN openraft::core::heartbeat::worker: HeartbeatWorker(id=2, target=3) failed to send a heartbeat: Ok(Err(Unreachable(Unreachable { source: BoxedErrorSource { inner: c;    122 ARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.4:N/raft/v1/stream: client error (Connect), when:(;
+13:15:39   n3 FATAL/panic/poison/unknown-version lines: 1
+13:15:40   n3:    3857  WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client error (Connect), when;   3142  WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client erro;   2837  WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.6:N/raft/v1/stream: client error (Connect), when;   2699  WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.6:N/raft/v1/stream: client erro;    411 WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client error (Connect), when:;    303 WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.5:N/raft/v1/stream: client error;    274 WARN openraft::replication: ReplicationCore recv RPCError: Unreachable node: core::io::error::Error: http://10.N.0.6:N/raft/v1/stream: client error (Connect), when:;    261 WARN openraft::engine::handler::replication_handler: update progress error: Unreachable node: core::io::error::Error: http://10.N.0.6:N/raft/v1/stream: client error;
+13:15:42 ROLL_DONE

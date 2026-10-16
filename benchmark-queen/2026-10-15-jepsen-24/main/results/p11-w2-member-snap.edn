@@ -1,0 +1,102 @@
+{:faults {:corrupt-outcomes {},
+          :corrupt-not-back [],
+          :valid? true,
+          :member-final {:leader nil,
+                         :term 7,
+                         :voters [1 2 3 4 5],
+                         :learners []},
+          :member-removals {[200 nil] 8, [503 "retry"] 1, [nil nil] 2},
+          :corrupt-trials 0,
+          :member-rejoins {true 8},
+          :corrupt-late-rejoined {},
+          :corrupt-exit-rcs {},
+          :corrupt-late-exits [],
+          :member-ops {:member-cycle 5,
+                       :member-double 4,
+                       :member-heal 1},
+          :member-skipped {}},
+ :perf {:latency-graph {:valid? true},
+        :rate-graph {:valid? true},
+        :valid? true},
+ :valid? true,
+ :leftovers {:valid? true, :leftovers {}},
+ :panic {:valid? true, :count 0, :matches ()},
+ :lazyfs {:valid? true},
+ :ex {:valid? true},
+ :clock {:valid? true},
+ :members {:valid? true,
+           :voters {"n1" [1 2 3 4 5],
+                    "n2" [1 2 3 4 5],
+                    "n3" [1 2 3 4 5],
+                    "n4" [1 2 3 4 5],
+                    "n5" [1 2 3 4 5]},
+           :not-initialized [],
+           :no-answer []},
+ :workload {:total-queue {:ok-count 4661,
+                          :duplicated-count 2,
+                          :valid? true,
+                          :lost-count 0,
+                          :lost #{},
+                          :acknowledged-count 4640,
+                          :recovered #{1405
+                                       1370
+                                       1584
+                                       4224
+                                       3177
+                                       3613
+                                       4263
+                                       19953
+                                       1375
+                                       3575
+                                       3509
+                                       19952
+                                       20019
+                                       18616
+                                       1357
+                                       3578
+                                       4294
+                                       1362
+                                       12054
+                                       19716
+                                       4290},
+                          :attempt-count 28511,
+                          :unexpected #{},
+                          :unexpected-count 0,
+                          :recovered-count 21,
+                          :duplicated #{1724 1253}},
+            :queue {:lease-overlaps (),
+                    :payload-mismatch (),
+                    :valid? true,
+                    :noop-ack-examples (),
+                    :acked-twice (),
+                    :acked-twice-count 0,
+                    :lease-overlap-count 0,
+                    :partial-acks 0,
+                    :acked 4660,
+                    :redeliveries 40,
+                    :pop-skips (),
+                    :offset-value-mismatch (),
+                    :ack-unknown 3,
+                    :pop-skip-count 0,
+                    :noop-acks 0,
+                    :deliveries 4665,
+                    :pop-internal-gaps (),
+                    :redelivered-after-ack-count 0,
+                    :ack-rejected 2,
+                    :redelivered-after-ack ()},
+            :valid? true},
+ :stats {:valid? true,
+         :count 57238,
+         :ok-count 9351,
+         :fail-count 47736,
+         :info-count 151,
+         :by-f {:dequeue {:valid? true,
+                          :count 28727,
+                          :ok-count 4711,
+                          :fail-count 24013,
+                          :info-count 3},
+                :enqueue {:valid? true,
+                          :count 28511,
+                          :ok-count 4640,
+                          :fail-count 23723,
+                          :info-count 148}}}}

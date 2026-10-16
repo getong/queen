@@ -1,0 +1,3 @@
+bs-w1-none      --workload log --batch-sends 8 --nemesis none --time-limit 60 --rate 100 --leave-db-running
+bs-w6-kill      --workload dedup --batch-sends 6 --nemesis kill --time-limit 60 --rate 100 --nemesis-interval 10
+bs-w1-kill      --workload log --batch-sends 8 --nemesis kill --time-limit 60 --rate 100 --nemesis-interval 10 --leave-db-running

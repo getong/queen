@@ -1,0 +1,102 @@
+{:faults {:corrupt-outcomes {},
+          :corrupt-not-back [],
+          :valid? true,
+          :member-final {:leader 5,
+                         :term 13,
+                         :voters [1 2 3 4 5],
+                         :learners []},
+          :member-removals {[200 nil] 22},
+          :corrupt-trials 0,
+          :member-rejoins {true 22},
+          :corrupt-late-rejoined {},
+          :corrupt-exit-rcs {},
+          :corrupt-late-exits [],
+          :member-ops {:member-cycle 11,
+                       :member-double 7,
+                       :member-heal 1},
+          :member-skipped {:no-membership 2}},
+ :perf {:latency-graph {:valid? true},
+        :rate-graph {:valid? true},
+        :valid? true},
+ :valid? true,
+ :leftovers {:valid? true, :leftovers {}},
+ :panic {:valid? true, :count 0, :matches ()},
+ :lazyfs {:valid? true},
+ :ex {:valid? true},
+ :clock {:valid? true},
+ :members {:valid? true,
+           :voters {"n1" [1 2 3 4 5],
+                    "n2" [1 2 3 4 5],
+                    "n3" [1 2 3 4 5],
+                    "n4" [1 2 3 4 5],
+                    "n5" [1 2 3 4 5]},
+           :not-initialized [],
+           :no-answer []},
+ :workload {:total-queue {:ok-count 17769,
+                          :duplicated-count 0,
+                          :valid? true,
+                          :lost-count 0,
+                          :lost #{},
+                          :acknowledged-count 17748,
+                          :recovered #{3348
+                                       22845
+                                       24905
+                                       20206
+                                       3373
+                                       22847
+                                       20303
+                                       26131
+                                       26051
+                                       3287
+                                       11202
+                                       4765
+                                       3319
+                                       22263
+                                       22262
+                                       3401
+                                       20498
+                                       1614
+                                       22365
+                                       22341
+                                       3404},
+                          :attempt-count 26368,
+                          :unexpected #{},
+                          :unexpected-count 0,
+                          :recovered-count 21,
+                          :duplicated #{}},
+            :queue {:lease-overlaps (),
+                    :payload-mismatch (),
+                    :valid? true,
+                    :noop-ack-examples (),
+                    :acked-twice (),
+                    :acked-twice-count 0,
+                    :lease-overlap-count 0,
+                    :partial-acks 0,
+                    :acked 17768,
+                    :redeliveries 68,
+                    :pop-skips (),
+                    :offset-value-mismatch (),
+                    :ack-unknown 1,
+                    :pop-skip-count 0,
+                    :noop-acks 0,
+                    :deliveries 17770,
+                    :pop-internal-gaps (),
+                    :redelivered-after-ack-count 0,
+                    :ack-rejected 1,
+                    :redelivered-after-ack ()},
+            :valid? true},
+ :stats {:valid? true,
+         :count 52618,
+         :ok-count 35273,
+         :fail-count 17286,
+         :info-count 59,
+         :by-f {:dequeue {:valid? true,
+                          :count 26250,
+                          :ok-count 17525,
+                          :fail-count 8724,
+                          :info-count 1},
+                :enqueue {:valid? true,
+                          :count 26368,
+                          :ok-count 17748,
+                          :fail-count 8562,
+                          :info-count 58}}}}

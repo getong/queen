@@ -1,0 +1,8 @@
+2026-10-15T13:29:54Z start bs-w1-none: --workload log --batch-sends 8 --nemesis none --time-limit 60 --rate 100 --leave-db-running
+2026-10-15T13:32:04Z done  bs-w1-none: valid store=/root/jepsen-batch/store/queen-log-none_batch=8_offload=on_lanes=16/2026-10-15T13:30:01.916846607Z log=/root/runs-batch-smoke/bs-w1-none.log
+2026-10-15T13:32:04Z start bs-w6-kill: --workload dedup --batch-sends 6 --nemesis kill --time-limit 60 --rate 100 --nemesis-interval 10
+2026-10-15T13:33:24Z done  bs-w6-kill: valid store=/root/jepsen-batch/store/queen-dedup-kill_t=one,primaries,majority,all_batch=6_offload=on_lanes=16/2026-10-15T13:32:12.191954411Z log=/root/runs-batch-smoke/bs-w6-kill.log
+2026-10-15T13:33:24Z start bs-w1-kill: --workload log --batch-sends 8 --nemesis kill --time-limit 60 --rate 100 --nemesis-interval 10 --leave-db-running
+2026-10-15T13:34:54Z done  bs-w1-kill: valid store=/root/jepsen-batch/store/queen-log-kill_t=one,primaries,majority,all_batch=8_offload=on_lanes=16/2026-10-15T13:33:32.008733855Z log=/root/runs-batch-smoke/bs-w1-kill.log
+2026-10-15T13:34:54Z matrix matrix-batch-smoke.txt finished
+2026-10-15T13:34:54Z ALL DONE matrix-batch-smoke.txt
