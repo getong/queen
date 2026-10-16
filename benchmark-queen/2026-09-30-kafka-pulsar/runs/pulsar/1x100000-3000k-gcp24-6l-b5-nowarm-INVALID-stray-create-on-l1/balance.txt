@@ -1,0 +1,5 @@
+balance bench/ns: 100000 topics (1 partitioned) in 48 of 48 bundles, 3 brokers, mean 33333.3 topics/broker; hash check 4/4 lookups agree
+  10.250.0.22:8080       bundles= 16 topics=  33253 (  -0.2%)  per-bundle max/min=2123/2046
+  10.250.0.23:8080       bundles= 16 topics=  33371 (  +0.1%)  per-bundle max/min=2111/2058
+  10.250.0.25:8080       bundles= 16 topics=  33376 (  +0.1%)  per-bundle max/min=2107/2063
+  unowned bundles with topics: 0 (0 topics); max deviation 0.2% (target ±10%): OK

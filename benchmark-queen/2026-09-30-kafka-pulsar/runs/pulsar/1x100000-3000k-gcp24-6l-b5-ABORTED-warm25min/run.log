@@ -1,0 +1,6 @@
+[2026-10-16T08:08:59Z] run 1x100000-3000k-gcp24-6l-b5: pulsar 4.2.4, 3000000 msg/s total over 18 load processes (6 loaders x 3), topics=1 x partitions=100000 entities=0 mode=batch batch=100 sub=failover consumers=17/process
+[2026-10-16T08:09:00Z] 1. cluster reset: PROFILE=vm JOURNALS=2 BOOKIE_SET=dbStorage_writeCacheMaxSizeMb=4096;dbStorage_readAheadCacheMaxSizeMb=2048 BROKER_SET=managedLedgerCacheSizeMB=4096 MEM_ZK=-Xms2g -Xmx2g MEM_BOOKIE=-Xms6g -Xmx6g -XX:MaxDirectMemorySize=16g MEM_BROKER=-Xms12g -Xmx12g -XX:MaxDirectMemorySize=12g
+  [2026-10-16T08:09:29Z] brokers healthy: brokers active=3 10.250.0.22:8080=ok 10.250.0.23:8080=ok 10.250.0.25:8080=ok
+    proof persistent://bench/ns/probe-health-1792138171: ledger 9 (1 ledgers, state=LedgerOpened) ensembleSize=3 writeQuorumSize=3 ackQuorumSize=2 ensemble=[10.250.0.23:3181, 10.250.0.22:3181, 10.250.
+  [2026-10-16T08:09:33Z] reset done
+[2026-10-16T08:09:33Z] 2. topics + subscription + warm: pload -create-only on loader 1

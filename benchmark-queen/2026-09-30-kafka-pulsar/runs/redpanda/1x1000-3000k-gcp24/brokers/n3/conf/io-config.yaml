@@ -1,0 +1,6 @@
+disks:
+  - mountpoint: /root/bench
+    read_iops: 665509
+    read_bandwidth: 2726579712
+    write_iops: 342121
+    write_bandwidth: 1404091776

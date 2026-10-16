@@ -1,0 +1,13 @@
+# Redpanda 26.2.3 CLUSTER properties for the Kafka-matrix re-run on Redpanda (rendered by redpanda/mkconf.sh at 2026-10-16T07:14:48Z,
+# PARTS=100). Read by Redpanda when the cluster forms (every reset wipes the 3 nodes first). Reasons: overrides.txt.
+default_topic_replications: 3
+internal_topic_replication_factor: 3
+write_caching_default: false
+kafka_batch_max_bytes: 16777216
+log_retention_ms: 600000
+rpc_server_listen_backlog: 4096
+topic_partitions_per_shard: 7000
+topic_partitions_memory_allocation_percent: 10
+topic_memory_per_partition: 204800
+segment_fallocation_step: 33554432
+auto_create_topics_enabled: false

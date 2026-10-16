@@ -1,0 +1,25 @@
+WARN max-pending 1000000 per partition producer would preallocate 127143 MB over 5555 partitions (24 B/slot); using 1000 (-pending-budget-mb 64)
+pload tag=1x50000-3000k-gcp24-c8 loader=6/9 mode=batch rate=333333 msg/s batch=100 batch-max=0 max-inflight=5000 ramp=10s duration=1m10s report=10s drain=0s GOMAXPROCS=16 GOGC=400(default) seed=1792136871588602559
+  offered: 333333 msg/s = 3333.3 units/s (avg 100.0 msgs/unit) across 64 pacer workers (52.08 units/s each)
+  topics: 1 x 50000 partitions (load..load), entities/topic=0 (explicit partition) | picker: topics=rr entities: rr over space=5555 starting at 0 [producer shard 6/9: partitions p % 9 == 6, entity j -> partition 6 + j*9]
+  payload: goload jsonEvent target 256 B, avg 289.5 B raw, ~319 B stamped ({"ts":µs,"src":6,...}), pool 64x100
+  consumers: 33 here (ci 198..230 of 297), poll=1000 proc-us=0 ack=async ack-inflight=256 local-src=[6 7 8]
+  pulsar: url=pulsar://10.250.0.23:6650,10.250.0.22:6650,10.250.0.25:6650 admin=http://10.250.0.23:8080 ns=bench/ns sub=sub type=failover compression=lz4 batch=1s/100 msgs/131072 B key-batching=false max-pending=1000/partition mem-limit=365 MB receiver-queue=1000 ack-group=100ms conns/broker=8
+  [admin] 1 topics with 50000 partitions and subscription "sub" exist (checked in 0.1s)
+  [consume] 33 consumers (ci 198..230 of 297), failover, partition slices (every partition exactly one consumer): 5544 partition registrations here, 50000 in total across all processes; idle 0 here, 0 in total; subscribed in 0.5s, settling 2s
+  [produce] producer shard 6/9: 5555 partitions per topic (p % 9 == 6) x 1 topics, per-partition producers created before READY (-producer-eager)
+  [produce] 5555 per-partition producers created in 2.4s
+READY 1792136886422
+[start] waiting 9.57s for the common start 1792136899605
+[start] GO 07:48:19.605 (unix ms 1792136899605)
+[07:48:29] offered=   151721/s achieved=    99054/s shed=     2850/s inflight=  4982 | p50= 757.76 p99= 2637.82 p999= 3293.18 ms | push=990600 pop=1034048 lag=-43448 | errs push=0 pop=0 empty=0 gor=50119 | ack=   103052/s ackErr=0 ackAvg=3.45ms | e2e p50=749.57 p99=2375.68 p999=2932.74 n=1034048 | e2e_local p50=806.91 p99=2408.45 n=273125
+[07:48:39] offered=   341873/s achieved=   196372/s shed=   145701/s inflight=  4958 | p50=2473.98 p99= 5144.58 p999= 5996.54 ms | push=2954300 pop=3236926 lag=-282626 | errs push=0 pop=0 empty=0 gor=50115 | ack=   220089/s ackErr=0 ackAvg=6.54ms | e2e p50=2637.82 p99=7045.12 p999=8978.43 n=2202978 | e2e_local p50=2703.36 p99=7962.62 n=551434
+[07:48:49] offered=   323717/s achieved=   213406/s shed=   111245/s inflight=  4989 | p50=2375.68 p99= 5472.26 p999= 6258.69 ms | push=5101300 pop=5801949 lag=-700649 | errs push=0 pop=0 empty=0 gor=50115 | ack=   255015/s ackErr=0 ackAvg=6.19ms | e2e p50=2473.98 p99=6914.05 p999=8978.43 n=2564923 | e2e_local p50=2506.75 p99=6979.58 n=645422
+[07:48:59] offered=   347014/s achieved=   217558/s shed=   128145/s inflight=  4828 | p50=2179.07 p99= 5996.54 p999= 7176.19 ms | push=7293600 pop=8154290 lag=-860690 | errs push=0 pop=0 empty=0 gor=50115 | ack=   233332/s ackErr=0 ackAvg=5.91ms | e2e p50=2375.68 p99=10027.01 p999=15007.74 n=2352341 | e2e_local p50=2277.38 p99=6455.30 n=558670
+[07:49:09] offered=   332988/s achieved=   207812/s shed=   128338/s inflight=  4999 | p50=2375.68 p99= 5668.86 p999= 6520.83 ms | push=9357500 pop=10258307 lag=-900807 | errs push=0 pop=0 empty=0 gor=50115 | ack=   212076/s ackErr=0 ackAvg=6.40ms | e2e p50=2834.43 p99=10813.44 p999=21889.02 n=2104017 | e2e_local p50=2768.90 p99=8454.14 n=455897
+[07:49:19] offered=   320089/s achieved=   212974/s shed=   106864/s inflight=  4742 | p50=2146.30 p99= 6324.22 p999= 7307.26 ms | push=11474600 pop=12676574 lag=-1201974 | errs push=0 pop=0 empty=0 gor=50115 | ack=   243480/s ackErr=0 ackAvg=5.93ms | e2e p50=2572.29 p99=22675.46 p999=29753.34 n=2418267 | e2e_local p50=2506.75 p99=10944.51 n=600249
+[07:49:29] offered=   344833/s achieved=   209749/s shed=   137566/s inflight=  4459 | p50=2277.38 p99= 6324.22 p999= 7241.73 ms | push=13596400 pop=15040497 lag=-1444097 | errs push=0 pop=0 empty=0 gor=50051 | ack=   233580/s ackErr=0 ackAvg=5.95ms | e2e p50=2473.98 p99=8454.14 p999=12910.59 n=2363923 | e2e_local p50=2408.45 p99=8224.77 n=587915
+[info] producers created: 5555 per-partition producers (shard), 0 creation errors, avg creation 13.9 ms
+[info] steady window 60s (after the ramp, before the producers stopped): offered 335126/s pushed 209658/s popped 232954/s cpu 524.2% = 2.50 cores per 100k msg/s (produce+consume)
+[final] offered=216669 achieved=140424 shed=76245 (msgs: offered=21666900 achieved=14042400 shed=7624500) pushErr=0 | pushed=14042400 popped=15707800 lag=-1665400 | popErr=0 empty=0 | overall p50=2211.84 p99=5865.47 p999=6979.58 ms | acked=15707800 ackErr=0 ackLag=-1665400 ackAvg=5.90ms | e2e p50=2441.22 p99=11993.09 p999=25034.75 ms
+load_cpu=407.3%

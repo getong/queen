@@ -1,0 +1,6 @@
+version=26.2.3-1
+redpanda=v26.2.3 - 3c9fc8dd623ed22ad66eaca7621fe7ab1c268369
+rpk=rpk version (Redpanda CLI): v26.2.3 (rev 3c9fc8dd623ed22ad66eaca7621fe7ab1c268369)
+release_date=2026-09-17
+units=redpanda:disabled/inactive redpanda-tuner:disabled/inactive
+installed=2026-10-16T06:47:02Z

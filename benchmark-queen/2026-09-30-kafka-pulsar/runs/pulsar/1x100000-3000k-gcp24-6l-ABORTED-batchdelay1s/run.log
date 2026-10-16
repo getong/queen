@@ -1,0 +1,2 @@
+[2026-10-16T07:58:57Z] run 1x100000-3000k-gcp24-6l: pulsar 4.2.4, 3000000 msg/s total over 18 load processes (6 loaders x 3), topics=1 x partitions=100000 entities=0 mode=batch batch=100 sub=failover consumers=17/process
+[2026-10-16T07:58:58Z] 1. cluster reset: PROFILE=vm JOURNALS=2 BOOKIE_SET=dbStorage_writeCacheMaxSizeMb=4096;dbStorage_readAheadCacheMaxSizeMb=2048 BROKER_SET=managedLedgerCacheSizeMB=4096 MEM_ZK=-Xms2g -Xmx2g MEM_BOOKIE=-Xms6g -Xmx6g -XX:MaxDirectMemorySize=16g MEM_BROKER=-Xms12g -Xmx12g -XX:MaxDirectMemorySize=12g

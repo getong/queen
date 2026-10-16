@@ -1,0 +1,151 @@
+# rpk redpanda tune all on queen-bench-3.europe-west1-b.c.<gcp-project>.internal (10.250.0.25) at 2026-10-16T07:41:45Z, rc=0, config /root/bench/redpanda/conf/redpanda.yaml; this pass planned 135 writes
+TUNER                  APPLIED  ENABLED  SUPPORTED
+aio_events             true     true     true
+ballast_file           true     true     true
+clocksource            true     true     true
+coredump               false    false    true
+cpu                    true     true     true
+disk_irq               true     true     true
+disk_nomerges          true     true     true
+disk_scheduler         true     true     true
+disk_write_cache       true     true     true
+fstrim                 false    false    true
+net                    true     true     true
+swappiness             true     true     true
+transparent_hugepages  false    false    true
+# every value a Redpanda tuner has written on this box: OS baseline (before its first tune; restored by rc.sh untune) -> now
+file    /proc/sys/fs/aio-max-nr                                                  65536 -> 10000137
+ballast /root/bench/data/redpanda/ballast                                        <absent> -> 1000000000
+file    /sys/devices/system/cpu/cpufreq/policy0/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy1/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy2/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy3/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy4/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy5/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy6/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy7/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy8/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy9/scaling_governor                 schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy10/scaling_governor                schedutil -> performance
+file    /sys/devices/system/cpu/cpufreq/policy11/scaling_governor                schedutil -> performance
+file    /proc/irq/92/smp_affinity                                                0400c0 -> 0400c0   (NOT APPLIED: wanted 00000010)
+file    /proc/irq/66/smp_affinity                                                00400c -> 00400c   (NOT APPLIED: wanted 00000400)
+file    /proc/irq/85/smp_affinity                                                100300 -> 100300   (NOT APPLIED: wanted 00008000)
+file    /proc/irq/73/smp_affinity                                                001003 -> 001003   (NOT APPLIED: wanted 00000080)
+file    /proc/irq/94/smp_affinity                                                400c00 -> 400c00   (NOT APPLIED: wanted 00000002)
+file    /proc/irq/89/smp_affinity                                                001003 -> 001003   (NOT APPLIED: wanted 00080000)
+file    /proc/irq/79/smp_affinity                                                02a000 -> 02a000   (NOT APPLIED: wanted 00000800)
+file    /proc/irq/56/smp_affinity                                                000200 -> 000040   (NOT APPLIED: wanted 00020000)
+file    /proc/irq/77/smp_affinity                                                100300 -> 100300   (NOT APPLIED: wanted 00000001)
+file    /proc/irq/65/smp_affinity                                                001003 -> 001003   (NOT APPLIED: wanted 00001000)
+file    /proc/irq/71/smp_affinity                                                02a000 -> 02a000   (NOT APPLIED: wanted 00000100)
+file    /proc/irq/96/smp_affinity                                                a80000 -> a80000   (NOT APPLIED: wanted 00000004)
+file    /proc/irq/78/smp_affinity                                                400c00 -> 400c00   (NOT APPLIED: wanted 00000020)
+file    /proc/irq/84/smp_affinity                                                0400c0 -> 0400c0   (NOT APPLIED: wanted 00000008)
+file    /proc/irq/81/smp_affinity                                                001003 -> 001003   (NOT APPLIED: wanted 00000800)
+file    /proc/irq/87/smp_affinity                                                02a000 -> 02a000   (NOT APPLIED: wanted 00000200)
+file    /proc/irq/72/smp_affinity                                                a80000 -> a80000   (NOT APPLIED: wanted 00000001)
+file    /proc/irq/90/smp_affinity                                                00400c -> 00400c   (NOT APPLIED: wanted 00000040)
+file    /proc/irq/58/smp_affinity                                                040000 -> 000400   (NOT APPLIED: wanted 00000040)
+file    /proc/irq/67/smp_affinity                                                010030 -> 010030   (NOT APPLIED: wanted 00000400)
+file    /proc/irq/57/smp_affinity                                                000001 -> 000040   (NOT APPLIED: wanted 00000002)
+file    /proc/irq/95/smp_affinity                                                02a000 -> 02a000   (NOT APPLIED: wanted 00002000)
+file    /proc/irq/91/smp_affinity                                                010030 -> 010030   (NOT APPLIED: wanted 00200000)
+file    /proc/irq/68/smp_affinity                                                0400c0 -> 0400c0   (NOT APPLIED: wanted 00400000)
+file    /proc/irq/88/smp_affinity                                                a80000 -> a80000   (NOT APPLIED: wanted 00000010)
+file    /proc/irq/59/smp_affinity                                                000008 -> 000004   (NOT APPLIED: wanted 00100000)
+file    /proc/irq/76/smp_affinity                                                0400c0 -> 0400c0   (NOT APPLIED: wanted 00004000)
+file    /proc/irq/80/smp_affinity                                                a80000 -> a80000   (NOT APPLIED: wanted 00000008)
+file    /proc/irq/93/smp_affinity                                                100300 -> 100300   (NOT APPLIED: wanted 00010000)
+file    /proc/irq/69/smp_affinity                                                100300 -> 100300   (NOT APPLIED: wanted 00000080)
+file    /proc/irq/74/smp_affinity                                                00400c -> 00400c   (NOT APPLIED: wanted 00000020)
+file    /proc/irq/82/smp_affinity                                                00400c -> 00400c   (NOT APPLIED: wanted 00000200)
+file    /proc/irq/75/smp_affinity                                                010030 -> 010030   (NOT APPLIED: wanted 00000004)
+file    /proc/irq/83/smp_affinity                                                010030 -> 010030   (NOT APPLIED: wanted 00040000)
+file    /proc/irq/86/smp_affinity                                                400c00 -> 400c00   (NOT APPLIED: wanted 00800000)
+file    /proc/irq/70/smp_affinity                                                400c00 -> 400c00   (NOT APPLIED: wanted 00000100)
+file    /sys/devices/pci0000:00/0000:00:06.0/nvme/nvme3/nvme3n1/queue/nomerges   0 -> 2
+file    /sys/devices/pci0000:00/0000:00:04.0/nvme/nvme0/nvme0n1/queue/nomerges   0 -> 2
+file    /sys/devices/pci0000:00/0000:00:03.0/nvme/nvme1/nvme1n1/queue/nomerges   0 -> 2
+file    /sys/devices/pci0000:00/0000:00:05.0/nvme/nvme2/nvme2n1/queue/nomerges   0 -> 2
+file    /proc/irq/115/smp_affinity                                               000001 -> 000001
+file    /proc/irq/127/smp_affinity                                               001000 -> 000200
+file    /proc/irq/113/smp_affinity                                               004000 -> 000400
+file    /proc/irq/116/smp_affinity                                               000002 -> 000002
+file    /proc/irq/103/smp_affinity                                               000010 -> 000008
+file    /proc/irq/106/smp_affinity                                               000080 -> 020000
+file    /proc/irq/107/smp_affinity                                               000100 -> 000040
+file    /proc/irq/108/smp_affinity                                               000200 -> 040000
+file    /proc/irq/124/smp_affinity                                               000200 -> 000080
+file    /proc/irq/109/smp_affinity                                               000400 -> 080000
+file    /proc/irq/130/smp_affinity                                               008000 -> 800000
+file    /proc/irq/102/smp_affinity                                               000008 -> 000004
+file    /proc/irq/125/smp_affinity                                               000400 -> 000080
+file    /proc/irq/126/smp_affinity                                               000800 -> 100000
+file    /proc/irq/112/smp_affinity                                               002000 -> 200000
+file    /proc/irq/99/smp_affinity                                                000001 -> 000001
+file    /proc/irq/100/smp_affinity                                               000002 -> 001000
+file    /proc/irq/121/smp_affinity                                               000040 -> 000010
+file    /proc/irq/105/smp_affinity                                               000040 -> 010000
+file    /proc/irq/114/smp_affinity                                               008000 -> 000800
+file    /proc/irq/111/smp_affinity                                               001000 -> 000200
+file    /proc/irq/101/smp_affinity                                               000004 -> 000002
+file    /proc/irq/117/smp_affinity                                               000004 -> 002000
+file    /proc/irq/118/smp_affinity                                               000008 -> 004000
+file    /proc/irq/120/smp_affinity                                               000020 -> 008000
+file    /proc/irq/119/smp_affinity                                               000010 -> 000008
+file    /proc/irq/104/smp_affinity                                               000020 -> 000010
+file    /proc/irq/110/smp_affinity                                               000800 -> 000100
+file    /proc/irq/128/smp_affinity                                               002000 -> 000400
+file    /proc/irq/129/smp_affinity                                               004000 -> 400000
+file    /proc/irq/122/smp_affinity                                               000080 -> 000020
+file    /proc/irq/123/smp_affinity                                               000100 -> 000040
+file    /sys/class/net/ens7/queues/rx-0/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-1/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-10/rps_cpus                                000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-11/rps_cpus                                000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-12/rps_cpus                                000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-13/rps_cpus                                000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-14/rps_cpus                                000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-15/rps_cpus                                000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-2/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-3/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-4/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-5/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-6/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-7/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-8/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-9/rps_cpus                                 000000 -> ffffff
+file    /sys/class/net/ens7/queues/rx-0/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-1/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-10/rps_flow_cnt                            0 -> 2048
+file    /sys/class/net/ens7/queues/rx-11/rps_flow_cnt                            0 -> 2048
+file    /sys/class/net/ens7/queues/rx-12/rps_flow_cnt                            0 -> 2048
+file    /sys/class/net/ens7/queues/rx-13/rps_flow_cnt                            0 -> 2048
+file    /sys/class/net/ens7/queues/rx-14/rps_flow_cnt                            0 -> 2048
+file    /sys/class/net/ens7/queues/rx-15/rps_flow_cnt                            0 -> 2048
+file    /sys/class/net/ens7/queues/rx-2/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-3/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-4/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-5/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-6/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-7/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-8/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/rx-9/rps_flow_cnt                             0 -> 2048
+file    /sys/class/net/ens7/queues/tx-0/xps_cpus                                 000001 -> 000001
+file    /sys/class/net/ens7/queues/tx-1/xps_cpus                                 000002 -> 001000
+file    /sys/class/net/ens7/queues/tx-10/xps_cpus                                000400 -> 002002
+file    /sys/class/net/ens7/queues/tx-11/xps_cpus                                000800 -> 004004
+file    /sys/class/net/ens7/queues/tx-12/xps_cpus                                001000 -> 000008
+file    /sys/class/net/ens7/queues/tx-13/xps_cpus                                002000 -> 008000
+file    /sys/class/net/ens7/queues/tx-14/xps_cpus                                004000 -> 010010
+file    /sys/class/net/ens7/queues/tx-15/xps_cpus                                008000 -> 020020
+file    /sys/class/net/ens7/queues/tx-2/xps_cpus                                 000004 -> 000040
+file    /sys/class/net/ens7/queues/tx-3/xps_cpus                                 000008 -> 040000
+file    /sys/class/net/ens7/queues/tx-4/xps_cpus                                 000010 -> 080080
+file    /sys/class/net/ens7/queues/tx-5/xps_cpus                                 000020 -> 100100
+file    /sys/class/net/ens7/queues/tx-6/xps_cpus                                 000040 -> 000200
+file    /sys/class/net/ens7/queues/tx-7/xps_cpus                                 000080 -> 200000
+file    /sys/class/net/ens7/queues/tx-8/xps_cpus                                 000100 -> 400400
+file    /sys/class/net/ens7/queues/tx-9/xps_cpus                                 000200 -> 800800
+sysctl  net.core.rps_sock_flow_entries                                           0 -> 32768

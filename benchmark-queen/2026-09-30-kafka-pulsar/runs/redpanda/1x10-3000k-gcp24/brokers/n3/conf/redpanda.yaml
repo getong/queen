@@ -1,0 +1,45 @@
+# Redpanda 26.2.3 node config: node 3 of 3 (10.250.0.25), PARTS=10. Rendered by redpanda/mkconf.sh on queen-bench-3.europe-west1-b.c.<gcp-project>.internal
+# at 2026-10-16T07:29:04Z with rpk (bootstrap + mode production + config set). Do not edit: re-render (rc.sh render).
+# Reasons: overrides.txt next to this file. Cluster properties: .bootstrap.yaml next to this file.
+redpanda:
+    data_directory: /root/bench/data/redpanda
+    node_id: 3
+    empty_seed_starts_cluster: false
+    seed_servers:
+        - host:
+            address: 10.250.0.23
+            port: 33145
+        - host:
+            address: 10.250.0.22
+            port: 33145
+        - host:
+            address: 10.250.0.25
+            port: 33145
+    rpc_server:
+        address: 10.250.0.25
+        port: 33145
+    kafka_api:
+        - address: 10.250.0.25
+          port: 9092
+    admin:
+        - address: 10.250.0.25
+          port: 9644
+    advertised_rpc_api:
+        address: 10.250.0.25
+        port: 33145
+    advertised_kafka_api:
+        - address: 10.250.0.25
+          port: 9092
+rpk:
+    tune_network: true
+    tune_disk_scheduler: true
+    tune_disk_nomerges: true
+    tune_disk_write_cache: true
+    tune_disk_irq: true
+    tune_cpu: true
+    tune_aio_events: true
+    tune_clocksource: true
+    tune_swappiness: true
+    coredump_dir: /var/lib/redpanda/coredump
+    tune_ballast_file: true
+    ballast_file_path: /root/bench/data/redpanda/ballast

@@ -1,0 +1,69 @@
+WARN max-pending 1000000 per partition producer would preallocate 127166 MB over 5556 partitions (24 B/slot); using 1000 (-pending-budget-mb 64)
+pload tag=1x100000-3000k-gcp24-6l-b5-nowarm loader=1/18 mode=batch rate=166667 msg/s batch=100 batch-max=0 max-inflight=5000 ramp=10s duration=1m10s report=10s drain=0s GOMAXPROCS=16 GOGC=400(default) seed=1792139899976355412
+  offered: 166667 msg/s = 1666.7 units/s (avg 100.0 msgs/unit) across 34 pacer workers (49.02 units/s each)
+  topics: 1 x 100000 partitions (load..load), entities/topic=0 (explicit partition) | picker: topics=rr entities: rr over space=5556 starting at 0 [producer shard 1/18: partitions p % 18 == 1, entity j -> partition 1 + j*18]
+  payload: goload jsonEvent target 256 B, avg 289.4 B raw, ~319 B stamped ({"ts":µs,"src":1,...}), pool 64x100
+  consumers: 17 here (ci 17..33 of 306), poll=1000 proc-us=0 ack=async ack-inflight=256 local-src=[0 1 2]
+  pulsar: url=pulsar://10.250.0.23:6650,10.250.0.22:6650,10.250.0.25:6650 admin=http://10.250.0.23:8080 ns=bench/ns sub=sub type=failover compression=lz4 batch=5ms/1000 msgs/131072 B key-batching=false max-pending=1000/partition mem-limit=365 MB receiver-queue=1000 ack-group=100ms conns/broker=1
+  [admin] 1 topics with 100000 partitions and subscription "sub" exist (checked in 0.0s)
+  [consume] 17 consumers (ci 17..33 of 306), failover, partition slices (every partition exactly one consumer): 5559 partition registrations here, 100000 in total across all processes; idle 0 here, 0 in total; subscribed in 1.0s, settling 2s
+  [produce] producer shard 1/18: 5556 partitions per topic (p % 18 == 1) x 1 topics, per-partition producers created before READY (-producer-eager)
+  [produce] 5556 per-partition producers created in 2.6s
+READY 1792139903417
+[start] waiting 9.779s for the common start 1792139920127
+[start] GO 08:38:40.127 (unix ms 1792139920127)
+[08:38:50] offered=    72365/s achieved=    45188/s shed=        0/s inflight=  2719 | p50=  17.79 p99=  880.64 p999= 2375.68 ms | push=452100 pop=453674 lag=-1574 | errs push=0 pop=0 empty=0 gor=50085 | ack=    45306/s ackErr=0 ackAvg=0.33ms | e2e p50=12.35 p99=2277.38 p999=2408.45 n=453674 | e2e_local p50=19.84 p99=790.53 n=79502
+[08:39:00] offered=   175379/s achieved=    87545/s shed=    65066/s inflight=  4995 | p50=4554.75 p99= 7176.19 p999= 8585.22 ms | push=1327200 pop=1169150 lag=158050 | errs push=0 pop=0 empty=0 gor=50085 | ack=    71526/s ackErr=0 ackAvg=1.91ms | e2e p50=4554.75 p99=9764.86 p999=11993.09 n=715476 | e2e_local p50=4816.90 p99=10551.30 n=102772
+[08:39:10] offered=   167111/s achieved=   105934/s shed=    61187/s inflight=  4994 | p50=4620.29 p99= 5996.54 p999= 6324.22 ms | push=2386600 pop=2065643 lag=320957 | errs push=0 pop=0 empty=0 gor=50085 | ack=    89689/s ackErr=0 ackAvg=2.01ms | e2e p50=8585.22 p99=16711.68 p999=19005.44 n=896493 | e2e_local p50=7241.73 p99=17170.43 n=145464
+[08:39:20] offered=   167875/s achieved=    94045/s shed=    73850/s inflight=  4991 | p50=5013.50 p99= 5931.01 p999= 6193.15 ms | push=3326800 pop=3136156 lag=190644 | errs push=0 pop=0 empty=0 gor=50085 | ack=   107060/s ackErr=0 ackAvg=2.06ms | e2e p50=11075.58 p99=21889.02 p999=25559.04 n=1070513 | e2e_local p50=9109.50 p99=21889.02 n=146484
+[08:39:30] offered=   166120/s achieved=    81385/s shed=    85950/s inflight=  4870 | p50=6193.15 p99= 6979.58 p999= 7307.26 ms | push=4150600 pop=4242913 lag=-92313 | errs push=0 pop=0 empty=0 gor=50085 | ack=   109403/s ackErr=0 ackAvg=1.97ms | e2e p50=13434.88 p99=27394.05 p999=31064.06 n=1106757 | e2e_local p50=10158.08 p99=26345.47 n=150112
+[08:39:40] offered=   166982/s achieved=    81321/s shed=    84538/s inflight=  4980 | p50=5996.54 p99= 7110.66 p999= 7438.34 ms | push=4954600 pop=5540415 lag=-585815 | errs push=0 pop=0 empty=0 gor=50085 | ack=   131237/s ackErr=0 ackAvg=1.72ms | e2e p50=13697.02 p99=32636.93 p999=36962.30 n=1297502 | e2e_local p50=10682.37 p99=31588.35 n=157274
+[08:39:50] offered=   163428/s achieved=    80831/s shed=    82803/s inflight=  4959 | p50=6062.08 p99= 6717.44 p999= 6979.58 ms | push=5782600 pop=7010885 lag=-1228285 | errs push=0 pop=0 empty=0 gor=50052 | ack=   143407/s ackErr=0 ackAvg=1.56ms | e2e p50=13041.66 p99=36438.02 p999=42205.18 n=1470470 | e2e_local p50=10551.30 p99=36962.30 n=147058
+time="2026-10-16T08:39:57Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=3308 name=c00030 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-32772"
+time="2026-10-16T08:39:57Z" level=error msg="unable to send permits" consumerID=3308 error="consumer closing or closed" name=c00030 subscription=sub topic="persistent://bench/ns/load-partition-32772"
+time="2026-10-16T08:39:57Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=2680 name=c00026 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-76526"
+time="2026-10-16T08:39:57Z" level=error msg="unable to send permits" consumerID=2680 error="consumer closing or closed" name=c00026 subscription=sub topic="persistent://bench/ns/load-partition-76526"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=1780 name=c00026 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-61226"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=1780 error="consumer closing or closed" name=c00026 subscription=sub topic="persistent://bench/ns/load-partition-61226"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=1938 name=c00028 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-44092"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=1938 error="consumer closing or closed" name=c00028 subscription=sub topic="persistent://bench/ns/load-partition-44092"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=2300 name=c00023 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-81725"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=2300 error="consumer closing or closed" name=c00023 subscription=sub topic="persistent://bench/ns/load-partition-81725"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=1138 name=c00019 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-99163"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=1138 error="consumer closing or closed" name=c00019 subscription=sub topic="persistent://bench/ns/load-partition-99163"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=599 name=c00025 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-85399"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=599 error="consumer closing or closed" name=c00025 subscription=sub topic="persistent://bench/ns/load-partition-85399"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=3517 name=c00020 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-79274"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=3517 error="consumer closing or closed" name=c00020 subscription=sub topic="persistent://bench/ns/load-partition-79274"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=2012 name=c00024 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-83562"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=2012 error="consumer closing or closed" name=c00024 subscription=sub topic="persistent://bench/ns/load-partition-83562"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=318 name=c00017 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-93347"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=318 error="consumer closing or closed" name=c00017 subscription=sub topic="persistent://bench/ns/load-partition-93347"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=4489 name=c00020 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-29090"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=4489 error="consumer closing or closed" name=c00020 subscription=sub topic="persistent://bench/ns/load-partition-29090"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=1920 name=c00025 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-90907"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=1920 error="consumer closing or closed" name=c00025 subscription=sub topic="persistent://bench/ns/load-partition-90907"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=4932 name=c00029 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-83261"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=4932 error="consumer closing or closed" name=c00029 subscription=sub topic="persistent://bench/ns/load-partition-83261"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=793 name=c00018 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-84168"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=793 error="consumer closing or closed" name=c00018 subscription=sub topic="persistent://bench/ns/load-partition-84168"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=745 name=c00025 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-97945"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=745 error="consumer closing or closed" name=c00025 subscription=sub topic="persistent://bench/ns/load-partition-97945"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=1525 name=c00020 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-86312"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=1525 error="consumer closing or closed" name=c00020 subscription=sub topic="persistent://bench/ns/load-partition-86312"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=2992 name=c00024 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-84480"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=2992 error="consumer closing or closed" name=c00024 subscription=sub topic="persistent://bench/ns/load-partition-84480"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=5268 name=c00029 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-49907"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=5268 error="consumer closing or closed" name=c00029 subscription=sub topic="persistent://bench/ns/load-partition-49907"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=583 name=c00024 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-92130"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=583 error="consumer closing or closed" name=c00024 subscription=sub topic="persistent://bench/ns/load-partition-92130"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=564 name=c00024 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-38274"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=564 error="consumer closing or closed" name=c00024 subscription=sub topic="persistent://bench/ns/load-partition-38274"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=379 name=c00018 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-42552"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=379 error="consumer closing or closed" name=c00018 subscription=sub topic="persistent://bench/ns/load-partition-42552"
+time="2026-10-16T08:39:58Z" level=error msg="Failed to redeliver closing or closed consumer" consumerID=3311 name=c00020 state=Closing subscription=sub topic="persistent://bench/ns/load-partition-54794"
+time="2026-10-16T08:39:58Z" level=error msg="unable to send permits" consumerID=3311 error="consumer closing or closed" name=c00020 subscription=sub topic="persistent://bench/ns/load-partition-54794"
+[info] producers created: 5556 per-partition producers (shard), 0 creation errors, avg creation 15.1 ms
+[info] steady window 60s (after the ramp, before the producers stopped): offered 167796/s pushed 88478/s popped 108840/s cpu 366.9% = 4.15 cores per 100k msg/s (produce+consume)
+[final] offered=108335 achieved=62789 shed=45546 (msgs: offered=10833500 achieved=6278900 shed=4554600) pushErr=0 | pushed=6278900 popped=8100784 lag=-1821884 | popErr=0 empty=0 | overall p50=5537.79 p99=6979.58 p999=7634.94 ms | acked=8100784 ackErr=0 ackLag=-1821884 ackAvg=1.41ms | e2e p50=10289.15 p99=33161.22 p999=40632.32 ms
+load_cpu=304.1%

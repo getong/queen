@@ -1,0 +1,83 @@
+[2026-10-16T07:59:49Z] run 1x50000-3000k-gcp24-6l-b5: pulsar 4.2.4, 3000000 msg/s total over 18 load processes (6 loaders x 3), topics=1 x partitions=50000 entities=0 mode=batch batch=100 sub=failover consumers=17/process
+[2026-10-16T07:59:50Z] 1. cluster reset: PROFILE=vm JOURNALS=2 BOOKIE_SET=dbStorage_writeCacheMaxSizeMb=4096;dbStorage_readAheadCacheMaxSizeMb=2048 BROKER_SET=managedLedgerCacheSizeMB=4096 MEM_ZK=-Xms2g -Xmx2g MEM_BOOKIE=-Xms6g -Xmx6g -XX:MaxDirectMemorySize=16g MEM_BROKER=-Xms12g -Xmx12g -XX:MaxDirectMemorySize=12g
+  [2026-10-16T08:00:09Z] brokers healthy: brokers active=3 10.250.0.22:8080=ok 10.250.0.23:8080=ok 10.250.0.25:8080=ok
+    proof persistent://bench/ns/probe-health-1792137611: ledger 11 (1 ledgers, state=LedgerOpened) ensembleSize=3 writeQuorumSize=3 ackQuorumSize=2 ensemble=[10.250.0.22:3181, 10.250.0.25:3181, 10.250
+  [2026-10-16T08:00:12Z] reset done
+[2026-10-16T08:00:12Z] 2. topics + subscription + warm: pload -create-only on loader 1
+    [admin] subscription "sub" on load created in 50.6s and verified on all 50000 partitions in 32.4s (19528 re-created on a partition)
+    [warm] one message (no "ts") into each of 50000 partitions in 331.4s; consumed and acked in 2.1s
+  [create] done: 1 topics x 50000 partitions, subscription "sub" on every partition
+    namespace bench/ns: bundles=48 persistence=E3/Qw3/Qa2 markDeleteRate=1.0 retention=0min/0MB
+    proof persistent://bench/ns/load-partition-0: ledger 41 (1 ledgers, state=LedgerOpened) ensembleSize=3 writeQuorumSize=3 ackQuorumSize=2 ensemble=[10.250.0.25:3181, 10.250.0.22:3181, 10.250.0.23:3181] (broker interna
+      LedgerMetadata{formatVersion=3, ensembleSize=3, writeQuorumSize=3, ackQuorumSize=2, state=OPEN, digestType=CRC32C, password=base64:, ensembles={0=[10.250.0.25:3181, 10.250.0.22:3181, 10.250.0.23:3181]}, ...
+[2026-10-16T08:07:13Z] 3. balance -fix
+  balance bench/ns: 50000 topics (1 partitioned) in 48 of 48 bundles, 3 brokers, mean 16666.7 topics/broker; hash check 4/4 lookups agree
+    10.250.0.22:8080       bundles= 16 topics=  16629 (  -0.2%)  per-bundle max/min=1062/1019
+    10.250.0.23:8080       bundles= 16 topics=  16669 (  +0.0%)  per-bundle max/min=1062/1018
+    10.250.0.25:8080       bundles= 16 topics=  16702 (  +0.2%)  per-bundle max/min=1058/1031
+    unowned bundles with topics: 0 (0 topics); max deviation 0.2% (target ±10%): OK
+[2026-10-16T08:07:13Z] 4. samplers on 3 brokers + 6 loaders
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 119108 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens7 disk=md0)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 119547 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens7 disk=md0)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 107820 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens7 disk=md0)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 13856 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 12078 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 12064 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 2343 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 2307 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x50000-3000k-gcp24-6l-b5 started pid 2314 -> /root/bench/samples/1x50000-3000k-gcp24-6l-b5.txt (iface=ens3 disk=nvme0n1)
+[2026-10-16T08:07:14Z] 5. 18 load processes
+[2026-10-16T08:07:20Z]   18/18 READY after 5s
+[2026-10-16T08:07:22Z] 6. start instant 1792138052355 (loader 1 clock + 10 s); producing 70s (ramp 10s) + drain 0s
+[2026-10-16T08:08:07Z]   mid-run thread snapshot
+    n1  node=1 broker total=5.11 cores over 3s (364 threads, 364 named by jstack)
+    n1  node=1 bookie total=3.47 cores over 3s (236 threads, 203 named by jstack)
+    n1  node=1 zk total=0.00 cores over 3s (150 threads, 150 named by jstack)
+    n2  node=2 broker total=4.85 cores over 3s (330 threads, 330 named by jstack)
+    n2  node=2 bookie total=3.46 cores over 3s (235 threads, 202 named by jstack)
+    n2  node=2 zk total=0.57 cores over 3s (153 threads, 153 named by jstack)
+    n3  node=3 broker total=5.02 cores over 3s (329 threads, 329 named by jstack)
+    n3  node=3 bookie total=3.41 cores over 3s (230 threads, 197 named by jstack)
+    n3  node=3 zk total=0.30 cores over 3s (158 threads, 158 named by jstack)
+[2026-10-16T08:08:45Z] 7. loaders done
+[2026-10-16T08:08:45Z] collect -> /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/pulsar/1x50000-3000k-gcp24-6l-b5
+  pload-0: [final] offered=108333 achieved=108333 shed=0 (msgs: offered=10833300 achieved=10833300 shed=0) pushErr=0 | pushed=10833300 popped=10872400 lag=-39100 | popErr=0 empty=0 | overall p50=6.18 p99=18.82 p999=24.96 ms | acked=10872400 ackErr=0 ackLag=-39100 ackAvg=0.01ms | e2e p50=6.30 p99=20.61 p999=26.24 ms
+  pload-0: load_cpu=206.2%
+  pload-1: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10872500 lag=-39300 | popErr=0 empty=0 | overall p50=6.18 p99=18.82 p999=25.22 ms | acked=10872500 ackErr=0 ackLag=-39300 ackAvg=0.01ms | e2e p50=6.30 p99=20.35 p999=25.73 ms
+  pload-1: load_cpu=207.0%
+  pload-2: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10872400 lag=-39200 | popErr=0 empty=0 | overall p50=6.18 p99=18.82 p999=24.96 ms | acked=10872400 ackErr=0 ackLag=-39200 ackAvg=0.01ms | e2e p50=6.30 p99=20.35 p999=25.47 ms
+  pload-2: load_cpu=207.0%
+  pload-3: [final] offered=108334 achieved=108334 shed=0 (msgs: offered=10833400 achieved=10833400 shed=0) pushErr=0 | pushed=10833400 popped=10872400 lag=-39000 | popErr=0 empty=0 | overall p50=6.18 p99=18.82 p999=24.70 ms | acked=10872400 ackErr=0 ackLag=-39000 ackAvg=0.01ms | e2e p50=6.37 p99=20.61 p999=25.73 ms
+  pload-3: load_cpu=213.5%
+  pload-4: [final] offered=108331 achieved=108331 shed=0 (msgs: offered=10833100 achieved=10833100 shed=0) pushErr=0 | pushed=10833100 popped=10872700 lag=-39600 | popErr=0 empty=0 | overall p50=6.11 p99=18.82 p999=24.96 ms | acked=10872700 ackErr=0 ackLag=-39600 ackAvg=0.01ms | e2e p50=6.37 p99=20.35 p999=24.96 ms
+  pload-4: load_cpu=214.3%
+  pload-5: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10872700 lag=-39500 | popErr=0 empty=0 | overall p50=6.18 p99=18.82 p999=24.70 ms | acked=10872700 ackErr=0 ackLag=-39500 ackAvg=0.01ms | e2e p50=6.37 p99=20.35 p999=25.73 ms
+  pload-5: load_cpu=213.8%
+  pload-6: [final] offered=108333 achieved=108333 shed=0 (msgs: offered=10833300 achieved=10833300 shed=0) pushErr=0 | pushed=10833300 popped=10872547 lag=-39247 | popErr=0 empty=0 | overall p50=6.50 p99=19.58 p999=25.98 ms | acked=10872547 ackErr=0 ackLag=-39247 ackAvg=0.01ms | e2e p50=6.56 p99=20.61 p999=25.73 ms
+  pload-6: load_cpu=263.9%
+  pload-7: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10819001 lag=14199 | popErr=0 empty=0 | overall p50=6.50 p99=19.58 p999=25.98 ms | acked=10819001 ackErr=0 ackLag=14199 ackAvg=0.01ms | e2e p50=6.56 p99=20.35 p999=26.24 ms
+  pload-7: load_cpu=264.8%
+  pload-8: [final] offered=108331 achieved=108331 shed=0 (msgs: offered=10833100 achieved=10833100 shed=0) pushErr=0 | pushed=10833100 popped=10807603 lag=25497 | popErr=0 empty=0 | overall p50=6.50 p99=19.84 p999=26.24 ms | acked=10807603 ackErr=0 ackLag=25497 ackAvg=0.01ms | e2e p50=6.50 p99=20.61 p999=27.26 ms
+  pload-8: load_cpu=264.2%
+  pload-10: [final] offered=108334 achieved=108334 shed=0 (msgs: offered=10833400 achieved=10833400 shed=0) pushErr=0 | pushed=10833400 popped=10807700 lag=25700 | popErr=0 empty=0 | overall p50=6.18 p99=19.07 p999=25.73 ms | acked=10807700 ackErr=0 ackLag=25700 ackAvg=0.01ms | e2e p50=6.30 p99=20.10 p999=26.50 ms
+  pload-10: load_cpu=214.3%
+  pload-11: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10807700 lag=25500 | popErr=0 empty=0 | overall p50=6.18 p99=19.07 p999=28.54 ms | acked=10807700 ackErr=0 ackLag=25500 ackAvg=0.01ms | e2e p50=6.30 p99=20.35 p999=27.52 ms
+  pload-11: load_cpu=214.3%
+  pload-9: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10807572 lag=25628 | popErr=0 empty=0 | overall p50=6.11 p99=19.07 p999=25.73 ms | acked=10807572 ackErr=0 ackLag=25628 ackAvg=0.01ms | e2e p50=6.37 p99=20.10 p999=26.24 ms
+  pload-9: load_cpu=216.1%
+  pload-12: [final] offered=108335 achieved=108335 shed=0 (msgs: offered=10833500 achieved=10833500 shed=0) pushErr=0 | pushed=10833500 popped=10807600 lag=25900 | popErr=0 empty=0 | overall p50=6.11 p99=18.82 p999=25.22 ms | acked=10807600 ackErr=0 ackLag=25900 ackAvg=0.01ms | e2e p50=6.37 p99=20.35 p999=26.75 ms
+  pload-12: load_cpu=210.6%
+  pload-13: [final] offered=108329 achieved=108329 shed=0 (msgs: offered=10832900 achieved=10832900 shed=0) pushErr=0 | pushed=10832900 popped=10807500 lag=25400 | popErr=0 empty=0 | overall p50=6.11 p99=18.82 p999=24.96 ms | acked=10807500 ackErr=0 ackLag=25400 ackAvg=0.01ms | e2e p50=6.37 p99=20.10 p999=26.50 ms
+  pload-13: load_cpu=211.1%
+  pload-14: [final] offered=108335 achieved=108335 shed=0 (msgs: offered=10833500 achieved=10833500 shed=0) pushErr=0 | pushed=10833500 popped=10807100 lag=26400 | popErr=0 empty=0 | overall p50=6.11 p99=19.07 p999=25.22 ms | acked=10807100 ackErr=0 ackLag=26400 ackAvg=0.01ms | e2e p50=6.37 p99=20.35 p999=26.50 ms
+  pload-14: load_cpu=209.7%
+  pload-15: [final] offered=108332 achieved=108332 shed=0 (msgs: offered=10833200 achieved=10833200 shed=0) pushErr=0 | pushed=10833200 popped=10806600 lag=26600 | popErr=0 empty=0 | overall p50=6.18 p99=19.33 p999=25.73 ms | acked=10806600 ackErr=0 ackLag=26600 ackAvg=0.01ms | e2e p50=6.30 p99=20.35 p999=26.50 ms
+  pload-15: load_cpu=214.1%
+  pload-16: [final] offered=108334 achieved=108334 shed=0 (msgs: offered=10833400 achieved=10833400 shed=0) pushErr=0 | pushed=10833400 popped=10806400 lag=27000 | popErr=0 empty=0 | overall p50=6.18 p99=19.07 p999=24.70 ms | acked=10806400 ackErr=0 ackLag=27000 ackAvg=0.01ms | e2e p50=6.30 p99=20.35 p999=25.73 ms
+  pload-16: load_cpu=213.1%
+  pload-17: [final] offered=108338 achieved=108338 shed=0 (msgs: offered=10833800 achieved=10833800 shed=0) pushErr=0 | pushed=10833800 popped=10806200 lag=27600 | popErr=0 empty=0 | overall p50=6.18 p99=19.07 p999=25.22 ms | acked=10806200 ackErr=0 ackLag=27600 ackAvg=0.01ms | e2e p50=6.30 p99=20.35 p999=25.98 ms
+  pload-17: load_cpu=213.6%
+[2026-10-16T08:08:55Z] DONE /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/pulsar/1x50000-3000k-gcp24-6l-b5
+  run                        sys     shape                                     offered  push/s  cons/s  shed/s  e2e p50  e2e p99  local p99  prod p99  brk cores  sys cores  rss GB/node  disk w MB/s/node  net rx/tx MB/s/node  errs  load cpu
+  1x50000-3000k-gcp24-6l-b5  pulsar  t=1 p=50000 e=0 batch/100 failover c=306  3000000   3000k   3000k      0k        7       21         22        21       21.7       22.0         27.0               897              463/443     0      39.7
+  latencies in ms (e2e = consumer receive - scheduled send; local = same-host samples only); rates = last 30 s

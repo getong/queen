@@ -1,0 +1,16 @@
+  n1  node=1 ip=10.250.0.23 zk=follower/imok bookie=rw broker=ok
+  n2  node=2 ip=10.250.0.22 zk=follower/imok bookie=rw broker=ok
+  n3  node=3 ip=10.250.0.25 zk=leader/imok bookie=rw broker=ok
+  zk states: follower follower leader leader=1 followers=2 synced=2
+  bookies rw=3 ro=0 writable=[10.250.0.22:3181 10.250.0.23:3181 10.250.0.25:3181]
+  bookkeeper shell listbookies -rw:
+    ReadWrite Bookies :
+    BookieID:10.250.0.25:3181, IP:10.250.0.25, Port:3181, Hostname:queen-bench-3.europe-west1-b.c.<gcp-project>.internal
+    BookieID:10.250.0.22:3181, IP:10.250.0.22, Port:3181, Hostname:queen-bench-2.europe-west1-b.c.<gcp-project>.internal
+    BookieID:10.250.0.23:3181, IP:10.250.0.23, Port:3181, Hostname:queen-bench-1.europe-west1-b.c.<gcp-project>.internal
+  brokers active=3 10.250.0.22:8080=ok 10.250.0.23:8080=ok 10.250.0.25:8080=ok
+  namespace bench/ns: bundles=48 persistence=E3/Qw3/Qa2 markDeleteRate=1.0 retention=0min/0MB
+  proof persistent://bench/ns/load-partition-0: ledger 35 (1 ledgers, state=LedgerOpened) ensembleSize=3 writeQuorumSize=3 ackQuorumSize=2 ensemble=[10.250.0.22:3181, 10.250.0.25:3181, 10.250.0.23:3181] (broker internalStats?metadata=true)
+  bookkeeper shell ledgermetadata -ledgerid 35:
+    ledgerID: 35
+    LedgerMetadata{formatVersion=3, ensembleSize=3, writeQuorumSize=3, ackQuorumSize=2, state=OPEN, digestType=CRC32C, password=base64:, ensembles={0=[10.250.0.22:3181, 10.250.0.25:3181, 10.250.0.23:3181]}, ...

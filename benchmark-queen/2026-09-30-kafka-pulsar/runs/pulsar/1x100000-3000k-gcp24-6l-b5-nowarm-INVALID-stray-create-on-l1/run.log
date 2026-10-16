@@ -1,0 +1,83 @@
+[2026-10-16T08:35:13Z] run 1x100000-3000k-gcp24-6l-b5-nowarm: pulsar 4.2.4, 3000000 msg/s total over 18 load processes (6 loaders x 3), topics=1 x partitions=100000 entities=0 mode=batch batch=100 sub=failover consumers=17/process
+[2026-10-16T08:35:13Z] 1. cluster reset: PROFILE=vm JOURNALS=2 BOOKIE_SET=dbStorage_writeCacheMaxSizeMb=4096;dbStorage_readAheadCacheMaxSizeMb=2048 BROKER_SET=managedLedgerCacheSizeMB=4096 MEM_ZK=-Xms2g -Xmx2g MEM_BOOKIE=-Xms6g -Xmx6g -XX:MaxDirectMemorySize=16g MEM_BROKER=-Xms12g -Xmx12g -XX:MaxDirectMemorySize=12g
+  [2026-10-16T08:35:33Z] brokers healthy: brokers active=3 10.250.0.22:8080=ok 10.250.0.23:8080=ok 10.250.0.25:8080=ok
+    proof persistent://bench/ns/probe-health-1792139736: ledger 9 (1 ledgers, state=LedgerOpened) ensembleSize=3 writeQuorumSize=3 ackQuorumSize=2 ensemble=[10.250.0.23:3181, 10.250.0.22:3181, 10.250.
+  [2026-10-16T08:35:37Z] reset done
+[2026-10-16T08:35:37Z] 2. topics + subscription + warm: pload -create-only on loader 1
+    [admin] subscription: 84140 of 100000 partitions checked (35522 re-created)
+    [admin] subscription "sub" on load created in 80.2s and verified on all 100000 partitions in 73.3s (43544 re-created on a partition)
+  [create] done: 1 topics x 100000 partitions, subscription "sub" on every partition
+    namespace bench/ns: bundles=48 persistence=E3/Qw3/Qa2 markDeleteRate=1.0 retention=0min/0MB
+    proof persistent://bench/ns/load-partition-0: ledger 812 (1 ledgers, state=LedgerOpened) ensembleSize=3 writeQuorumSize=3 ackQuorumSize=2 ensemble=[10.250.0.25:3181, 10.250.0.22:3181, 10.250.0.23:3181] (broker intern
+      LedgerMetadata{formatVersion=3, ensembleSize=3, writeQuorumSize=3, ackQuorumSize=2, state=OPEN, digestType=CRC32C, password=base64:, ensembles={0=[10.250.0.25:3181, 10.250.0.22:3181, 10.250.0.23:3181]}, ...
+[2026-10-16T08:38:15Z] 3. balance -fix
+  balance bench/ns: 100000 topics (1 partitioned) in 48 of 48 bundles, 3 brokers, mean 33333.3 topics/broker; hash check 4/4 lookups agree
+    10.250.0.22:8080       bundles= 16 topics=  33253 (  -0.2%)  per-bundle max/min=2123/2046
+    10.250.0.23:8080       bundles= 16 topics=  33371 (  +0.1%)  per-bundle max/min=2111/2058
+    10.250.0.25:8080       bundles= 16 topics=  33376 (  +0.1%)  per-bundle max/min=2107/2063
+    unowned bundles with topics: 0 (0 topics); max deviation 0.2% (target ±10%): OK
+[2026-10-16T08:38:16Z] 4. samplers on 3 brokers + 6 loaders
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 129435 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens7 disk=md0)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 128057 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens7 disk=md0)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 116499 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens7 disk=md0)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 14510 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 12421 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 12410 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 2693 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 2657 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens3 disk=nvme0n1)
+  sampler 1x100000-3000k-gcp24-6l-b5-nowarm started pid 2670 -> /root/bench/samples/1x100000-3000k-gcp24-6l-b5-nowarm.txt (iface=ens3 disk=nvme0n1)
+[2026-10-16T08:38:17Z] 5. 18 load processes
+[2026-10-16T08:38:27Z]   18/18 READY after 9s
+[2026-10-16T08:38:30Z] 6. start instant 1792139920127 (loader 1 clock + 10 s); producing 70s (ramp 10s) + drain 0s
+[2026-10-16T08:39:15Z]   mid-run thread snapshot
+    n1  node=1 broker total=5.54 cores over 3s (364 threads, 364 named by jstack)
+    n1  node=1 bookie total=3.65 cores over 3s (236 threads, 203 named by jstack)
+    n1  node=1 zk total=0.01 cores over 3s (154 threads, 154 named by jstack)
+    n2  node=2 broker total=5.05 cores over 3s (329 threads, 329 named by jstack)
+    n2  node=2 bookie total=3.12 cores over 3s (235 threads, 202 named by jstack)
+    n2  node=2 zk total=0.00 cores over 3s (150 threads, 150 named by jstack)
+    n3  node=3 broker total=5.09 cores over 3s (330 threads, 330 named by jstack)
+    n3  node=3 bookie total=3.06 cores over 3s (230 threads, 197 named by jstack)
+    n3  node=3 zk total=0.01 cores over 3s (157 threads, 157 named by jstack)
+[2026-10-16T08:40:07Z] 7. loaders done
+[2026-10-16T08:40:07Z] collect -> /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/pulsar/1x100000-3000k-gcp24-6l-b5-nowarm
+  pload-0: [final] offered=108331 achieved=61056 shed=47275 (msgs: offered=10833100 achieved=6105600 shed=4727500) pushErr=0 | pushed=6105600 popped=7853861 lag=-1748261 | popErr=0 empty=0 | overall p50=5537.79 p99=7569.41 p999=9109.50 ms | acked=7853861 ackErr=0 ackLag=-1748261 ackAvg=1.51ms | e2e p50=10813.44 p99=33816.58 p999=41680.90 ms
+  pload-0: load_cpu=301.8%
+  pload-1: [final] offered=108335 achieved=62789 shed=45546 (msgs: offered=10833500 achieved=6278900 shed=4554600) pushErr=0 | pushed=6278900 popped=8100784 lag=-1821884 | popErr=0 empty=0 | overall p50=5537.79 p99=6979.58 p999=7634.94 ms | acked=8100784 ackErr=0 ackLag=-1821884 ackAvg=1.41ms | e2e p50=10289.15 p99=33161.22 p999=40632.32 ms
+  pload-1: load_cpu=304.1%
+  pload-2: [final] offered=108332 achieved=60792 shed=47540 (msgs: offered=10833200 achieved=6079200 shed=4754000) pushErr=0 | pushed=6079200 popped=7857207 lag=-1778007 | popErr=0 empty=0 | overall p50=5472.26 p99=7700.48 p999=8093.70 ms | acked=7857207 ackErr=0 ackLag=-1778007 ackAvg=1.50ms | e2e p50=10551.30 p99=33816.58 p999=42729.47 ms
+  pload-2: load_cpu=301.5%
+  pload-3: [final] offered=108332 achieved=102419 shed=5913 (msgs: offered=10833200 achieved=10241900 shed=591300) pushErr=0 | pushed=10241900 popped=8726866 lag=1515034 | popErr=0 empty=0 | overall p50=2932.74 p99=4227.07 p999=4489.22 ms | acked=8726866 ackErr=0 ackLag=1515034 ackAvg=1.16ms | e2e p50=3719.17 p99=13041.66 p999=18219.01 ms
+  pload-3: load_cpu=431.8%
+  pload-4: [final] offered=108330 achieved=105727 shed=2603 (msgs: offered=10833000 achieved=10572700 shed=260300) pushErr=0 | pushed=10572700 popped=8700086 lag=1872614 | popErr=0 empty=0 | overall p50=2768.90 p99=4358.14 p999=4620.29 ms | acked=8700086 ackErr=0 ackLag=1872614 ackAvg=1.13ms | e2e p50=3424.26 p99=14352.38 p999=21102.59 ms
+  pload-4: load_cpu=447.7%
+  pload-5: [final] offered=108330 achieved=106811 shed=1519 (msgs: offered=10833000 achieved=10681100 shed=151900) pushErr=0 | pushed=10681100 popped=8714649 lag=1966451 | popErr=0 empty=0 | overall p50=2572.29 p99=3850.24 p999=4112.38 ms | acked=8714649 ackErr=0 ackLag=1966451 ackAvg=1.20ms | e2e p50=3162.11 p99=9240.58 p999=12386.30 ms
+  pload-5: load_cpu=438.0%
+  pload-6: [final] offered=108334 achieved=62189 shed=46145 (msgs: offered=10833400 achieved=6218900 shed=4614500) pushErr=0 | pushed=6218900 popped=7994721 lag=-1775821 | popErr=0 empty=0 | overall p50=5537.79 p99=7176.19 p999=7766.02 ms | acked=7994721 ackErr=0 ackLag=-1775821 ackAvg=2.59ms | e2e p50=9764.86 p99=32374.78 p999=40632.32 ms
+  pload-6: load_cpu=467.3%
+  pload-7: [final] offered=108337 achieved=61365 shed=46972 (msgs: offered=10833700 achieved=6136500 shed=4697200) pushErr=0 | pushed=6136500 popped=7970751 lag=-1834251 | popErr=0 empty=0 | overall p50=5472.26 p99=7634.94 p999=8028.16 ms | acked=7970751 ackErr=0 ackLag=-1834251 ackAvg=2.53ms | e2e p50=10027.01 p99=32636.93 p999=40632.32 ms
+  pload-7: load_cpu=467.3%
+  pload-8: [final] offered=108332 achieved=62576 shed=45756 (msgs: offered=10833200 achieved=6257600 shed=4575600) pushErr=0 | pushed=6257600 popped=7963476 lag=-1705876 | popErr=0 empty=0 | overall p50=5275.65 p99=7569.41 p999=8716.29 ms | acked=7963476 ackErr=0 ackLag=-1705876 ackAvg=2.73ms | e2e p50=10813.44 p99=33816.58 p999=42205.18 ms
+  pload-8: load_cpu=469.8%
+  pload-10: [final] offered=108336 achieved=100402 shed=7934 (msgs: offered=10833600 achieved=10040200 shed=793400) pushErr=0 | pushed=10040200 popped=8951490 lag=1088710 | popErr=0 empty=0 | overall p50=2899.97 p99=4816.90 p999=5144.58 ms | acked=8951490 ackErr=0 ackLag=1088710 ackAvg=1.24ms | e2e p50=4112.38 p99=15532.03 p999=22151.17 ms
+  pload-10: load_cpu=438.0%
+  pload-11: [final] offered=108331 achieved=97195 shed=11136 (msgs: offered=10833100 achieved=9719500 shed=1113600) pushErr=0 | pushed=9719500 popped=8895099 lag=824401 | popErr=0 empty=0 | overall p50=3096.58 p99=5210.11 p999=5537.79 ms | acked=8895099 ackErr=0 ackLag=824401 ackAvg=1.34ms | e2e p50=4145.15 p99=16187.39 p999=22413.31 ms
+  pload-11: load_cpu=436.9%
+  pload-9: [final] offered=108329 achieved=98903 shed=9426 (msgs: offered=10832900 achieved=9890300 shed=942600) pushErr=0 | pushed=9890300 popped=8975075 lag=915225 | popErr=0 empty=0 | overall p50=3162.11 p99=4358.14 p999=4816.90 ms | acked=8975075 ackErr=0 ackLag=915225 ackAvg=1.35ms | e2e p50=3850.24 p99=11599.87 p999=16056.32 ms
+  pload-9: load_cpu=437.0%
+  pload-12: [final] offered=108333 achieved=107818 shed=515 (msgs: offered=10833300 achieved=10781800 shed=51500) pushErr=0 | pushed=10781800 popped=8757740 lag=2024060 | popErr=0 empty=0 | overall p50=2244.61 p99=3719.17 p999=4145.15 ms | acked=8757740 ackErr=0 ackLag=2024060 ackAvg=1.07ms | e2e p50=2801.66 p99=7700.48 p999=10289.15 ms
+  pload-12: load_cpu=433.6%
+  pload-13: [final] offered=108335 achieved=107963 shed=372 (msgs: offered=10833500 achieved=10796300 shed=37200) pushErr=0 | pushed=10796300 popped=8730293 lag=2066007 | popErr=0 empty=0 | overall p50=1892.35 p99=4489.22 p999=5013.50 ms | acked=8730293 ackErr=0 ackLag=2066007 ackAvg=1.08ms | e2e p50=2342.91 p99=9633.79 p999=13959.17 ms
+  pload-13: load_cpu=438.4%
+  pload-14: [final] offered=108330 achieved=107240 shed=1090 (msgs: offered=10833000 achieved=10724000 shed=109000) pushErr=0 | pushed=10724000 popped=8702309 lag=2021691 | popErr=0 empty=0 | overall p50=2506.75 p99=3850.24 p999=4145.15 ms | acked=8702309 ackErr=0 ackLag=2021691 ackAvg=1.14ms | e2e p50=3063.81 p99=10289.15 p999=14352.38 ms
+  pload-14: load_cpu=430.8%
+  pload-15: [final] offered=108330 achieved=99492 shed=8838 (msgs: offered=10833000 achieved=9949200 shed=883800) pushErr=0 | pushed=9949200 popped=8888308 lag=1060892 | popErr=0 empty=0 | overall p50=3063.81 p99=4685.82 p999=5079.04 ms | acked=8888308 ackErr=0 ackLag=1060892 ackAvg=1.41ms | e2e p50=4014.08 p99=14090.24 p999=19267.58 ms
+  pload-15: load_cpu=435.2%
+  pload-16: [final] offered=108334 achieved=98896 shed=9438 (msgs: offered=10833400 achieved=9889600 shed=943800) pushErr=0 | pushed=9889600 popped=8857661 lag=1031939 | popErr=0 empty=0 | overall p50=3096.58 p99=4292.61 p999=4620.29 ms | acked=8857661 ackErr=0 ackLag=1031939 ackAvg=1.41ms | e2e p50=4112.38 p99=13303.81 p999=17956.86 ms
+  pload-16: load_cpu=436.3%
+  pload-17: [final] offered=108336 achieved=100703 shed=7633 (msgs: offered=10833600 achieved=10070300 shed=763300) pushErr=0 | pushed=10070300 popped=8889725 lag=1180575 | popErr=0 empty=0 | overall p50=3096.58 p99=4554.75 p999=5144.58 ms | acked=8889725 ackErr=0 ackLag=1180575 ackAvg=1.39ms | e2e p50=3751.94 p99=12648.45 p999=17694.72 ms
+  pload-17: load_cpu=439.4%
+[2026-10-16T08:40:21Z] DONE /Users/alice/Work/queen/benchmark-queen/2026-09-30-kafka-pulsar/runs/pulsar/1x100000-3000k-gcp24-6l-b5-nowarm
+  run                                sys     shape                                      offered  push/s  cons/s  shed/s  e2e p50  e2e p99  local p99  prod p99  brk cores  sys cores  rss GB/node  disk w MB/s/node  net rx/tx MB/s/node  errs  load cpu
+  1x100000-3000k-gcp24-6l-b5-nowarm  pulsar  t=1 p=100000 e=0 batch/100 failover c=306  3000000   2375k   2308k    620k    14483    33423      33161      7504       21.0       21.2         30.5               737              395/367     0      75.5
+  latencies in ms (e2e = consumer receive - scheduled send; local = same-host samples only); rates = last 30 s
