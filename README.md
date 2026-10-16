@@ -11,7 +11,7 @@ Queen MQ is a transactional event broker. When a worker handles an event, the ac
 changes, the events it emits and the timer it sets commit as one entry of a replicated log, or not
 at all. 
 
-On three nodes it carries up to 3M msg/s in and out of one queue of 10M partitions.
+On three nodes it carries up to 5M msg/s in and out of one queue, and 3M over 10M partitions.
 
 Queen speaks HTTP but is also compatible with Kafka clients.
 
@@ -68,38 +68,40 @@ In production at [Smartness](https://www.smartness.com/en). Tested with Jepsen.
 
 Queen answers a write once two of its three nodes have fsynced it; Kafka 4.3.1, run on the same
 machines, keeps three replicas with `acks=all` and no fsync. The chart and the first three rows are
-the released 2.3.0 on three GCP nodes of 24 vCPU with local NVMe (2026-10-14), with Kafka on XFS;
-in those rows a p99 is the median of three 10-second windows, and the chart and the brackets give
-the worst one. The other rows say where they ran. Each row links to the run and its conditions.
+Queen 2.4 on three GCP nodes of 24 vCPU with local NVMe (2026-10-14 to 16), with Kafka, Pulsar and
+Redpanda on the same machines; in those rows a p99 is the median of three 10-second windows, and the
+chart and the brackets give the worst one. The other rows say where they ran. Each row links to the
+run and its conditions.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/bench-queen-e2e-dark.svg">
-  <img src="assets/bench-queen-e2e-light.svg" alt="End to end p99 as one queue grows from 10 to 10 million partitions on three GCP nodes with local NVMe: 47 to 78 ms at 3M msg/s of 256-byte messages; at 1M msg/s of 1 KB messages 27 to 34 ms from 100 to 1M partitions, 68 and 65 ms at 10 and 10M" width="820">
+  <img src="assets/bench-queen-e2e-light.svg" alt="Queen 2.4 end to end p99 as one queue grows from 10 to 10 million partitions on three GCP nodes with local NVMe: 17 to 29 ms at 3M msg/s of 256-byte messages, 17 to 25 ms at 1M msg/s of 1 KB messages" width="820">
 </picture>
 
-<sub>Queen 2.3.0 on three GCP c4-standard-24-lssd nodes with local NVMe, 2026-10-14: end to end p99 at 3M msg/s of
-256-byte messages and at 1M msg/s of 1 KB messages, the worst load process in seconds 30-60 of 70.
-[Queen vs Kafka on NVMe](https://queenmq.com/benchmarks/queen-vs-kafka/).</sub>
+<sub>Queen 2.4 on three GCP c4-standard-24-lssd nodes with local NVMe, 2026-10-15: end to end p99 at 3M msg/s of
+256-byte messages and at 1M msg/s of 1 KB messages, the worst load process in seconds 30-60 of 70 (at 3M and
+1,000 partitions, the median of five runs). 2.3.0's 3M line read 47 to 78 ms on the same axes.
+[Queen vs Kafka, Pulsar and Redpanda on NVMe](https://queenmq.com/benchmarks/queen-vs-kafka/).</sub>
 
 | | Result |
 |---|---|
-| [Partitions](https://queenmq.com/benchmarks/queen-vs-kafka/#3000000-msgs-of-256-byte-messages) | 3,000,000 msg/s of 256-byte messages in and out of one queue at every count from 10 to **10,000,000 partitions**, e2e p99 **42 to 76 ms** (47 to 78) on 19 to 23 cores. Kafka on the same machines: p99 7.5 to 21 ms up to 10,000 partitions, 105 ms at 25,000 on 57 cores, and it does not carry 50,000 or 100,000. |
-| [1 KB messages](https://queenmq.com/benchmarks/queen-vs-kafka/#1000000-msgs-of-1-kb-messages) | 1,000,000 msg/s of 1 KB messages, about 1 GB/s: e2e p99 **26 to 30 ms** (27 to 34) from 100 to 1,000,000 partitions. Kafka: 9.4 to 19 ms up to 10,000 partitions, 45 ms at 25,000, and it does not carry 50,000; the medians are close (Queen 9.4 to 11 ms, Kafka 7.4 to 8.8). |
-| [Ceiling](https://queenmq.com/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions) | One queue of 1,000 partitions: e2e p50 / p99 of 5.8 / 17 ms at 2,000,000 msg/s, 21 / 50 ms at 3,000,000 and 46 / 97 ms at 3,500,000; 4,000,000 is not carried. Kafka, one topic of 1,000 partitions: 6.0 / 8.1 ms at 3,000,000 and 5.8 / 12.5 ms at 8,000,000. |
+| [Partitions](https://queenmq.com/benchmarks/queen-vs-kafka/#3000000-msgs-of-256-byte-messages) | 3,000,000 msg/s of 256-byte messages in and out of one queue at every count from 10 to **10,000,000 partitions**, e2e p99 **15 to 25 ms** (17 to 29) on 21 to 28 cores. Kafka on the same machines: p99 7.5 to 11 ms up to 1,000 partitions, 53 cores at 10,000, and it does not carry 50,000. Pulsar: 20 to 25 ms up to 50,000, not 100,000. Redpanda: 14 ms at 100 and 1,000, 782 ms at 10,000, not 50,000. |
+| [1 KB messages](https://queenmq.com/benchmarks/queen-vs-kafka/#1000000-msgs-of-1-kb-messages) | 1,000,000 msg/s of 1 KB messages, about 1 GB/s: e2e p50 6.7 to 9.7 ms and p99 **16 to 22 ms** (17 to 25) from 10 to 10,000,000 partitions. Kafka: 9.4 ms up to 1,000 partitions, 19 ms at 10,000 and 45 ms at 25,000, and it does not carry 50,000. |
+| [Ceiling](https://queenmq.com/benchmarks/queen-vs-kafka/#the-ceiling-at-1000-partitions) | One queue of 1,000 partitions: e2e p50 / p99 of 6.6 / 15 ms at 3,000,000 msg/s, 16 / 52 ms at 4,000,000 and 39 / 87 ms at **5,000,000**; 5,500,000 is not carried. Kafka, one topic of 1,000 partitions: 6.0 / 8.1 ms at 3,000,000 and 5.8 / 12.5 ms at 8,000,000. [All four at 5,000,000](https://queenmq.com/benchmarks/queen-vs-kafka/#all-four-at-5000000-msgs): Kafka 5.7 / 8.9 ms, Redpanda 30 / 82, Queen 41 / 91, Pulsar not carried. |
 | [Transactions](https://queenmq.com/benchmarks/transactions/) | 10 messages per transaction on three 16-vCPU nodes: commit p99 **4 ms** at 6,000 transactions a second, a ceiling near 12,900 a second. In September's comparison: commit p99 4 ms against Kafka's 34 and Pulsar's 32. |
 | [Kafka clients](https://queenmq.com/benchmarks/kafka-clients/) | franz-go at 1,000,000 msg/s through Queen's Kafka port on three 16-vCPU nodes, e2e p99 48 ms. |
 | [Soak](https://queenmq.com/benchmarks/soak/) | 500,000 msg/s for 3 h 23 min over 1,000,000 partitions on 2.0.0-beta.1, through a kill -9 of the leader and of a follower: e2e p99 86 ms in the median window. |
 | [Jepsen](https://queenmq.com/benchmarks/jepsen/) | **244 tests** on the code of 2.3.0: all valid, three of them once their histories were checked again with more memory, one at its second run, after the test harness had crashed in the first. No acknowledged message lost, no lease held twice, transactions atomic. |
 | [Laravel](https://queenmq.com/benchmarks/laravel/) | 2,753 jobs/s with 32 workers on one node, against 1,124 for Horizon on Redis. |
 
-Where Queen is behind: on these machines Kafka is the faster broker up to about 10,000
-partitions. Its median is three to six times lower and its p99 lower too, it uses less CPU up to
-1,000 partitions, and one topic of 1,000 partitions carries about 8,000,000 msg/s where one Queen
-queue carries 3,500,000. Little of that is durability: with an fsync on every append Kafka still
-read 7.5 / 12 ms at 100 partitions. Its fsyncs cost more as partitions multiply, because it syncs a
-file per partition: at 10,000 partitions fsynced Kafka read 95 / 281 ms against Queen's 24 / 61.
-Queen leads where partitions multiply: Kafka needs about twice Queen's CPU at
-10,000 partitions and does not carry 50,000, where Queen stays flat up to 10,000,000.
+Where Queen is behind: up to 1,000 partitions Kafka answers sooner and goes further. At 3,000,000
+msg/s its median was about 6 ms and its p99 7.5 to 11 ms, where Queen 2.4's were 6.9 to 10 ms and
+16.5 to 24, and it used less CPU (15 to 21 cores against Queen's 21 to 28). One Kafka topic of 1,000
+partitions carries about 8,000,000 msg/s where one Queen queue carries 5,000,000. Little of that is
+durability: with an fsync on every append Kafka still read 7.5 / 12 ms at 100 partitions, but 198 ms
+at 1,000 and 281 at 10,000, where Queen read 16.5 and 20. Queen leads where partitions multiply:
+Kafka needs about twice Queen's CPU at 10,000 partitions and does not carry 50,000, Redpanda reads
+782 ms at 10,000 and falls behind at 50,000, Pulsar at 100,000, and Queen stays flat up to 10,000,000.
 [Method and rig](https://queenmq.com/benchmarks/methodology/).
 
 ## Quick start
