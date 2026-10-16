@@ -22,7 +22,9 @@ ran it, answers when its replicas hold the write in memory; with an fsync on eve
 is 198 ms at 1,000 partitions and 281 ms at 10,000
 ([the runs](#an-fsync-before-the-answer)). With 1 KB messages at 1,000,000 msg/s Queen's median is
 the lower one from 100 partitions up, and Kafka keeps the lower p99 up to 1,000. On one topic of
-1,000 partitions Kafka carried about 8,000,000 msg/s and one Queen queue 5,000,000.
+1,000 partitions Kafka carried about 8,000,000 msg/s and one Queen queue 5,000,000; at 5,000,000
+Kafka read a p99 of 8.9 ms, Redpanda 82, Queen 91, and Pulsar, its disks full, did not carry the
+rate ([all four at 5,000,000](#all-four-at-5000000-msgs)).
 
 Queen 2.4 writes 147 bytes a message where 2.3.0 wrote 248, about what Kafka writes for this load;
 the queue log's fsync went from about 3 ms to 0.5, and the p99 of the same matrix fell from 42 to
@@ -36,7 +38,7 @@ brokers of the same machine type, one system at a time, with nothing else on the
 | Role | Machine type | CPU | Memory | Disk for the data |
 |---|---|---|---|---|
 | 3 brokers | `c4-standard-24-lssd` | 24 vCPU, Intel Xeon 6985P-C | 88 GB | the four local NVMe disks of the machine type (4 × 375 GB) in one RAID0, XFS `noatime` |
-| 3 load generators (6 for Pulsar at 50,000 and 100,000 partitions) | `c4-highcpu-16` | 16 vCPU, Intel Xeon Platinum 8581C | 32 GB | boot disk only |
+| 3 load generators (6 for Pulsar at 50,000 and 100,000 partitions and at 5,000,000 msg/s) | `c4-highcpu-16` | 16 vCPU, Intel Xeon Platinum 8581C | 32 GB | boot disk only |
 
 The runs come from three sets of these VMs, made on 2026-10-14 (Kafka), 10-15 (Queen 2.4) and 10-16
 (Pulsar, Redpanda, and Queen at 1,000 and 50,000 partitions). We measured every broker's disks
@@ -57,7 +59,8 @@ compare.
   pulsar-client-go and Queen's (`qload`) Queen's HTTP API, on the same core of pacing, payloads and
   histograms. Each Queen process talks to one of the three brokers; the other clients talk to each
   partition's leader.
-- **Pulsar at 50,000 and 100,000 partitions** ran on six load generators, 18 processes. On three,
+- **Pulsar at 50,000 and 100,000 partitions and at 5,000,000 msg/s** ran on six load generators,
+  18 processes. On three,
   the Go client used all 16 cores of each load generator at 50,000 partitions, about 2.2 to 2.7
   cores for every 100,000 msg/s against 0.7 at 10,000, and the run measured the clients: 1,680,000
   msg/s pushed with the brokers at 13 of 72 cores. On six it carried the rate.
@@ -233,6 +236,30 @@ limit; the leader used 19 of 24 cores and each broker wrote 670 MB/s, half what 
 neither was full, and what stopped it is not profiled yet. We did not measure Pulsar's or
 Redpanda's ceiling.
 
+## All four at 5,000,000 msg/s
+
+One queue or topic of 1,000 partitions at 5,000,000 msg/s of 256-byte messages, a fresh cluster
+for each system, 70 seconds of load, 2026-10-16, Pulsar on six load generators. p50 / p99 in
+milliseconds (worst window in brackets), the cores of the three brokers (Redpanda's shards' busy
+time) and the mean write rate of a broker's disks:
+
+| System | e2e p50 / p99 | cores | disk writes a broker |
+|---|---|---|---|
+| Kafka 4.3.1 | 5.7 / 8.9 (14) | 30.8 | 737 MB/s |
+| Redpanda 26.2.3 | 30 / 82 (268) | 32.6 | 1,045 MB/s |
+| Queen 2.4 | 41 / 91 (111) | 35.1 | 672 MB/s |
+| Pulsar 4.2.4 | not carried: 4,420,000 msg/s pushed, 514,000 shed, p50 / p99 1.7 / 5.6 s | 15.7 | 1,308 MB/s |
+
+Kafka barely moves from 3,000,000 msg/s (6.0 / 7.9 ms) and reads what its ceiling ladder read on
+10-14 (5.5 / 8.8). Queen reads what its own ladder read on 10-15 (39 / 87 ms), with the leader at
+18 of its 24 cores. Redpanda carries the rate with its median up from 6.8 to 30 ms; its brokers'
+own produce p99 sat in the buckets up to 33 and 66 ms. Pulsar stopped at its disks: a bookie writes
+every entry to its journal and again to its ledger storage, both on the one RAID of these
+machines, and each broker wrote 1,308 MB/s of the about 1,340 the RAID takes, with the brokers at 16
+of 72 cores and the load generators at about 5 of their 16. BookKeeper's documentation advises a
+disk of its own for the journal; these machines have one. Each point ran once, and only on 1,000
+partitions.
+
 ## An fsync before the answer
 
 Queen, Pulsar and Redpanda answer a write after two nodes have fsynced it; Kafka above answers when
@@ -356,7 +383,8 @@ behind from 10,000.
 
 ## What these runs do not show
 
-- Pulsar and Redpanda with 1 KB messages, at their ceilings, or in transactions.
+- Pulsar and Redpanda with 1 KB messages or in transactions, and their ceilings: both ran at
+  5,000,000 msg/s on 1,000 partitions only, and Pulsar with its journal sharing the RAID.
 - Redpanda with write caching on, where it answers from memory as Kafka does here; Redpanda at
   100,000 partitions.
 - Pulsar at 100,000 partitions with enough load generators to rule its client out.
@@ -377,14 +405,15 @@ the `runs/gcp/fm3-*` folders (3,000,000 msg/s), `fm3r1-*` and `fm3r2-*` (repeats
 partitions), `f1k-*` (1 KB), `bpm*` and `fxc-*` (the ceiling), with the README's tables for every
 node's memory and disk; and `a24-*` in
 [`benchmark-queen/2026-10-12-three-node-new-forms/runs/`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-10-12-three-node-new-forms)
-(1,000 and 50,000 partitions, 10-16). Kafka: the `*-gcp24-xfs-t24` folders of
+(1,000 and 50,000 partitions, and 5,000,000 msg/s on 1,000, 10-16). Kafka: the `*-gcp24-xfs-t24` folders of
 `benchmark-queen/2026-09-30-kafka-pulsar/runs/kafka/` for the tables, `1x1000-<rate>k-gcp24-xfs-t24`
 for its ceiling, `*-fsync` with an fsync on every append, `*-share` the share groups,
-`1x1000-3000k-gcp24-xfs-t24-1016` the run of 10-16; on ext4, `*-gcp24` (writeback from 5%),
+`1x1000-3000k-gcp24-xfs-t24-1016` and `1x1000-5000k-gcp24-xfs-t24-1016` the runs of 10-16; on ext4, `*-gcp24` (writeback from 5%),
 `*-gcp24-dbb1g` (from 1 GiB) and `*-gcp24-lazy` (`lazytime`); `*-probe` and `*-lazytime` hold the
 kernel samples in `dstate/`. Pulsar: `runs/pulsar/1x<partitions>-3000k-gcp24`, with
-`1x50000-3000k-gcp24-6l-b5` and `1x100000-3000k-gcp24-6l-b5-nowarm-r` on six load generators.
-Redpanda: `runs/redpanda/1x<partitions>-3000k-gcp24`. The load generators are `qload`, `kload` and
+`1x50000-3000k-gcp24-6l-b5`, `1x100000-3000k-gcp24-6l-b5-nowarm-r` and `1x1000-5000k-gcp24-6l`
+on six load generators. Redpanda: `runs/redpanda/1x<partitions>-3000k-gcp24` and
+`1x1000-5000k-gcp24`. The load generators are `qload`, `kload` and
 `pload` of
 [`benchmark-queen/2026-09-30-kafka-pulsar/mqload`](https://github.com/queen-mq/queen/tree/master/benchmark-queen/2026-09-30-kafka-pulsar/mqload).
 [How we measure](/benchmarks/methodology/) describes the harness.

@@ -1,0 +1,6 @@
+total 7680
+drwxr-xr-x 2 root root      26 Oct 16 10:17 .
+drwxr-xr-x 5 root root      49 Oct 16 10:17 ..
+-rw-r--r-- 1 root root 5029154 Oct 16 10:20 redpanda.log
+65G	/root/bench/data/redpanda
+/dev/md0        1.5T  239G  1.3T  16% /root/bench

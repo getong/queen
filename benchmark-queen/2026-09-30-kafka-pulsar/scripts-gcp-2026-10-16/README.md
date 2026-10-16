@@ -11,6 +11,7 @@ they ran. `S` was a scratch directory (markers, logs); the brokers' public addre
 | `chain3.sh` | 50k and 100k: Queen 50k, Pulsar and Redpanda 50k (100k only after a carried 50k) |
 | `chain4.sh` | Pulsar 50k with 8 connections per broker (`-c8`) |
 | `chain5.sh` to `chain8.sh` | Pulsar on six load generators (`hosts-6l.env`): 50k with a 1 s batch delay (`-6l`), with default batching (`-6l-b5`), 100k without the warm-up (`-nowarm-r`) |
+| `chain9.sh` | 5,000,000 msg/s on 1,000 partitions for all four: Queen 2.4 (`a24-p1000-r5000000`), Kafka (`1x1000-5000k-gcp24-xfs-t24-1016`), Pulsar on six load generators (`1x1000-5000k-gcp24-6l`), Redpanda (`1x1000-5000k-gcp24`) |
 | `next.sh` | waits for the next point to end (progress reports) |
 | `sum1016.py`, `full1016.py` | the docs statistic for every run (median of the three windows of seconds 30-60, slowest process), one table |
 
